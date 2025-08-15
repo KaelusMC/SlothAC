@@ -1,0 +1,83 @@
+# \u00BB is » (double >>), ANSI and UTF-8 interpret this differently... you may even see ? due to this
+prefix: "&bSloth &8\u00BB"
+
+alerts-enabled: "%prefix% &fAlerts enabled"
+alerts-disabled: "%prefix% &fAlerts disabled"
+alerts-format: "%prefix% &f%player% &bfailed &f%check_name% &f(x&c%vl%&f) &7%verbose%"
+
+player-not-found: "%prefix% &cPlayer is exempt or offline!"
+run-as-player: "%prefix% &cThis command can only be used by players!"
+reload-start: "%prefix% &eReloading SlothAC configuration..."
+reload-success: "%prefix% &aSlothAC configuration reloaded."
+
+datacollect:
+  details-required: "%prefix% &cDetails are required for LEGIT and CHEAT types."
+  invalid-type: "%prefix% &cInvalid status. Use LEGIT, CHEAT, or UNLABELED."
+  start-success: "%prefix% &aStarted data collection for &f%player%&a. Status: &f%status%"
+  start-restarted: "%prefix% &eData collection for &f%player%&e was already running. It has been restarted with the new status."
+  stop-success: "%prefix% &aStopped and saved data collection for &f%player%&a."
+  stop-fail: "%prefix% &cData collection was not running for &f%player%&c."
+  status-header: "&6--- Active Data Collection Sessions ---"
+  status-player: "&e - %player%:&r &f%status%&7 (&bTime:&f %time%s&7, &bTicks:&f %ticks%&7)"
+  status-none: "&7None."
+  status-no-session: "%prefix% &cNo active data collection session for &f%player%&c."
+  global-stop-previous: "%prefix% &eStopping previous global collection (&f%id%&e)."
+  global-start-success: "%prefix% &aGlobal data collection started. Session ID: &f%id%"
+  global-started-for-players: "%prefix% &aCollection started for &f%count%&a online players."
+  global-stop-fail: "%prefix% &cGlobal data collection is not active."
+  global-stop-success: "%prefix% &eGlobal data collection (&f%id%&e) stopped."
+  global-stop-archived: "%prefix% &eArchived and stopped &f%count%&e data collection sessions."
+  global-status-fail: "%prefix% &cGlobal data collection is not active."
+  global-status-header: "&6--- Global Data Collection Status ---"
+  global-status-active: "&7 - Mode: &fActive"
+  global-status-session-id: "&7 - Session ID: &f%id%"
+  global-status-players-header: "&6Players:"
+  global-status-player-entry: "&7 - &f%player% &7(Time: &f%time%s&7, Ticks: &f%ticks%&7)"
+
+prob:
+  enabled: "&aProbability display for %player% enabled."
+  disabled: "&eProbability display for %player% disabled."
+  no-data: "&cCould not get data for %player%"
+  no-aicheck: "&cAI-Check is not active for %player%"
+  actionbar-format: "%prob_color%Prob (%player%): %.4f &7| %vl_color%Buffer: %.2f &7| %ping_color%Ping: %ping%ms"
+
+brand:
+  alerts-enabled: "%prefix% &fBrand notifications enabled."
+  alerts-disabled: "%prefix% &fBrand notifications disabled."
+  notification: "%prefix% &f%player% &7joined using &b%brand%"
+  disconnect-forge: "&cYour Forge version is blacklisted due to a built-in reach exploit.\n&eAffected versions: 1.18.2-1.19.3\n&7Please update Forge or use a different client."
+
+profile:
+  no-data: "%prefix% &cCould not get data (exempt or offline)."
+  lines:
+    - "&7======================"
+    - "%prefix% &bProfile for &f%player%"
+    - "&bPing: &f%ping%"
+    - "&bVersion: &f%version%"
+    - "&bClient Brand: &f%brand%"
+    - "&bSession Time: &f%session_time%"
+    - "&bTotal Playtime: &f%total_playtime%"
+    - "&bHorizontal Sensitivity: &f%sens_x%"
+    - "&bVertical Sensitivity: &f%sens_y%"
+    - "&bAI Buffer: &f%ai_buffer%"
+    - "&bPredictions >0.9: &f%ai_probs_90%"
+    - "&7======================"
+
+history:
+  disabled: "%prefix% &cHistory subsystem is disabled!"
+  header: "%prefix% &bShowing logs for &f%player% (&f%page%&b/&f%maxPages%&f)"
+  entry: "%prefix% &8[&f%server%&8] &bFailed &f%check% (x&c%vl%&f) &7%verbose% (&b%timeago% ago&7)"
+  no-violations: "%prefix% &7No violations found for this player."
+
+punish:
+  reset-success: "%prefix% &aAll violation levels (VL) for player %player% have been reset."
+
+internal:
+  error: "&cAn error occurred whilst processing packets."
+
+time:
+  ago: " ago"
+  days: "d"
+  hours: "h"
+  minutes: "m"
+  seconds: "s"

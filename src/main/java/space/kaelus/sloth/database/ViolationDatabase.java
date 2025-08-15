@@ -1,0 +1,43 @@
+/*
+ * This file is part of SlothAC - https://github.com/KaelusMC/SlothAC
+ * Copyright (C) 2025 KaelusMC
+ *
+ * This file contains code derived from GrimAC.
+ * The original authors of GrimAC are credited below.
+ *
+ * Copyright (c) 2021-2025 GrimAC, DefineOutside and contributors.
+ *
+ * SlothAC is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SlothAC is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package space.kaelus.sloth.database;
+
+import space.kaelus.sloth.player.SlothPlayer;
+import java.util.List;
+import java.util.UUID;
+
+public interface ViolationDatabase {
+    void connect();
+    void disconnect();
+    void logAlert(SlothPlayer player, String verbose, String checkName, int vls);
+    int getLogCount(UUID player);
+    List<Violation> getViolations(UUID player, int page, int limit);
+
+    int getViolationLevel(UUID playerUUID, String punishGroupName);
+
+    int incrementViolationLevel(UUID playerUUID, String punishGroupName);
+
+    void resetViolationLevel(UUID playerUUID, String punishGroupName);
+
+    void resetAllViolationLevels(UUID playerUUID);
+}
