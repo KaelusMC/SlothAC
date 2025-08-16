@@ -80,6 +80,9 @@ public enum Message {
     // Punish
     PUNISH_RESET_SUCCESS("punish.reset-success"),
 
+    // Help
+    HELP_MESSAGE("help"),
+
     // Internal
     INTERNAL_ERROR("internal.error"),
 

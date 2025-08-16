@@ -72,6 +72,19 @@ history:
 punish:
   reset-success: "%prefix% &aAll violation levels (VL) for player %player% have been reset."
 
+help:
+  - "&7================== &bSlothAC Help &7=================="
+  - "&b/%command% alerts &f- &7Toggle violation alerts."
+  - "&b/%command% brands &f- &7Toggle client brand notifications."
+  - "&b/%command% profile <player> &f- &7View a player's profile."
+  - "&b/%command% prob <player> &f- &7Live view AI probabilities for a player."
+  - "&b/%command% reload &f- &7Reload the configuration."
+  - "&b/%command% history <player> [page] &f- &7View a player's violation history."
+  - "&b/%command% dc <start|stop|status> &f- &7Manage data collection sessions."
+  - "&b/%command% punish reset <player> &f- &7Reset all of a player's violation levels."
+  - "&b/%command% help &f- &7View this help message."
+  - "&7==============================================="
+
 internal:
   error: "&cAn error occurred whilst processing packets."
 

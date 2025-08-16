@@ -53,6 +53,7 @@ public class CommandRegister {
     public static void registerCommands(CommandManager<Sender> commandManager) {
         if (commandsRegistered) return;
 
+        new HelpCommand().register(commandManager);
         new AlertsCommand().register(commandManager);
         new ReloadCommand().register(commandManager);
         new ProbCommand().register(commandManager);
