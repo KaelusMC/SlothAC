@@ -31,7 +31,7 @@ public class PunishCommand implements SlothCommand {
 
     @Override
     public void register(CommandManager<Sender> manager) {
-        final var baseBuilder = manager.commandBuilder("sloth", "slothac")
+        final var baseBuilder = manager.commandBuilder("sloth", "slothac", "slothac")
                 .literal("punish")
                 .permission("sloth.punish.manage");
 

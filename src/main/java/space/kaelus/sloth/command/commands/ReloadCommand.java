@@ -33,7 +33,7 @@ public class ReloadCommand implements SlothCommand {
     @Override
     public void register(CommandManager<Sender> manager) {
         manager.command(
-                manager.commandBuilder("sloth")
+                manager.commandBuilder("sloth", "slothac")
                         .literal("reload")
                         .permission("sloth.reload")
                         .handler(this::execute)
