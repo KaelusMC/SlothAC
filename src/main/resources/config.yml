@@ -1,0 +1,63 @@
+# SlothAC main configuration
+# Copyright 2025 KaelusMC, DefineOutside and contributors, Licensed under GPLv3.
+
+# Locale: en, ru
+locale: "en"
+
+ai:
+  # Enable AI check?
+  enabled: false
+  # URL for the AI inference API.
+  server: "https://url/v1/inference"
+  # The API key for the AI server.
+  api-key: "API-KEY"
+  # The number of ticks to send in a sequence to the AI.
+  sequence: 40
+  # The number of ticks to wait before sending the next sequence.
+  step: 10
+  buffer:
+    # The violation level (VL) at which a flag will be triggered.
+    flag: 50.0
+    # The value to which the buffer is reset after a flag.
+    reset-on-flag: 25.0
+    # The multiplier for increasing the buffer when cheat probability is high (>0.9).
+    # (probability - 0.9) * multiplier
+    multiplier: 100.0
+    # The amount subtracted from the buffer when cheat probability is low (<0.1).
+    decrease: 0.25
+  damage-reduction:
+    # Enable damage reduction?
+    enabled: true
+    # The probability at which damage reduction will begin.
+    prob: 0.9
+    # Damage multiplier
+    # 0.1: at 100% (1.0) probability, damage will be cut by 10%.
+    # 1.0: at 100% (1.0) probability, damage will be cut by 100%.
+    # 2.0: at 95% (0.95) probability, damage will be cut by 100%.
+    multiplier: 1.0
+  worldguard:
+    # Enable WorldGuard region checking?
+    enabled: true
+    # List of WorldGuard regions where the AI check is disabled.
+    disabled-regions:
+      - "spawn"
+  # Enable debug
+  debug: false
+
+client-brand:
+  # This means it won't broadcast their brand to operators if the brand matches the following regexes
+  ignored-clients:
+    - "^vanilla$"
+    - "^fabric$"
+    - "^lunarclient:v\\d+\\.\\d+\\.\\d+-\\d{4}$"
+    - "^Feather Fabric$"
+    - "^labymod$"
+  # Sloth will blacklist specific Forge versions which include built-in Reach hacks (Forge 1.18.2 to 1.19.3).
+  # Setting this option to false will allow said clients to connect to the server. Disable this at your own risk.
+  disconnect-blacklisted-forge-versions: true
+
+alerts:
+  print-to-console: true
+
+history:
+  enabled: true

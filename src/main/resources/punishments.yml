@@ -1,0 +1,49 @@
+# %check_name% - name of the check
+# %vl% - violations
+# %verbose% - extra information
+# %player% - player name
+# [alert] - special command to alert
+# [broadcast] message - special command to broadcast message to all players on the server
+# [reset] - special command to reset the check violations in check group
+
+Punishments:
+  AI:
+    checks:
+      - "AI (Aim)"
+    actions:
+      1:
+        - "[alert]"
+        - "[log]"
+        - "[broadcast] &bSloth AI &8» &fСистема Sloth обнаружила необычное поведение игрока %player%. Игрок, чьё поведение было сочтено необычным отключён от сервера."
+        - "kick %player% Система Sloth сочла ваше поведение необычным."
+      3:
+        - "[alert]"
+        - "[log]"
+        - "[broadcast] &bSloth AI &8» &fСистема Sloth обнаружила необычное поведение игрока %player%. Игрок, чьё поведение было сочтено необычным временно заблокирован."
+        - "tempban %player% 15m Система Sloth сочла ваше поведение необычным."
+      4:
+        - "[alert]"
+        - "[log]"
+        - "[broadcast] &bSloth AI &8» &fСистема Sloth обнаружила необычное поведение игрока %player%. Игрок, чьё поведение было сочтено необычным временно заблокирован."
+        - "tempban %player% 30m Система Sloth сочла ваше поведение необычным."
+      5:
+        - "[alert]"
+        - "[log]"
+        - "[broadcast] &bSloth AI &8» &fСистема Sloth обнаружила необычное поведение игрока %player%. Игрок, чьё поведение было сочтено необычным временно заблокирован."
+        - "tempban %player% 1h Система Sloth сочла ваше поведение необычным."
+      7:
+        - "[alert]"
+        - "[log]"
+        - "[broadcast] &bSloth AI &8» &fСистема Sloth обнаружила необычное поведение игрока %player%. Игрок, чьё поведение было сочтено необычным временно заблокирован."
+        - "tempban %player% 3h Система Sloth сочла ваше поведение необычным."
+      10:
+        - "[alert]"
+        - "[log]"
+        - "[broadcast] &bSloth AI &8» &fСистема Sloth обнаружила необычное поведение игрока %player%. Игрок, чьё поведение было сочтено необычным временно заблокирован."
+        - "tempban %player% 20h Система Sloth сочла ваше поведение необычным."
+      15:
+        - "[alert]"
+        - "[log]"
+        - "[broadcast] &bSloth AI &8» &fСистема Sloth обнаружила необычное поведение игрока %player%. Игрок, чьё поведение было сочтено необычным заблокирован навсегда."
+        - "ban %player% Система Sloth сочла ваше поведение необычным."
+        - "[reset]"
