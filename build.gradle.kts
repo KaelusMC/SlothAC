@@ -21,8 +21,8 @@ repositories {
 
 dependencies {
     // Bukkit APIs
-    compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
-    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.10")
+    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
     compileOnly("me.clip:placeholderapi:2.11.6")
 
     // PacketEvents
@@ -47,6 +47,11 @@ dependencies {
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+}
+
+tasks.withType<JavaCompile> {
+    options.release.set(17)
+    options.encoding = "UTF-8"
 }
 
 tasks.shadowJar {
