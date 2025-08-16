@@ -44,7 +44,7 @@ public class DataCollectCommand implements SlothCommand {
 
     @Override
     public void register(CommandManager<Sender> manager) {
-        final var baseBuilder = manager.commandBuilder("sloth")
+        final var baseBuilder = manager.commandBuilder("sloth", "slothac")
                 .literal("datacollect", "dc")
                 .permission("sloth.datacollect");
 

@@ -38,7 +38,7 @@ public class AlertsCommand implements SlothCommand {
     @Override
     public void register(CommandManager<Sender> manager) {
         manager.command(
-                manager.commandBuilder("sloth")
+                manager.commandBuilder("sloth", "slothac")
                         .literal("alerts")
                         .permission("sloth.alerts")
                         .handler(this::execute)
