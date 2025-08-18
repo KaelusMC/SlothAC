@@ -95,14 +95,6 @@ bukkit {
         "WorldGuard",
     )
 
-    commands {
-        register("sloth") {
-            aliases = listOf("slothac")
-            description = "Main command for SlothAC"
-            permission = "sloth.help"
-        }
-    }
-
     permissions {
         register("sloth.help") {
             description = "Allows usage of the help command"
