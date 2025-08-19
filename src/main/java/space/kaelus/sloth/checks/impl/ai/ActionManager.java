@@ -43,8 +43,13 @@ public class ActionManager extends Check implements PacketCheck {
             WrapperPlayClientInteractEntity action = new WrapperPlayClientInteractEntity(event);
             if (action.getAction() == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
                 PacketEntity entity = slothPlayer.getCompensatedEntities().getEntity(action.getEntityId());
-                if (entity != null && entity.isPlayer) {
+
+                if (entity == null) {
                     slothPlayer.ticksSinceAttack = 0;
+                } else {
+                    if (entity.isPlayer) {
+                        slothPlayer.ticksSinceAttack = 0;
+                    }
                 }
             }
         } else if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
