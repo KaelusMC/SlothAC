@@ -21,24 +21,24 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class SlothMath {
-    public static final double MINIMUM_DIVISOR = ((Math.pow(0.2f, 3) * 8) * 0.15) - 1e-3;
+  public static final double MINIMUM_DIVISOR = ((Math.pow(0.2f, 3) * 8) * 0.15) - 1e-3;
 
-    public static double gcd(double a, double b) {
-        if (a == 0) return 0;
+  public static double gcd(double a, double b) {
+    if (a == 0) return 0;
 
-        // Make sure a is larger than b
-        if (a < b) {
-            double temp = a;
-            a = b;
-            b = temp;
-        }
-
-        while (b > MINIMUM_DIVISOR) { // Minimum minecraft sensitivity
-            double temp = a - (Math.floor(a / b) * b);
-            a = b;
-            b = temp;
-        }
-
-        return a;
+    // Make sure a is larger than b
+    if (a < b) {
+      double temp = a;
+      a = b;
+      b = temp;
     }
+
+    while (b > MINIMUM_DIVISOR) { // Minimum minecraft sensitivity
+      double temp = a - (Math.floor(a / b) * b);
+      a = b;
+      b = temp;
+    }
+
+    return a;
+  }
 }

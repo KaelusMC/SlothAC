@@ -22,160 +22,266 @@
  */
 package space.kaelus.sloth.database;
 
-import space.kaelus.sloth.SlothAC;
-import space.kaelus.sloth.player.SlothPlayer;
-import java.io.File;
+import com.zaxxer.hikari.HikariDataSource;
 import java.sql.*;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
+import space.kaelus.sloth.SlothAC;
+import space.kaelus.sloth.config.ConfigManager;
+import space.kaelus.sloth.player.SlothPlayer;
 
 public class SQLiteViolationDatabase implements ViolationDatabase {
-    private Connection connection;
+  private final HikariDataSource dataSource;
+  private final SlothAC plugin;
+  private final ConfigManager configManager;
 
-    @Override
-    public synchronized void connect() {
-        File dbFile = new File(SlothAC.getInstance().getDataFolder(), "violations.db");
-        try {
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath());
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("CREATE TABLE IF NOT EXISTS violations(" +
-                        "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
-                        "server VARCHAR(255) NOT NULL, " +
-                        "uuid CHAR(36) NOT NULL, " +
-                        "check_name TEXT NOT NULL, " +
-                        "verbose TEXT NOT NULL, " +
-                        "vl INTEGER NOT NULL, " +
-                        "created_at BIGINT NOT NULL);");
+  public SQLiteViolationDatabase(
+      HikariDataSource dataSource, SlothAC plugin, ConfigManager configManager) {
+    this.dataSource = dataSource;
+    this.plugin = plugin;
+    this.configManager = configManager;
+    initTables();
+  }
 
-                statement.execute("CREATE INDEX IF NOT EXISTS idx_violations_uuid ON violations(uuid);");
+  private void initTables() {
+    try (Connection conn = dataSource.getConnection();
+        Statement statement = conn.createStatement()) {
 
-                statement.execute("CREATE TABLE IF NOT EXISTS sloth_punishments (" +
-                        "uuid CHAR(36) NOT NULL, " +
-                        "punish_group VARCHAR(255) NOT NULL, " +
-                        "vl INTEGER NOT NULL, " +
-                        "PRIMARY KEY (uuid, punish_group));");
-            }
-        } catch (SQLException | ClassNotFoundException e) {
-            SlothAC.getInstance().getLogger().log(Level.SEVERE, "Failed to connect to SQLite database", e);
-        }
+      statement.execute(
+          "CREATE TABLE IF NOT EXISTS violations("
+              + "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+              + "server VARCHAR(255) NOT NULL, "
+              + "uuid CHAR(36) NOT NULL, "
+              + "player_name TEXT NOT NULL, "
+              + "check_name TEXT NOT NULL, "
+              + "verbose TEXT NOT NULL, "
+              + "vl INTEGER NOT NULL, "
+              + "created_at BIGINT NOT NULL);");
+
+      statement.execute("DROP INDEX IF EXISTS idx_violations_uuid;");
+      statement.execute(
+          "CREATE INDEX IF NOT EXISTS idx_violations_uuid_time ON violations(uuid, created_at DESC);");
+      statement.execute(
+          "CREATE INDEX IF NOT EXISTS idx_violations_time ON violations(created_at DESC);");
+
+      statement.execute(
+          "CREATE TABLE IF NOT EXISTS sloth_punishments ("
+              + "uuid CHAR(36) NOT NULL, "
+              + "punish_group VARCHAR(255) NOT NULL, "
+              + "vl INTEGER NOT NULL, "
+              + "PRIMARY KEY (uuid, punish_group));");
+
+    } catch (SQLException e) {
+      plugin.getLogger().log(Level.SEVERE, "Failed to initialize database tables", e);
     }
+  }
 
-    @Override
-    public synchronized void disconnect() {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-            }
-        } catch (SQLException e) {
-            SlothAC.getInstance().getLogger().log(Level.SEVERE, "Failed to close SQLite connection", e);
-        }
+  @Override
+  public void logAlert(SlothPlayer player, String verbose, String checkName, int vls) {
+    String sql =
+        "INSERT INTO violations (server, uuid, player_name, check_name, verbose, vl, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, configManager.getConfig().getString("history.server-name", "server"));
+      ps.setString(2, player.getUuid().toString());
+      ps.setString(3, player.getPlayer().getName());
+      ps.setString(4, checkName);
+      ps.setString(5, verbose);
+      ps.setInt(6, vls);
+      ps.setLong(7, System.currentTimeMillis());
+      ps.executeUpdate();
+    } catch (SQLException e) {
+      plugin.getLogger().log(Level.SEVERE, "Failed to log violation", e);
     }
+  }
 
-    @Override
-    public synchronized void logAlert(SlothPlayer player, String verbose, String checkName, int vls) {
-        String sql = "INSERT INTO violations (server, uuid, check_name, verbose, vl, created_at) VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, SlothAC.getInstance().getConfigManager().getConfig().getString("history.server-name", "server"));
-            ps.setString(2, player.getUuid().toString());
-            ps.setString(3, checkName);
-            ps.setString(4, verbose);
-            ps.setInt(5, vls);
-            ps.setLong(6, System.currentTimeMillis());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            SlothAC.getInstance().getLogger().log(Level.SEVERE, "Failed to log violation", e);
+  @Override
+  public int getLogCount(UUID player) {
+    String sql = "SELECT COUNT(*) FROM violations WHERE uuid = ?";
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, player.toString());
+      try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+          return rs.getInt(1);
         }
+      }
+    } catch (SQLException e) {
+      plugin.getLogger().log(Level.SEVERE, "Failed to count violations", e);
     }
+    return 0;
+  }
 
-    @Override
-    public synchronized int getLogCount(UUID player) {
-        try (PreparedStatement ps = connection.prepareStatement("SELECT COUNT(*) FROM violations WHERE uuid = ?")) {
-            ps.setString(1, player.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            SlothAC.getInstance().getLogger().log(Level.SEVERE, "Failed to count violations", e);
+  @Override
+  public List<Violation> getViolations(UUID player, int page, int limit) {
+    String sql =
+        "SELECT * FROM violations WHERE uuid = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, player.toString());
+      ps.setInt(2, limit);
+      ps.setInt(3, (page - 1) * limit);
+      try (ResultSet rs = ps.executeQuery()) {
+        return Violation.fromResultSet(rs);
+      }
+    } catch (SQLException e) {
+      plugin.getLogger().log(Level.SEVERE, "Failed to get violations", e);
+    }
+    return List.of();
+  }
+
+  @Override
+  public int getLogCount(long since) {
+    String sql = "SELECT COUNT(*) FROM violations" + (since > 0 ? " WHERE created_at >= ?" : "");
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      if (since > 0) {
+        ps.setLong(1, since);
+      }
+      try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+          return rs.getInt(1);
         }
+      }
+    } catch (SQLException e) {
+      plugin.getLogger().log(Level.SEVERE, "Failed to count all violations", e);
+    }
+    return 0;
+  }
+
+  @Override
+  public List<Violation> getViolations(int page, int limit, long since) {
+    String sql =
+        "SELECT * FROM violations"
+            + (since > 0 ? " WHERE created_at >= ?" : "")
+            + " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      int paramIndex = 1;
+      if (since > 0) {
+        ps.setLong(paramIndex++, since);
+      }
+      ps.setInt(paramIndex++, limit);
+      ps.setInt(paramIndex, (page - 1) * limit);
+      try (ResultSet rs = ps.executeQuery()) {
+        return Violation.fromResultSet(rs);
+      }
+    } catch (SQLException e) {
+      plugin.getLogger().log(Level.SEVERE, "Failed to get all violations", e);
+    }
+    return List.of();
+  }
+
+  @Override
+  public int getViolationLevel(UUID playerUUID, String punishGroupName) {
+    String sql = "SELECT vl FROM sloth_punishments WHERE uuid = ? AND punish_group = ?";
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, playerUUID.toString());
+      ps.setString(2, punishGroupName);
+      try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+          return rs.getInt("vl");
+        }
+      }
+    } catch (SQLException e) {
+      plugin.getLogger().log(Level.SEVERE, "Failed to get violation level for " + playerUUID, e);
+    }
+    return 0;
+  }
+
+  @Override
+  public int incrementViolationLevel(UUID playerUUID, String punishGroupName) {
+    String upsertSQL =
+        "INSERT INTO sloth_punishments (uuid, punish_group, vl) VALUES (?, ?, 1) "
+            + "ON CONFLICT(uuid, punish_group) DO UPDATE SET vl = vl + 1";
+    String selectSQL = "SELECT vl FROM sloth_punishments WHERE uuid = ? AND punish_group = ?";
+
+    try (Connection conn = dataSource.getConnection()) {
+      conn.setAutoCommit(false);
+
+      try {
+        try (PreparedStatement psUpsert = conn.prepareStatement(upsertSQL)) {
+          psUpsert.setString(1, playerUUID.toString());
+          psUpsert.setString(2, punishGroupName);
+          psUpsert.executeUpdate();
+        }
+
+        try (PreparedStatement psSelect = conn.prepareStatement(selectSQL)) {
+          psSelect.setString(1, playerUUID.toString());
+          psSelect.setString(2, punishGroupName);
+          try (ResultSet rs = psSelect.executeQuery()) {
+            if (rs.next()) {
+              int newVl = rs.getInt(1);
+              conn.commit();
+              return newVl;
+            }
+          }
+        }
+
+        conn.rollback();
         return 0;
-    }
 
-    @Override
-    public synchronized List<Violation> getViolations(UUID player, int page, int limit) {
-        String sql = "SELECT * FROM violations WHERE uuid = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, player.toString());
-            ps.setInt(2, limit);
-            ps.setInt(3, (page - 1) * limit);
-            try (ResultSet rs = ps.executeQuery()) {
-                return Violation.fromResultSet(rs);
-            }
-        } catch (SQLException e) {
-            SlothAC.getInstance().getLogger().log(Level.SEVERE, "Failed to get violations", e);
-        }
-        return List.of();
-    }
-
-    @Override
-    public synchronized int getViolationLevel(UUID playerUUID, String punishGroupName) {
-        String sql = "SELECT vl FROM sloth_punishments WHERE uuid = ? AND punish_group = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, playerUUID.toString());
-            ps.setString(2, punishGroupName);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("vl");
-                }
-            }
-        } catch (SQLException e) {
-            SlothAC.getInstance().getLogger().log(Level.SEVERE, "Failed to get violation level for " + playerUUID, e);
-        }
+      } catch (SQLException e) {
+        conn.rollback();
+        plugin
+            .getLogger()
+            .log(Level.SEVERE, "Failed to increment violation level for " + playerUUID, e);
         return 0;
+      }
+    } catch (SQLException e) {
+      plugin
+          .getLogger()
+          .log(
+              Level.SEVERE,
+              "Database connection error while incrementing violation level for " + playerUUID,
+              e);
+      return 0;
     }
+  }
 
-    @Override
-    public synchronized int incrementViolationLevel(UUID playerUUID, String punishGroupName) {
-        int currentVl = getViolationLevel(playerUUID, punishGroupName);
-        int newVl = currentVl + 1;
-
-        String sql = "INSERT INTO sloth_punishments (uuid, punish_group, vl) VALUES (?, ?, ?) " +
-                "ON CONFLICT(uuid, punish_group) DO UPDATE SET vl = excluded.vl";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, playerUUID.toString());
-            ps.setString(2, punishGroupName);
-            ps.setInt(3, newVl);
-            ps.executeUpdate();
-            return newVl;
-        } catch (SQLException e) {
-            SlothAC.getInstance().getLogger().log(Level.SEVERE, "Failed to increment violation level for " + playerUUID, e);
+  @Override
+  public int getUniqueViolatorsSince(long since) {
+    String sql = "SELECT COUNT(DISTINCT uuid) FROM violations WHERE created_at >= ?";
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setLong(1, since);
+      try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+          return rs.getInt(1);
         }
-        return currentVl;
+      }
+    } catch (SQLException e) {
+      plugin.getLogger().log(Level.SEVERE, "Failed to count unique violators", e);
     }
+    return 0;
+  }
 
-    @Override
-    public synchronized void resetViolationLevel(UUID playerUUID, String punishGroupName) {
-        String sql = "DELETE FROM sloth_punishments WHERE uuid = ? AND punish_group = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, playerUUID.toString());
-            ps.setString(2, punishGroupName);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            SlothAC.getInstance().getLogger().log(Level.SEVERE, "Failed to reset violation level for " + playerUUID, e);
-        }
+  @Override
+  public void resetViolationLevel(UUID playerUUID, String punishGroupName) {
+    String sql = "DELETE FROM sloth_punishments WHERE uuid = ? AND punish_group = ?";
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, playerUUID.toString());
+      ps.setString(2, punishGroupName);
+      ps.executeUpdate();
+    } catch (SQLException e) {
+      plugin.getLogger().log(Level.SEVERE, "Failed to reset violation level for " + playerUUID, e);
     }
+  }
 
-    @Override
-    public synchronized void resetAllViolationLevels(UUID playerUUID) {
-        String sql = "DELETE FROM sloth_punishments WHERE uuid = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, playerUUID.toString());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            SlothAC.getInstance().getLogger().log(Level.SEVERE, "Failed to reset all violation levels for " + playerUUID, e);
-        }
+  @Override
+  public void resetAllViolationLevels(UUID playerUUID) {
+    String sql = "DELETE FROM sloth_punishments WHERE uuid = ?";
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, playerUUID.toString());
+      ps.executeUpdate();
+    } catch (SQLException e) {
+      plugin
+          .getLogger()
+          .log(Level.SEVERE, "Failed to reset all violation levels for " + playerUUID, e);
     }
+  }
 }

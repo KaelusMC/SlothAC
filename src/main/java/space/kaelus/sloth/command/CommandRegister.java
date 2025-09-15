@@ -23,60 +23,87 @@
 package space.kaelus.sloth.command;
 
 import io.leangen.geantyref.TypeToken;
+import java.util.function.Function;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.exception.InvalidSyntaxException;
 import org.incendo.cloud.key.CloudKey;
 import org.incendo.cloud.processors.requirements.RequirementApplicable;
 import org.incendo.cloud.processors.requirements.RequirementPostprocessor;
 import org.incendo.cloud.processors.requirements.Requirements;
+import space.kaelus.sloth.SlothAC;
+import space.kaelus.sloth.alert.AlertManager;
+import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
 import space.kaelus.sloth.command.commands.*;
 import space.kaelus.sloth.command.handler.SlothCommandFailureHandler;
+import space.kaelus.sloth.config.ConfigManager;
+import space.kaelus.sloth.config.LocaleManager;
+import space.kaelus.sloth.database.DatabaseManager;
+import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.MessageUtil;
 
-import java.util.function.Function;
-
 public class CommandRegister {
 
-    public static final CloudKey<Requirements<Sender, SenderRequirement>> REQUIREMENT_KEY = CloudKey.of(
-            "sloth_requirements",
-            new TypeToken<>() {}
-    );
+  public static final CloudKey<Requirements<Sender, SenderRequirement>> REQUIREMENT_KEY =
+      CloudKey.of("sloth_requirements", new TypeToken<>() {});
 
-    public static final RequirementApplicable.RequirementApplicableFactory<Sender, SenderRequirement> REQUIREMENT_FACTORY =
-            RequirementApplicable.factory(REQUIREMENT_KEY);
+  public static final RequirementApplicable.RequirementApplicableFactory<Sender, SenderRequirement>
+      REQUIREMENT_FACTORY = RequirementApplicable.factory(REQUIREMENT_KEY);
 
-    private static boolean commandsRegistered = false;
+  private static boolean commandsRegistered = false;
 
-    public static void registerCommands(CommandManager<Sender> commandManager) {
-        if (commandsRegistered) return;
+  public static void registerCommands(
+      org.incendo.cloud.CommandManager<Sender> commandManager,
+      SlothAC plugin,
+      AlertManager alertManager,
+      DataCollectorManager dataCollectorManager,
+      DatabaseManager databaseManager,
+      ConfigManager configManager,
+      LocaleManager localeManager,
+      PlayerDataManager playerDataManager) {
 
-        new HelpCommand().register(commandManager);
-        new AlertsCommand().register(commandManager);
-        new ReloadCommand().register(commandManager);
-        new ProbCommand().register(commandManager);
-        new DataCollectCommand().register(commandManager);
-        new ProfileCommand().register(commandManager);
-        new HistoryCommand().register(commandManager);
-        new PunishCommand().register(commandManager);
-        new BrandsCommand().register(commandManager);
+    if (commandsRegistered) return;
 
-        final RequirementPostprocessor<Sender, SenderRequirement> senderRequirementPostprocessor = RequirementPostprocessor.of(
-                REQUIREMENT_KEY,
-                new SlothCommandFailureHandler()
-        );
-        commandManager.registerCommandPostProcessor(senderRequirementPostprocessor);
+    new HelpCommand().register(commandManager);
+    new AlertsCommand(alertManager).register(commandManager);
+    new ReloadCommand(plugin).register(commandManager);
+    new ProbCommand(playerDataManager, localeManager, plugin).register(commandManager);
+    new DataCollectCommand(dataCollectorManager).register(commandManager);
+    new ProfileCommand(playerDataManager, localeManager).register(commandManager);
+    new HistoryCommand(plugin, databaseManager, configManager, localeManager)
+        .register(commandManager);
+    new LogsCommand(plugin, databaseManager, configManager, localeManager).register(commandManager);
+    new PunishCommand(databaseManager).register(commandManager);
+    new BrandsCommand(alertManager).register(commandManager);
+    new SuspiciousCommand(playerDataManager, alertManager).register(commandManager);
+    new StatsCommand(plugin, databaseManager, playerDataManager).register(commandManager);
 
-        registerExceptionHandler(commandManager, InvalidSyntaxException.class, e -> MessageUtil.format(e.correctSyntax()));
+    final RequirementPostprocessor<Sender, SenderRequirement> senderRequirementPostprocessor =
+        RequirementPostprocessor.of(REQUIREMENT_KEY, new SlothCommandFailureHandler());
+    commandManager.registerCommandPostProcessor(senderRequirementPostprocessor);
 
-        commandsRegistered = true;
-    }
+    registerExceptionHandler(
+        commandManager, InvalidSyntaxException.class, e -> MessageUtil.format(e.correctSyntax()));
 
-    private static <E extends Exception> void registerExceptionHandler(CommandManager<Sender> commandManager, Class<E> ex, Function<E, ComponentLike> toComponent) {
-        commandManager.exceptionController().registerHandler(ex,
-                (c) -> c.context().sender().sendMessage(toComponent.apply(c.exception()).asComponent().colorIfAbsent(NamedTextColor.RED))
-        );
-    }
+    commandsRegistered = true;
+  }
+
+  private static <E extends Exception> void registerExceptionHandler(
+      org.incendo.cloud.CommandManager<Sender> commandManager,
+      Class<E> ex,
+      Function<E, ComponentLike> toComponent) {
+    commandManager
+        .exceptionController()
+        .registerHandler(
+            ex,
+            (c) ->
+                c.context()
+                    .sender()
+                    .sendMessage(
+                        toComponent
+                            .apply(c.exception())
+                            .asComponent()
+                            .colorIfAbsent(NamedTextColor.RED)));
+  }
 }

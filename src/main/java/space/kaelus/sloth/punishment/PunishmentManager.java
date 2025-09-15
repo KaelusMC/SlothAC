@@ -22,114 +22,159 @@
  */
 package space.kaelus.sloth.punishment;
 
+import java.util.*;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.alert.AlertManager;
 import space.kaelus.sloth.checks.AbstractCheck;
+import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.database.ViolationDatabase;
 import space.kaelus.sloth.player.SlothPlayer;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
-import java.util.*;
-
 public class PunishmentManager {
+  private final SlothPlayer slothPlayer;
+  private final SlothAC plugin;
+  private final ConfigManager configManager;
+  private final Map<String, PunishGroup> punishmentGroups = new HashMap<>();
+  private final AlertManager alertManager;
+  private final ViolationDatabase database;
 
-    private final SlothPlayer slothPlayer;
-    private final Map<String, PunishGroup> punishmentGroups = new HashMap<>();
-    private final AlertManager alertManager;
-    private final ViolationDatabase database;
+  public PunishmentManager(
+      SlothPlayer slothPlayer,
+      SlothAC plugin,
+      ConfigManager configManager,
+      ViolationDatabase database,
+      AlertManager alertManager) {
+    this.slothPlayer = slothPlayer;
+    this.plugin = plugin;
+    this.configManager = configManager;
+    this.alertManager = alertManager;
+    this.database = database;
+    reload();
+  }
 
-    public PunishmentManager(SlothPlayer slothPlayer) {
-        this.slothPlayer = slothPlayer;
-        this.alertManager = SlothAC.getInstance().getAlertManager();
-        this.database = SlothAC.getInstance().getDatabaseManager().getDatabase();
-        reload();
-    }
+  public void reload() {
+    punishmentGroups.clear();
 
-    public void reload() {
-        punishmentGroups.clear();
+    ConfigurationSection punishmentsSection =
+        configManager.getPunishments().getConfigurationSection("Punishments");
+    if (punishmentsSection == null) return;
 
-        ConfigurationSection punishmentsSection = SlothAC.getInstance().getConfigManager().getPunishments().getConfigurationSection("Punishments");
-        if (punishmentsSection == null) return;
+    for (String groupName : punishmentsSection.getKeys(false)) {
+      ConfigurationSection groupSection = punishmentsSection.getConfigurationSection(groupName);
+      if (groupSection == null) continue;
 
-        for (String groupName : punishmentsSection.getKeys(false)) {
-            ConfigurationSection groupSection = punishmentsSection.getConfigurationSection(groupName);
-            if (groupSection == null) continue;
+      List<String> checkNamesFilters = groupSection.getStringList("checks");
+      ConfigurationSection actionsSection = groupSection.getConfigurationSection("actions");
 
-            List<String> checkNamesFilters = groupSection.getStringList("checks");
-            ConfigurationSection actionsSection = groupSection.getConfigurationSection("actions");
+      if (actionsSection == null) continue;
 
-            if (actionsSection == null) continue;
-
-            NavigableMap<Integer, List<String>> parsedActions = new TreeMap<>();
-            for (String vlString : actionsSection.getKeys(false)) {
-                try {
-                    int vl = Integer.parseInt(vlString);
-                    List<String> commands = actionsSection.getStringList(vlString);
-                    parsedActions.put(vl, commands);
-                } catch (NumberFormatException e) {
-                    SlothAC.getInstance().getLogger().warning("Invalid VL " + vlString + " in punishment group " + groupName + ".");
-                }
-            }
-
-            if (!parsedActions.isEmpty()) {
-                PunishGroup punishGroup = new PunishGroup(groupName, checkNamesFilters, parsedActions);
-                punishmentGroups.put(groupName, punishGroup);
-            }
+      NavigableMap<Integer, List<String>> parsedActions = new TreeMap<>();
+      for (String vlString : actionsSection.getKeys(false)) {
+        try {
+          int vl = Integer.parseInt(vlString);
+          List<String> commands = actionsSection.getStringList(vlString);
+          parsedActions.put(vl, commands);
+        } catch (NumberFormatException e) {
+          plugin
+              .getLogger()
+              .warning("Invalid VL " + vlString + " in punishment group " + groupName + ".");
         }
+      }
+
+      if (!parsedActions.isEmpty()) {
+        PunishGroup punishGroup = new PunishGroup(groupName, checkNamesFilters, parsedActions);
+        punishmentGroups.put(groupName, punishGroup);
+      }
     }
+  }
 
-    public void handleFlag(AbstractCheck check, String debug) {
-        for (PunishGroup group : punishmentGroups.values()) {
-            if (group.isCheckAssociated(check)) {
-                int newVl = database.incrementViolationLevel(slothPlayer.getUuid(), group.getGroupName());
+  public void handleFlag(AbstractCheck check, String debug) {
+    for (PunishGroup group : punishmentGroups.values()) {
+      if (group.isCheckAssociated(check)) {
+        Bukkit.getScheduler()
+            .runTaskAsynchronously(
+                plugin,
+                () -> {
+                  int newVl =
+                      database.incrementViolationLevel(slothPlayer.getUuid(), group.getGroupName());
 
-                Map.Entry<Integer, List<String>> entry = group.getActions().floorEntry(newVl);
-                if (entry != null) {
+                  Map.Entry<Integer, List<String>> entry = group.getActions().floorEntry(newVl);
+                  if (entry != null) {
                     executeCommands(check, group, newVl, debug, entry.getValue());
-                }
-            }
-        }
-    }
-
-    private void executeCommands(AbstractCheck check, PunishGroup group, int vl, String verbose, List<String> commands) {
-        for (String command : commands) {
-            String formattedCmd = command
-                    .replace("%player%", slothPlayer.getPlayer().getName())
-                    .replace("%check_name%", check.getCheckName())
-                    .replace("%vl%", String.valueOf(vl))
-                    .replace("%verbose%", verbose);
-
-            String commandLower = formattedCmd.toLowerCase(Locale.ROOT);
-
-            if (commandLower.equals("[alert]")) {
-                sendAlert(check, vl, verbose);
-            } else if (commandLower.equals("[log]")) {
-                database.logAlert(slothPlayer, verbose, check.getCheckName(), vl);
-            } else if (commandLower.equals("[reset]")) {
-                database.resetViolationLevel(slothPlayer.getUuid(), group.getGroupName());
-            } else if (commandLower.startsWith("[broadcast] ")) {
-                final String broadcastMessage = formattedCmd.substring("[broadcast] ".length());
-                Bukkit.getScheduler().runTask(SlothAC.getInstance(), () -> {
-                    SlothAC.getInstance().getAdventure().players().sendMessage(MessageUtil.format(broadcastMessage));
+                  }
                 });
-            } else {
-                Bukkit.getScheduler().runTask(SlothAC.getInstance(), () ->
-                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), formattedCmd));
-            }
-        }
+      }
     }
+  }
 
-    private void sendAlert(AbstractCheck check, int vl, String verbose) {
-        Component alertMessage = MessageUtil.getMessage(Message.ALERTS_FORMAT,
-                "player", slothPlayer.getPlayer().getName(),
-                "check_name", check.getCheckName(),
-                "vl", String.valueOf(vl),
-                "verbose", verbose
-        );
-        alertManager.sendAlert(alertMessage);
+  private void executeCommands(
+      AbstractCheck check, PunishGroup group, int vl, String verbose, List<String> commands) {
+    for (String command : commands) {
+      String commandLower = command.toLowerCase(Locale.ROOT);
+
+      if (commandLower.equals("[alert]")) {
+        sendAlert(check, vl, verbose);
+      } else if (commandLower.equals("[log]")) {
+        database.logAlert(slothPlayer, verbose, check.getCheckName(), vl);
+      } else if (commandLower.equals("[reset]")) {
+        database.resetViolationLevel(slothPlayer.getUuid(), group.getGroupName());
+      } else if (commandLower.startsWith("[broadcast] ")) {
+        final String message = command.substring("[broadcast] ".length());
+        final Component component =
+            MessageUtil.format(
+                message,
+                "player",
+                slothPlayer.getPlayer().getName(),
+                "check_name",
+                check.getCheckName(),
+                "vl",
+                String.valueOf(vl),
+                "verbose",
+                verbose);
+
+        Bukkit.getScheduler()
+            .runTask(
+                plugin,
+                () -> {
+                  plugin.getAdventure().players().sendMessage(component);
+                });
+      } else {
+        String formattedCmd =
+            command
+                .replace("<player>", slothPlayer.getPlayer().getName())
+                .replace("<check_name>", check.getCheckName())
+                .replace("<vl>", String.valueOf(vl))
+                .replace("<verbose>", verbose);
+
+        Bukkit.getScheduler()
+            .runTask(plugin, () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), formattedCmd));
+      }
     }
+  }
+
+  private void sendAlert(AbstractCheck check, int vl, String verbose) {
+    final Component message =
+        MessageUtil.getMessage(
+            Message.ALERTS_FORMAT,
+            "player",
+            slothPlayer.getPlayer().getName(),
+            "check_name",
+            check.getCheckName(),
+            "vl",
+            String.valueOf(vl),
+            "verbose",
+            verbose);
+
+    Bukkit.getScheduler()
+        .runTask(
+            plugin,
+            () -> {
+              alertManager.sendAlert(message);
+            });
+  }
 }

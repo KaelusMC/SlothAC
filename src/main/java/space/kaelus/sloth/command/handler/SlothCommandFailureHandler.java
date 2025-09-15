@@ -23,9 +23,11 @@ import org.incendo.cloud.processors.requirements.RequirementFailureHandler;
 import space.kaelus.sloth.command.SenderRequirement;
 import space.kaelus.sloth.sender.Sender;
 
-public class SlothCommandFailureHandler implements RequirementFailureHandler<Sender, SenderRequirement> {
-    @Override
-    public void handleFailure(@NonNull CommandContext<Sender> context, @NonNull SenderRequirement requirement) {
-        context.sender().sendMessage(requirement.errorMessage(context.sender()));
-    }
+public class SlothCommandFailureHandler
+    implements RequirementFailureHandler<Sender, SenderRequirement> {
+  @Override
+  public void handleFailure(
+      @NonNull CommandContext<Sender> context, @NonNull SenderRequirement requirement) {
+    context.sender().sendMessage(requirement.errorMessage(context.sender()));
+  }
 }

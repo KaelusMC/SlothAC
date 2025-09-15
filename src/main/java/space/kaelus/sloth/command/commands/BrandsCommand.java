@@ -26,7 +26,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
-import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.alert.AlertManager;
 import space.kaelus.sloth.command.SlothCommand;
 import space.kaelus.sloth.sender.Sender;
@@ -35,29 +34,34 @@ import space.kaelus.sloth.utils.MessageUtil;
 
 public class BrandsCommand implements SlothCommand {
 
-    @Override
-    public void register(CommandManager<Sender> manager) {
-        manager.command(
-                manager.commandBuilder("sloth", "slothac")
-                        .literal("brands")
-                        .permission("sloth.brand")
-                        .handler(this::execute)
-        );
-    }
+  private final AlertManager alertManager;
 
-    private void execute(CommandContext<Sender> context) {
-        CommandSender nativeSender = context.sender().getNativeSender();
-        AlertManager alertManager = SlothAC.getInstance().getAlertManager();
+  public BrandsCommand(AlertManager alertManager) {
+    this.alertManager = alertManager;
+  }
 
-        if (nativeSender instanceof Player) {
-            alertManager.toggleBrandAlerts((Player) nativeSender, false);
-        } else {
-            alertManager.toggleConsoleBrandAlerts();
-            if (alertManager.isConsoleBrandAlertsEnabled()) {
-                MessageUtil.sendMessage(nativeSender, Message.BRAND_ALERTS_ENABLED);
-            } else {
-                MessageUtil.sendMessage(nativeSender, Message.BRAND_ALERTS_DISABLED);
-            }
-        }
+  @Override
+  public void register(CommandManager<Sender> manager) {
+    manager.command(
+        manager
+            .commandBuilder("sloth", "slothac")
+            .literal("brands")
+            .permission("sloth.brand")
+            .handler(this::execute));
+  }
+
+  private void execute(CommandContext<Sender> context) {
+    CommandSender nativeSender = context.sender().getNativeSender();
+
+    if (nativeSender instanceof Player) {
+      alertManager.toggleBrandAlerts((Player) nativeSender, false);
+    } else {
+      alertManager.toggleConsoleBrandAlerts();
+      if (alertManager.isConsoleBrandAlertsEnabled()) {
+        MessageUtil.sendMessage(nativeSender, Message.BRAND_ALERTS_ENABLED);
+      } else {
+        MessageUtil.sendMessage(nativeSender, Message.BRAND_ALERTS_DISABLED);
+      }
     }
+  }
 }

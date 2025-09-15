@@ -18,11 +18,11 @@
 package space.kaelus.sloth.entity.types;
 
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
-import space.kaelus.sloth.player.SlothPlayer;
 import java.util.UUID;
+import space.kaelus.sloth.player.SlothPlayer;
 
 public class PacketEntityHorse extends PacketEntityTrackXRot {
-    public PacketEntityHorse(SlothPlayer player, UUID uuid, EntityType type) {
-        super(player, uuid, type);
-    }
+  public PacketEntityHorse(SlothPlayer player, UUID uuid, EntityType type) {
+    super(player, uuid, type);
+  }
 }
