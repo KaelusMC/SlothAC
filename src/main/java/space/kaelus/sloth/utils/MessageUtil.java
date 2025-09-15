@@ -22,99 +22,64 @@
  */
 package space.kaelus.sloth.utils;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
-import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.config.LocaleManager;
-
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class MessageUtil {
 
-    private static final MiniMessage miniMessage = MiniMessage.miniMessage();
-    private static final Pattern HEX_PATTERN = Pattern.compile("([&§]#[A-Fa-f0-9]{6})|([&§]x([&§][A-Fa-f0-9]){6})");
+  private static final MiniMessage miniMessage = MiniMessage.miniMessage();
+  private static LocaleManager localeManager;
+  private static BukkitAudiences adventure;
 
-    private static LocaleManager getLocaleManager() {
-        return SlothAC.getInstance().getLocaleManager();
-    }
+  public static void init(LocaleManager localeManager, BukkitAudiences adventure) {
+    MessageUtil.localeManager = localeManager;
+    MessageUtil.adventure = adventure;
+  }
 
-    public static Component format(String message, String... placeholders) {
-        String processedMessage = message.replace("%prefix%", getLocaleManager().getRawMessage(Message.PREFIX));
+  public static Component format(String message, String... placeholders) {
+    String processedMessage =
+        message.replace("<prefix>", localeManager.getRawMessage(Message.PREFIX));
 
-        TagResolver.Builder resolverBuilder = TagResolver.builder();
-        if (placeholders.length > 0) {
-            if (placeholders.length % 2 != 0) {
-                throw new IllegalArgumentException("Placeholders must be key-value pairs.");
-            }
-            for (int i = 0; i < placeholders.length; i += 2) {
-                String key = placeholders[i];
-                String value = placeholders[i + 1];
-                processedMessage = processedMessage.replace("%" + key + "%", "<" + key + ">");
-                resolverBuilder.resolver(Placeholder.component(key, Component.text(value)));
-            }
+    TagResolver.Builder resolverBuilder = TagResolver.builder();
+    if (placeholders.length > 0) {
+      if (placeholders.length % 2 != 0) {
+        System.err.println("Invalid placeholders count for message: " + message);
+      } else {
+        for (int i = 0; i < placeholders.length; i += 2) {
+          String key = placeholders[i];
+          String value = placeholders[i + 1];
+
+          resolverBuilder.resolver(Placeholder.component(key, Component.text(value)));
         }
-
-        Matcher matcher = HEX_PATTERN.matcher(processedMessage);
-        StringBuilder sb = new StringBuilder();
-        while (matcher.find()) {
-            String hex = matcher.group(0).replaceAll("[&§#x]", "");
-            matcher.appendReplacement(sb, "<#" + hex + ">");
-        }
-        matcher.appendTail(sb);
-        processedMessage = sb.toString();
-
-        processedMessage = ChatUtil.translateAlternateColorCodes('&', processedMessage);
-
-        processedMessage = processedMessage
-                .replace("§0", "<!b><!i><!u><!st><!obf><black>")
-                .replace("§1", "<!b><!i><!u><!st><!obf><dark_blue>")
-                .replace("§2", "<!b><!i><!u><!st><!obf><dark_green>")
-                .replace("§3", "<!b><!i><!u><!st><!obf><dark_aqua>")
-                .replace("§4", "<!b><!i><!u><!st><!obf><dark_red>")
-                .replace("§5", "<!b><!i><!u><!st><!obf><dark_purple>")
-                .replace("§6", "<!b><!i><!u><!st><!obf><gold>")
-                .replace("§7", "<!b><!i><!u><!st><!obf><gray>")
-                .replace("§8", "<!b><!i><!u><!st><!obf><dark_gray>")
-                .replace("§9", "<!b><!i><!u><!st><!obf><blue>")
-                .replace("§a", "<!b><!i><!u><!st><!obf><green>")
-                .replace("§b", "<!b><!i><!u><!st><!obf><aqua>")
-                .replace("§c", "<!b><!i><!u><!st><!obf><red>")
-                .replace("§d", "<!b><!i><!u><!st><!obf><light_purple>")
-                .replace("§e", "<!b><!i><!u><!st><!obf><yellow>")
-                .replace("§f", "<!b><!i><!u><!st><!obf><white>")
-                .replace("§k", "<obfuscated>")
-                .replace("§l", "<bold>")
-                .replace("§m", "<strikethrough>")
-                .replace("§n", "<underlined>")
-                .replace("§o", "<italic>")
-                .replace("§r", "<reset>");
-
-        TagResolver tagResolver = resolverBuilder.build();
-        return miniMessage.deserialize(processedMessage, tagResolver);
+      }
     }
 
-    public static void sendMessage(CommandSender sender, Message key, String... placeholders) {
-        SlothAC.getInstance().getAdventure().sender(sender).sendMessage(getMessage(key, placeholders));
-    }
+    return miniMessage.deserialize(processedMessage, resolverBuilder.build());
+  }
 
-    public static void sendMessageList(CommandSender sender, Message key, String... placeholders) {
-        getMessageList(key, placeholders).forEach(line -> SlothAC.getInstance().getAdventure().sender(sender).sendMessage(line));
-    }
+  public static void sendMessage(CommandSender sender, Message key, String... placeholders) {
+    adventure.sender(sender).sendMessage(getMessage(key, placeholders));
+  }
 
-    public static Component getMessage(Message key, String... placeholders) {
-        String rawMessage = getLocaleManager().getRawMessage(key);
-        return format(rawMessage, placeholders);
-    }
+  public static void sendMessageList(CommandSender sender, Message key, String... placeholders) {
+    getMessageList(key, placeholders).forEach(line -> adventure.sender(sender).sendMessage(line));
+  }
 
-    public static List<Component> getMessageList(Message key, String... placeholders) {
-        return getLocaleManager().getRawMessageList(key).stream()
-                .map(line -> format(line, placeholders))
-                .collect(Collectors.toList());
-    }
+  public static Component getMessage(Message key, String... placeholders) {
+    String rawMessage = localeManager.getRawMessage(key);
+    return format(rawMessage, placeholders);
+  }
+
+  public static List<Component> getMessageList(Message key, String... placeholders) {
+    return localeManager.getRawMessageList(key).stream()
+        .map(line -> format(line, placeholders))
+        .collect(Collectors.toList());
+  }
 }

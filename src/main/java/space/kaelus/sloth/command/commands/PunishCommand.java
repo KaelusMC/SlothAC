@@ -21,33 +21,42 @@ import org.bukkit.OfflinePlayer;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.bukkit.parser.OfflinePlayerParser;
 import org.incendo.cloud.context.CommandContext;
-import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.command.SlothCommand;
+import space.kaelus.sloth.database.DatabaseManager;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
 public class PunishCommand implements SlothCommand {
 
-    @Override
-    public void register(CommandManager<Sender> manager) {
-        final var baseBuilder = manager.commandBuilder("sloth", "slothac", "slothac")
-                .literal("punish")
-                .permission("sloth.punish.manage");
+  private final DatabaseManager databaseManager;
 
-        manager.command(baseBuilder.literal("reset")
-                .required("target", OfflinePlayerParser.offlinePlayerParser())
-                .handler(this::reset));
-    }
+  public PunishCommand(DatabaseManager databaseManager) {
+    this.databaseManager = databaseManager;
+  }
 
-    private void reset(CommandContext<Sender> context) {
-        final Sender sender = context.sender();
-        final OfflinePlayer target = context.get("target");
+  @Override
+  public void register(CommandManager<Sender> manager) {
+    final var baseBuilder =
+        manager
+            .commandBuilder("sloth", "slothac", "slothac")
+            .literal("punish")
+            .permission("sloth.punish.manage");
 
-        SlothAC.getInstance().getDatabaseManager().getDatabase().resetAllViolationLevels(target.getUniqueId());
+    manager.command(
+        baseBuilder
+            .literal("reset")
+            .required("target", OfflinePlayerParser.offlinePlayerParser())
+            .handler(this::reset));
+  }
 
-        MessageUtil.sendMessage(sender.getNativeSender(), Message.PUNISH_RESET_SUCCESS,
-                "player", target.getName()
-        );
-    }
+  private void reset(CommandContext<Sender> context) {
+    final Sender sender = context.sender();
+    final OfflinePlayer target = context.get("target");
+
+    databaseManager.getDatabase().resetAllViolationLevels(target.getUniqueId());
+
+    MessageUtil.sendMessage(
+        sender.getNativeSender(), Message.PUNISH_RESET_SUCCESS, "player", target.getName());
+  }
 }

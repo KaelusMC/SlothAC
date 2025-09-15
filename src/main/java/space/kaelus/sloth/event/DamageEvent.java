@@ -22,22 +22,28 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import space.kaelus.sloth.SlothAC;
+import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.player.SlothPlayer;
 
 public class DamageEvent implements Listener {
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player damager)) {
-            return;
-        }
-        SlothPlayer slothPlayer = SlothAC.getInstance().getPlayerDataManager().getPlayer(damager);
-        if (slothPlayer == null) {
-            return;
-        }
-        double multiplier = slothPlayer.getDmgMultiplier();
-        if (multiplier < 1.0) {
-            event.setDamage(event.getDamage() * multiplier);
-        }
+  private final PlayerDataManager playerDataManager;
+
+  public DamageEvent(PlayerDataManager playerDataManager) {
+    this.playerDataManager = playerDataManager;
+  }
+
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+  public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+    if (!(event.getDamager() instanceof Player damager)) {
+      return;
     }
+    SlothPlayer slothPlayer = playerDataManager.getPlayer(damager);
+    if (slothPlayer == null) {
+      return;
+    }
+    double multiplier = slothPlayer.getDmgMultiplier();
+    if (multiplier < 1.0) {
+      event.setDamage(event.getDamage() * multiplier);
+    }
+  }
 }

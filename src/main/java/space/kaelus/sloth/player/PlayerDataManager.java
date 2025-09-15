@@ -22,73 +22,122 @@
  */
 package space.kaelus.sloth.player;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import space.kaelus.sloth.SlothAC;
-import space.kaelus.sloth.checks.impl.ai.DataCollectorCheck;
+import space.kaelus.sloth.alert.AlertManager;
+import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
+import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.data.DataSession;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import space.kaelus.sloth.database.DatabaseManager;
+import space.kaelus.sloth.integration.WorldGuardManager;
+import space.kaelus.sloth.server.AIServerProvider;
 
 public class PlayerDataManager implements Listener {
-    private final Map<UUID, SlothPlayer> players = new ConcurrentHashMap<>();
+  private final SlothAC plugin;
+  private final AlertManager alertManager;
+  private final DataCollectorManager dataCollectorManager;
+  private final ConfigManager configManager;
+  private final DatabaseManager databaseManager;
+  private final WorldGuardManager worldGuardManager;
+  private AIServerProvider aiServerProvider;
 
-    public PlayerDataManager() {
-        SlothAC.getInstance().getServer().getPluginManager().registerEvents(this, SlothAC.getInstance());
+  private final Map<UUID, SlothPlayer> players = new ConcurrentHashMap<>();
+
+  public PlayerDataManager(
+      SlothAC plugin,
+      AlertManager alertManager,
+      DataCollectorManager dataCollectorManager,
+      ConfigManager configManager,
+      DatabaseManager databaseManager,
+      AIServerProvider aiServerProvider,
+      WorldGuardManager worldGuardManager) {
+    this.plugin = plugin;
+    this.alertManager = alertManager;
+    this.dataCollectorManager = dataCollectorManager;
+    this.configManager = configManager;
+    this.databaseManager = databaseManager;
+    this.aiServerProvider = aiServerProvider;
+    this.worldGuardManager = worldGuardManager;
+    plugin.getServer().getPluginManager().registerEvents(this, plugin);
+  }
+
+  @EventHandler
+  public void onJoin(PlayerJoinEvent event) {
+    Player player = event.getPlayer();
+    players.put(
+        player.getUniqueId(),
+        new SlothPlayer(
+            player,
+            plugin,
+            configManager,
+            databaseManager,
+            alertManager,
+            dataCollectorManager,
+            aiServerProvider,
+            worldGuardManager));
+
+    if (player.hasPermission("sloth.alerts")
+        && player.hasPermission("sloth.alerts.enable-on-join")) {
+      if (!alertManager.hasAlertsEnabled(player)) {
+        alertManager.toggleAlerts(player, true);
+      }
     }
 
-    @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        players.put(player.getUniqueId(), new SlothPlayer(player));
-
-        if (player.hasPermission("sloth.alerts") && player.hasPermission("sloth.alerts.enable-on-join")) {
-            SlothAC.getInstance().getAlertManager().toggleAlerts(player, true);
-        }
-
-        if (player.hasPermission("sloth.brand") && player.hasPermission("sloth.brand.enable-on-join")) {
-            SlothAC.getInstance().getAlertManager().toggleBrandAlerts(player, true);
-        }
-
-        String globalId = DataCollectorCheck.getGlobalCollectionId();
-        if (globalId != null) {
-            DataCollectorCheck.startCollecting(player.getUniqueId(), player.getName(), globalId);
-        }
+    if (player.hasPermission("sloth.brand") && player.hasPermission("sloth.brand.enable-on-join")) {
+      if (!alertManager.hasBrandAlertsEnabled(player)) {
+        alertManager.toggleBrandAlerts(player, true);
+      }
     }
 
-    @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
-        UUID uuid = event.getPlayer().getUniqueId();
+    String globalId = dataCollectorManager.getGlobalCollectionId();
+    if (globalId != null) {
+      dataCollectorManager.startCollecting(player.getUniqueId(), player.getName(), globalId);
+    }
+  }
 
-        DataSession session = DataCollectorCheck.getSession(uuid);
-        if (session != null) {
-            String globalId = DataCollectorCheck.getGlobalCollectionId();
-            if (globalId == null || !session.getStatus().equals(globalId)) {
-                DataCollectorCheck.stopCollecting(uuid);
-            }
-        }
+  @EventHandler
+  public void onQuit(PlayerQuitEvent event) {
+    Player player = event.getPlayer();
+    UUID uuid = event.getPlayer().getUniqueId();
 
-        players.remove(uuid);
+    DataSession session = dataCollectorManager.getSession(uuid);
+    if (session != null) {
+      String globalId = dataCollectorManager.getGlobalCollectionId();
+      if (globalId == null || !session.getStatus().equals(globalId)) {
+        dataCollectorManager.stopCollecting(uuid);
+      }
     }
 
-    public SlothPlayer getPlayer(Player player) {
-        if (player == null) {
-            return null;
-        }
-        return players.get(player.getUniqueId());
-    }
+    alertManager.handlePlayerQuit(player);
+    players.remove(uuid);
+  }
 
-    public SlothPlayer getPlayer(UUID uuid) {
-        return players.get(uuid);
+  public SlothPlayer getPlayer(Player player) {
+    if (player == null) {
+      return null;
     }
+    return players.get(player.getUniqueId());
+  }
 
-    public Collection<SlothPlayer> getPlayers() {
-        return players.values();
+  public SlothPlayer getPlayer(UUID uuid) {
+    return players.get(uuid);
+  }
+
+  public Collection<SlothPlayer> getPlayers() {
+    return players.values();
+  }
+
+  public void reloadAllPlayers() {
+    for (SlothPlayer slothPlayer : players.values()) {
+      slothPlayer.reload();
     }
+  }
 }

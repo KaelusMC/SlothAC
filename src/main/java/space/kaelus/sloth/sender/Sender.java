@@ -17,23 +17,30 @@
  */
 package space.kaelus.sloth.sender;
 
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.UUID;
-
 public interface Sender {
-    UUID CONSOLE_UUID = new UUID(0, 0);
-    String CONSOLE_NAME = "Console";
+  UUID CONSOLE_UUID = new UUID(0, 0);
+  String CONSOLE_NAME = "Console";
 
-    String getName();
-    UUID getUniqueId();
-    void sendMessage(String message);
-    void sendMessage(Component message);
-    boolean hasPermission(String permission);
-    boolean isConsole();
-    boolean isPlayer();
-    CommandSender getNativeSender();
-    Player getPlayer();
+  String getName();
+
+  UUID getUniqueId();
+
+  void sendMessage(String message);
+
+  void sendMessage(Component message);
+
+  boolean hasPermission(String permission);
+
+  boolean isConsole();
+
+  boolean isPlayer();
+
+  CommandSender getNativeSender();
+
+  Player getPlayer();
 }

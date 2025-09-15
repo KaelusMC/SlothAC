@@ -19,4 +19,4 @@ package space.kaelus.sloth.world;
 
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 
-public record Column(int x, int z, BaseChunk[] chunks, int transaction) { }
+public record Column(int x, int z, BaseChunk[] chunks, int transaction) {}

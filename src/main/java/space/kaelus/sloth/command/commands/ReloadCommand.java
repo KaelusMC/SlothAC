@@ -17,46 +17,35 @@
  */
 package space.kaelus.sloth.command.commands;
 
-import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
-import com.github.retrooper.packetevents.protocol.player.User;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.command.SlothCommand;
-import space.kaelus.sloth.player.SlothPlayer;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
 public class ReloadCommand implements SlothCommand {
 
-    @Override
-    public void register(CommandManager<Sender> manager) {
-        manager.command(
-                manager.commandBuilder("sloth", "slothac")
-                        .literal("reload")
-                        .permission("sloth.reload")
-                        .handler(this::execute)
-        );
-    }
+  private final SlothAC plugin;
 
-    private void execute(CommandContext<Sender> context) {
-        SlothAC plugin = SlothAC.getInstance();
+  public ReloadCommand(SlothAC plugin) {
+    this.plugin = plugin;
+  }
 
-        MessageUtil.sendMessage(context.sender().getNativeSender(), Message.RELOAD_START);
+  @Override
+  public void register(CommandManager<Sender> manager) {
+    manager.command(
+        manager
+            .commandBuilder("sloth", "slothac")
+            .literal("reload")
+            .permission("sloth.reload")
+            .handler(this::execute));
+  }
 
-        plugin.getConfigManager().reloadConfig();
-        plugin.loadAI();
-
-        if (plugin.getPlayerDataManager() != null) {
-            for (SlothPlayer onlinePlayer : plugin.getPlayerDataManager().getPlayers()) {
-                User user = onlinePlayer.getUser();
-                if (user != null) {
-                    ChannelHelper.runInEventLoop(user.getChannel(), onlinePlayer::reload);
-                }
-            }
-        }
-
-        MessageUtil.sendMessage(context.sender().getNativeSender(), Message.RELOAD_SUCCESS);
-    }
+  private void execute(CommandContext<Sender> context) {
+    MessageUtil.sendMessage(context.sender().getNativeSender(), Message.RELOAD_START);
+    plugin.reloadPlugin();
+    MessageUtil.sendMessage(context.sender().getNativeSender(), Message.RELOAD_SUCCESS);
+  }
 }
