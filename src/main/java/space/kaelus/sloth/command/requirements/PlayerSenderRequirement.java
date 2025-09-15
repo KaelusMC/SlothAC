@@ -10,15 +10,16 @@ import space.kaelus.sloth.utils.MessageUtil;
 
 public final class PlayerSenderRequirement implements SenderRequirement {
 
-    public static final PlayerSenderRequirement PLAYER_SENDER_REQUIREMENT = new PlayerSenderRequirement();
+  public static final PlayerSenderRequirement PLAYER_SENDER_REQUIREMENT =
+      new PlayerSenderRequirement();
 
-    @Override
-    public @NonNull Component errorMessage(Sender sender) {
-        return MessageUtil.getMessage(Message.RUN_AS_PLAYER);
-    }
+  @Override
+  public @NonNull Component errorMessage(Sender sender) {
+    return MessageUtil.getMessage(Message.RUN_AS_PLAYER);
+  }
 
-    @Override
-    public boolean evaluateRequirement(@NonNull CommandContext<Sender> commandContext) {
-        return commandContext.sender().isPlayer();
-    }
+  @Override
+  public boolean evaluateRequirement(@NonNull CommandContext<Sender> commandContext) {
+    return commandContext.sender().isPlayer();
+  }
 }

@@ -18,12 +18,12 @@
 package space.kaelus.sloth.entity.types;
 
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
+import java.util.UUID;
 import space.kaelus.sloth.entity.PacketEntity;
 import space.kaelus.sloth.player.SlothPlayer;
-import java.util.UUID;
 
 public class PacketEntityUnHittable extends PacketEntity {
-    public PacketEntityUnHittable(SlothPlayer player, UUID uuid, EntityType type) {
-        super(player, uuid, type);
-    }
+  public PacketEntityUnHittable(SlothPlayer player, UUID uuid, EntityType type) {
+    super(player, uuid, type);
+  }
 }
