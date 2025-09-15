@@ -26,41 +26,59 @@ import org.incendo.cloud.bukkit.CloudBukkitCapabilities;
 import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 import space.kaelus.sloth.SlothAC;
+import space.kaelus.sloth.alert.AlertManager;
+import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
+import space.kaelus.sloth.config.ConfigManager;
+import space.kaelus.sloth.config.LocaleManager;
+import space.kaelus.sloth.database.DatabaseManager;
+import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.sender.SenderFactory;
 
 public class CommandManager {
-    private final SlothAC plugin;
 
-    public CommandManager(SlothAC plugin) {
-        this.plugin = plugin;
-        LegacyPaperCommandManager<Sender> cloudManager = setupCloud();
-        if (cloudManager != null) {
-            CommandRegister.registerCommands(cloudManager);
-        }
+  public CommandManager(
+      SlothAC plugin,
+      AlertManager alertManager,
+      DataCollectorManager dataCollectorManager,
+      DatabaseManager databaseManager,
+      ConfigManager configManager,
+      LocaleManager localeManager,
+      PlayerDataManager playerDataManager) {
+
+    LegacyPaperCommandManager<Sender> cloudManager = setupCloud(plugin);
+    if (cloudManager != null) {
+      CommandRegister.registerCommands(
+          cloudManager,
+          plugin,
+          alertManager,
+          dataCollectorManager,
+          databaseManager,
+          configManager,
+          localeManager,
+          playerDataManager);
+    }
+  }
+
+  private LegacyPaperCommandManager<Sender> setupCloud(SlothAC plugin) {
+    SenderFactory senderFactory = new SenderFactory(plugin);
+    LegacyPaperCommandManager<Sender> manager;
+    try {
+      manager =
+          new LegacyPaperCommandManager<>(
+              plugin, ExecutionCoordinator.simpleCoordinator(), senderFactory);
+    } catch (Exception e) {
+      plugin.getLogger().severe("Failed to initialize Cloud Command Manager: " + e.getMessage());
+      e.printStackTrace();
+      return null;
     }
 
-    private LegacyPaperCommandManager<Sender> setupCloud() {
-        SenderFactory senderFactory = new SenderFactory();
-        LegacyPaperCommandManager<Sender> manager;
-        try {
-            manager = new LegacyPaperCommandManager<>(
-                    plugin,
-                    ExecutionCoordinator.simpleCoordinator(),
-                    senderFactory
-            );
-        } catch (Exception e) {
-            plugin.getLogger().severe("Failed to initialize Cloud Command Manager: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-
-        if (manager.hasCapability(CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
-            manager.registerBrigadier();
-        } else if (manager.hasCapability(CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
-            manager.registerAsynchronousCompletions();
-        }
-
-        return manager;
+    if (manager.hasCapability(CloudBukkitCapabilities.NATIVE_BRIGADIER)) {
+      manager.registerBrigadier();
+    } else if (manager.hasCapability(CloudBukkitCapabilities.ASYNCHRONOUS_COMPLETION)) {
+      manager.registerAsynchronousCompletions();
     }
+
+    return manager;
+  }
 }

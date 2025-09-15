@@ -18,5 +18,5 @@
 package space.kaelus.sloth.checks;
 
 public interface AbstractCheck {
-    String getCheckName();
+  String getCheckName();
 }

@@ -21,5 +21,5 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import space.kaelus.sloth.checks.AbstractCheck;
 
 public interface PacketCheck extends AbstractCheck {
-    default void onPacketReceive(PacketReceiveEvent event) {}
+  default void onPacketReceive(PacketReceiveEvent event) {}
 }

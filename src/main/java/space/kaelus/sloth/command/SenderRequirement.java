@@ -23,5 +23,5 @@ import org.incendo.cloud.processors.requirements.Requirement;
 import space.kaelus.sloth.sender.Sender;
 
 public interface SenderRequirement extends Requirement<Sender, SenderRequirement> {
-    @NonNull Component errorMessage(Sender sender);
+  @NonNull Component errorMessage(Sender sender);
 }

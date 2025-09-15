@@ -27,18 +27,18 @@ import space.kaelus.sloth.player.SlothPlayer;
 
 @Getter
 public abstract class Check implements AbstractCheck {
-    protected final SlothPlayer slothPlayer;
-    private final String checkName;
-    private final String configName;
+  protected final SlothPlayer slothPlayer;
+  private final String checkName;
+  private final String configName;
 
-    public Check(SlothPlayer slothPlayer) {
-        this.slothPlayer = slothPlayer;
-        CheckData data = getClass().getAnnotation(CheckData.class);
-        this.checkName = data.name();
-        this.configName = data.configName().equals("DEFAULT") ? data.name() : data.configName();
-    }
+  public Check(SlothPlayer slothPlayer) {
+    this.slothPlayer = slothPlayer;
+    CheckData data = getClass().getAnnotation(CheckData.class);
+    this.checkName = data.name();
+    this.configName = data.configName().equals("DEFAULT") ? data.name() : data.configName();
+  }
 
-    protected void flag(String debug) {
-        slothPlayer.getPunishmentManager().handleFlag(this, debug);
-    }
+  protected void flag(String debug) {
+    slothPlayer.getPunishmentManager().handleFlag(this, debug);
+  }
 }

@@ -30,6 +30,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface CheckData {
-    String name();
-    String configName() default "DEFAULT";
+  String name();
+
+  String configName() default "DEFAULT";
 }

@@ -17,8 +17,6 @@
  */
 package space.kaelus.sloth.data;
 
-import lombok.Getter;
-import space.kaelus.sloth.SlothAC;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -29,67 +27,70 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
+import space.kaelus.sloth.SlothAC;
 
 @Getter
 public class DataSession {
-    private final UUID uuid;
-    private final String player;
-    private final String status;
-    private final java.util.Queue<TickData> recordedTicks = new java.util.concurrent.ConcurrentLinkedQueue<>();
-    private final Instant startTime;
+  private final UUID uuid;
+  private final String player;
+  private final String status;
+  private final java.util.Queue<TickData> recordedTicks =
+      new java.util.concurrent.ConcurrentLinkedQueue<>();
+  private final Instant startTime;
 
-    public DataSession(UUID uuid, String player, String status) {
-        this.uuid = uuid;
-        this.player = player;
-        this.status = status;
-        this.startTime = Instant.now();
-    }
+  public DataSession(UUID uuid, String player, String status) {
+    this.uuid = uuid;
+    this.player = player;
+    this.status = status;
+    this.startTime = Instant.now();
+  }
 
-    public void addTick(TickData tickData) {
-        recordedTicks.add(tickData);
-    }
+  public void addTick(TickData tickData) {
+    recordedTicks.add(tickData);
+  }
 
-    public String generateFileName() {
-        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date(startTime.toEpochMilli()));
-        String statusForFilename = status.replace(' ', '#')
-                .replaceAll("[/\\\\?%*:|\"<>']", "-");
-        if (statusForFilename.contains("_GLOBAL_")) {
-            statusForFilename = statusForFilename.split("_GLOBAL_")[0];
-        }
-        return String.format("%s_%s_%s.csv", statusForFilename, player, timestamp);
+  public String generateFileName() {
+    String timestamp =
+        new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date(startTime.toEpochMilli()));
+    String statusForFilename = status.replace(' ', '#').replaceAll("[/\\\\?%*:|\"<>']", "-");
+    if (statusForFilename.contains("_GLOBAL_")) {
+      statusForFilename = statusForFilename.split("_GLOBAL_")[0];
     }
+    return String.format("%s_%s_%s.csv", statusForFilename, player, timestamp);
+  }
 
-    public String generateCsvContent() {
-        if (recordedTicks.isEmpty()) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder();
-        sb.append(TickData.getHeader()).append("\n");
-        String cheatingStatus = "UNLABELED";
-        if (status.startsWith("CHEAT")) {
-            cheatingStatus = "CHEAT";
-        } else if (status.startsWith("LEGIT")) {
-            cheatingStatus = "LEGIT";
-        }
-        List<TickData> ticks = new ArrayList<>(recordedTicks);
-        for (TickData tick : ticks) {
-            sb.append(tick.toCsv(cheatingStatus)).append("\n");
-        }
-        return sb.toString();
+  public String generateCsvContent() {
+    if (recordedTicks.isEmpty()) {
+      return "";
     }
+    StringBuilder sb = new StringBuilder();
+    sb.append(TickData.getHeader()).append("\n");
+    String cheatingStatus = "UNLABELED";
+    if (status.startsWith("CHEAT")) {
+      cheatingStatus = "CHEAT";
+    } else if (status.startsWith("LEGIT")) {
+      cheatingStatus = "LEGIT";
+    }
+    List<TickData> ticks = new ArrayList<>(recordedTicks);
+    for (TickData tick : ticks) {
+      sb.append(tick.toCsv(cheatingStatus)).append("\n");
+    }
+    return sb.toString();
+  }
 
-    public void saveAndClose() throws IOException {
-        String csvContent = generateCsvContent();
-        if (csvContent.isEmpty()) {
-            return;
-        }
-        File dataFolder = new File(SlothAC.getInstance().getDataFolder(), "datacollection");
-        if (!dataFolder.exists()) {
-            dataFolder.mkdirs();
-        }
-        File outputFile = new File(dataFolder, generateFileName());
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
-            writer.write(csvContent);
-        }
+  public void saveAndClose(SlothAC plugin) throws IOException {
+    String csvContent = generateCsvContent();
+    if (csvContent.isEmpty()) {
+      return;
     }
+    File dataFolder = new File(plugin.getDataFolder(), "datacollection");
+    if (!dataFolder.exists()) {
+      dataFolder.mkdirs();
+    }
+    File outputFile = new File(dataFolder, generateFileName());
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
+      writer.write(csvContent);
+    }
+  }
 }

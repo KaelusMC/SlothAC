@@ -9,18 +9,17 @@ import space.kaelus.sloth.utils.MessageUtil;
 
 public class HelpCommand implements SlothCommand {
 
-    @Override
-    public void register(CommandManager<Sender> manager) {
-        final var builder = manager.commandBuilder("sloth", "slothac")
-                .permission("sloth.help");
+  @Override
+  public void register(CommandManager<Sender> manager) {
+    final var builder = manager.commandBuilder("sloth", "slothac").permission("sloth.help");
 
-        manager.command(builder.handler(this::help));
+    manager.command(builder.handler(this::help));
 
-        manager.command(builder.literal("help").handler(this::help));
-    }
+    manager.command(builder.literal("help").handler(this::help));
+  }
 
-    private void help(CommandContext<Sender> context) {
-        final Sender sender = context.sender();
-        MessageUtil.sendMessageList(sender.getNativeSender(), Message.HELP_MESSAGE, "command", "sloth");
-    }
+  private void help(CommandContext<Sender> context) {
+    final Sender sender = context.sender();
+    MessageUtil.sendMessageList(sender.getNativeSender(), Message.HELP_MESSAGE, "command", "sloth");
+  }
 }

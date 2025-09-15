@@ -23,6 +23,7 @@ import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.plugin.java.JavaPlugin;
 import space.kaelus.sloth.alert.AlertManager;
+import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
 import space.kaelus.sloth.command.CommandManager;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.config.LocaleManager;
@@ -31,81 +32,95 @@ import space.kaelus.sloth.event.DamageEvent;
 import space.kaelus.sloth.integration.WorldGuardManager;
 import space.kaelus.sloth.packet.PacketListener;
 import space.kaelus.sloth.player.PlayerDataManager;
-import space.kaelus.sloth.server.AIServer;
+import space.kaelus.sloth.server.AIServerProvider;
+import space.kaelus.sloth.utils.MessageUtil;
 
-@Getter
 public final class SlothAC extends JavaPlugin {
-    @Getter
-    private static SlothAC instance;
-    private PlayerDataManager playerDataManager;
-    private ConfigManager configManager;
-    private LocaleManager localeManager;
-    private AIServer aiServer;
-    private WorldGuardManager worldGuardManager;
-    private CommandManager commandManager;
-    private AlertManager alertManager;
-    private DatabaseManager databaseManager;
-    private BukkitAudiences adventure;
+  private PlayerDataManager playerDataManager;
+  private ConfigManager configManager;
+  private LocaleManager localeManager;
+  private AIServerProvider aiServerProvider;
+  private WorldGuardManager worldGuardManager;
+  private CommandManager commandManager;
+  private AlertManager alertManager;
+  private DatabaseManager databaseManager;
+  private DataCollectorManager dataCollectorManager;
 
-    @Override
-    public void onLoad() {
-        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
-        PacketEvents.getAPI().getSettings()
-                .checkForUpdates(false)
-                .bStats(true);
-        PacketEvents.getAPI().load();
+  @Getter private BukkitAudiences adventure;
+
+  @Override
+  public void onLoad() {
+    PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+    PacketEvents.getAPI().getSettings().checkForUpdates(false).bStats(true);
+    PacketEvents.getAPI().load();
+  }
+
+  @Override
+  public void onEnable() {
+    this.adventure = BukkitAudiences.create(this);
+
+    this.configManager = new ConfigManager(this);
+    this.localeManager = new LocaleManager(this, configManager);
+
+    MessageUtil.init(this.localeManager, this.adventure);
+
+    this.databaseManager = new DatabaseManager(this, configManager);
+    this.dataCollectorManager = new DataCollectorManager(this);
+    this.worldGuardManager = new WorldGuardManager(this, configManager);
+    this.alertManager = new AlertManager(this, configManager, localeManager, adventure);
+    this.aiServerProvider = new AIServerProvider(this, configManager);
+
+    this.playerDataManager =
+        new PlayerDataManager(
+            this,
+            alertManager,
+            dataCollectorManager,
+            configManager,
+            databaseManager,
+            this.aiServerProvider,
+            worldGuardManager);
+
+    PacketEvents.getAPI()
+        .getEventManager()
+        .registerListener(new PacketListener(this.playerDataManager));
+    PacketEvents.getAPI().init();
+
+    this.commandManager =
+        new CommandManager(
+            this,
+            alertManager,
+            dataCollectorManager,
+            databaseManager,
+            configManager,
+            localeManager,
+            playerDataManager);
+
+    getServer().getPluginManager().registerEvents(new DamageEvent(playerDataManager), this);
+  }
+
+  public void reloadPlugin() {
+    configManager.reloadConfig();
+    localeManager.reload();
+    alertManager.reload();
+
+    aiServerProvider.reload();
+
+    if (playerDataManager != null) {
+      playerDataManager.reloadAllPlayers();
     }
+  }
 
-    @Override
-    public void onEnable() {
-        instance = this;
-
-        this.adventure = BukkitAudiences.create(this);
-
-        this.configManager = new ConfigManager(this);
-        this.localeManager = new LocaleManager(this);
-        this.alertManager = new AlertManager();
-        this.databaseManager = new DatabaseManager();
-        this.playerDataManager = new PlayerDataManager();
-        this.worldGuardManager = new WorldGuardManager();
-        loadAI();
-
-        PacketEvents.getAPI().getEventManager().registerListener(new PacketListener(this.playerDataManager));
-        PacketEvents.getAPI().init();
-
-        this.commandManager = new CommandManager(this);
-        getServer().getPluginManager().registerEvents(new DamageEvent(), this);
+  @Override
+  public void onDisable() {
+    if (this.adventure != null) {
+      this.adventure.close();
+      this.adventure = null;
     }
-
-    @Override
-    public void onDisable() {
-        if (this.adventure != null) {
-            this.adventure.close();
-            this.adventure = null;
-        }
-        if (databaseManager != null) {
-            databaseManager.shutdown();
-        }
-        if (PacketEvents.getAPI().isInitialized()) {
-            PacketEvents.getAPI().terminate();
-        }
+    if (databaseManager != null) {
+      databaseManager.shutdown();
     }
-
-    public void loadAI() {
-        if (configManager.isAiEnabled()) {
-            String url = configManager.getAiServerUrl();
-            String key = configManager.getAiApiKey();
-
-            if (url == null || url.isEmpty() || key == null || key.equals("API-KEY")) {
-                getLogger().warning("[AICheck] AI is enabled but not configured.");
-                this.aiServer = null;
-            } else {
-                this.aiServer = new AIServer(url, key);
-                getLogger().info("[AICheck] AI Check enabled.");
-            }
-        } else {
-            this.aiServer = null;
-            getLogger().info("[AICheck] AI Check disabled.");
-        }
+    if (PacketEvents.getAPI().isInitialized()) {
+      PacketEvents.getAPI().terminate();
     }
+  }
 }

@@ -22,22 +22,28 @@
  */
 package space.kaelus.sloth.database;
 
-import space.kaelus.sloth.player.SlothPlayer;
 import java.util.List;
 import java.util.UUID;
+import space.kaelus.sloth.player.SlothPlayer;
 
 public interface ViolationDatabase {
-    void connect();
-    void disconnect();
-    void logAlert(SlothPlayer player, String verbose, String checkName, int vls);
-    int getLogCount(UUID player);
-    List<Violation> getViolations(UUID player, int page, int limit);
+  void logAlert(SlothPlayer player, String verbose, String checkName, int vls);
 
-    int getViolationLevel(UUID playerUUID, String punishGroupName);
+  int getLogCount(UUID player);
 
-    int incrementViolationLevel(UUID playerUUID, String punishGroupName);
+  List<Violation> getViolations(UUID player, int page, int limit);
 
-    void resetViolationLevel(UUID playerUUID, String punishGroupName);
+  int getUniqueViolatorsSince(long since);
 
-    void resetAllViolationLevels(UUID playerUUID);
+  int getLogCount(long since);
+
+  List<Violation> getViolations(int page, int limit, long since);
+
+  int getViolationLevel(UUID playerUUID, String punishGroupName);
+
+  int incrementViolationLevel(UUID playerUUID, String punishGroupName);
+
+  void resetViolationLevel(UUID playerUUID, String punishGroupName);
+
+  void resetAllViolationLevels(UUID playerUUID);
 }

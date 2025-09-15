@@ -1,3 +1,4 @@
+import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission
 
 plugins {
@@ -5,6 +6,8 @@ plugins {
     id("io.freefair.lombok") version "8.6"
     id("com.gradleup.shadow") version "9.0.0-beta6"
     id("net.minecrell.plugin-yml.bukkit") version "0.6.0"
+    id("net.ltgt.errorprone") version "4.3.0"
+    id("com.diffplug.spotless") version "7.2.1"
 }
 
 group = "space.kaelus.sloth"
@@ -36,6 +39,10 @@ dependencies {
     implementation("net.kyori:adventure-platform-bukkit:4.3.4")
     implementation("net.kyori:adventure-text-minimessage:4.17.0")
 
+    // HikariCP
+    implementation("com.zaxxer:HikariCP:7.0.2")
+    implementation("org.slf4j:slf4j-jdk14:2.0.17")
+
     // Utilities
     compileOnly("org.projectlombok:lombok:1.18.32")
     annotationProcessor("org.projectlombok:lombok:1.18.32")
@@ -43,6 +50,8 @@ dependencies {
     implementation("org.jetbrains:annotations:24.1.0")
     implementation("com.google.flatbuffers:flatbuffers-java:25.2.10")
     implementation("com.google.code.gson:gson:2.10.1")
+
+    errorprone("com.google.errorprone:error_prone_core:2.41.0")
 }
 
 java {
@@ -58,7 +67,12 @@ tasks.shadowJar {
     archiveBaseName.set(rootProject.name)
     archiveClassifier.set("")
 
-    minimize()
+    minimize {
+        exclude(dependency("org.slf4j:slf4j-api"))
+        exclude(dependency("org.slf4j:slf4j-jdk14"))
+    }
+
+    transformers.add(ServiceFileTransformer())
 
     relocate("io.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents")
     relocate("com.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents")
@@ -67,6 +81,11 @@ tasks.shadowJar {
     relocate("org.incendo", "space.kaelus.sloth.libs.incendo")
     relocate("io.leangen.geantyref", "space.kaelus.sloth.libs.geantyref")
     relocate("it.unimi.dsi.fastutil", "space.kaelus.sloth.libs.fastutil")
+    relocate("com.google.flatbuffers", "space.kaelus.sloth.libs.flatbuffers")
+    relocate("com.zaxxer.hikari", "space.kaelus.sloth.libs.hikari")
+    relocate("org.slf4j", "space.kaelus.sloth.libs.slf4j")
+    relocate("org.jetbrains", "space.kaelus.sloth.libs.jetbrains")
+    relocate("org.intellij", "space.kaelus.sloth.libs.intellij")
 }
 
 tasks.build {
@@ -136,5 +155,17 @@ bukkit {
             description = "Automatically enables brand notifications on join"
             default = Permission.Default.OP
         }
+    }
+}
+
+spotless {
+    isEnforceCheck = true
+
+    java {
+        importOrder()
+
+        removeUnusedImports()
+
+        googleJavaFormat("1.17.0")
     }
 }

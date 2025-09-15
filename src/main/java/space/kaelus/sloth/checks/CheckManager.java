@@ -23,58 +23,85 @@
 package space.kaelus.sloth.checks;
 
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import java.util.*;
+import space.kaelus.sloth.SlothAC;
+import space.kaelus.sloth.alert.AlertManager;
 import space.kaelus.sloth.checks.impl.ai.AICheck;
 import space.kaelus.sloth.checks.impl.ai.ActionManager;
 import space.kaelus.sloth.checks.impl.ai.DataCollectorCheck;
+import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
 import space.kaelus.sloth.checks.impl.aim.AimProcessor;
 import space.kaelus.sloth.checks.impl.misc.ClientBrand;
 import space.kaelus.sloth.checks.type.PacketCheck;
 import space.kaelus.sloth.checks.type.RotationCheck;
+import space.kaelus.sloth.config.ConfigManager;
+import space.kaelus.sloth.integration.WorldGuardManager;
 import space.kaelus.sloth.player.SlothPlayer;
+import space.kaelus.sloth.server.AIServerProvider;
 import space.kaelus.sloth.utils.update.RotationUpdate;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Stream;
-
 public class CheckManager {
-    private final List<RotationCheck> rotationChecks = new ArrayList<>();
-    private final List<PacketCheck> packetChecks = new ArrayList<>();
+  private final List<RotationCheck> rotationChecks = new ArrayList<>();
+  private final List<PacketCheck> packetChecks = new ArrayList<>();
 
-    public CheckManager(SlothPlayer player) {
-        rotationChecks.add(new AimProcessor(player));
+  private final Map<Class<? extends AbstractCheck>, AbstractCheck> checks = new HashMap<>();
 
-        packetChecks.add(new ActionManager(player));
-        packetChecks.add(new AICheck(player));
-        packetChecks.add(new DataCollectorCheck(player));
-        packetChecks.add(new ClientBrand(player));
+  public CheckManager(
+      SlothPlayer player,
+      SlothAC plugin,
+      ConfigManager configManager,
+      DataCollectorManager dataCollectorManager,
+      AIServerProvider aiServerProvider,
+      WorldGuardManager worldGuardManager,
+      AlertManager alertManager) {
+
+    registerCheck(new AimProcessor(player));
+    registerCheck(new ActionManager(player, configManager));
+    registerCheck(
+        new AICheck(
+            player, plugin, aiServerProvider, configManager, worldGuardManager, alertManager));
+    registerCheck(new DataCollectorCheck(player, dataCollectorManager, plugin));
+    registerCheck(new ClientBrand(player, configManager, alertManager));
+  }
+
+  private void registerCheck(AbstractCheck check) {
+    checks.put(check.getClass(), check);
+
+    if (check instanceof RotationCheck rotationCheck) {
+      rotationChecks.add(rotationCheck);
     }
 
-    public void onRotationUpdate(RotationUpdate update) {
-        for (RotationCheck check : rotationChecks) {
-            check.process(update);
-        }
+    if (check instanceof PacketCheck packetCheck) {
+      packetChecks.add(packetCheck);
     }
+  }
 
-    public void onPacketReceive(PacketReceiveEvent event) {
-        for (PacketCheck check : packetChecks) {
-            check.onPacketReceive(event);
-        }
+  public void reloadChecks() {
+    for (AbstractCheck check : checks.values()) {
+      if (check instanceof Reloadable reloadable) {
+        reloadable.reload();
+      }
     }
+  }
 
-    @SuppressWarnings("unchecked")
-    public <T extends AbstractCheck> T getCheck(Class<T> clazz) {
-        for (AbstractCheck check : getAllChecks()) {
-            if (clazz.isInstance(check)) {
-                return (T) check;
-            }
-        }
-        return null;
+  public void onRotationUpdate(RotationUpdate update) {
+    for (RotationCheck check : rotationChecks) {
+      check.process(update);
     }
+  }
 
-    public Collection<AbstractCheck> getAllChecks() {
-        return Stream.concat(rotationChecks.stream(), packetChecks.stream())
-                .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+  public void onPacketReceive(PacketReceiveEvent event) {
+    for (PacketCheck check : packetChecks) {
+      check.onPacketReceive(event);
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  public <T extends AbstractCheck> T getCheck(Class<T> clazz) {
+    return (T) checks.get(clazz);
+  }
+
+  public Collection<AbstractCheck> getAllChecks() {
+    return checks.values();
+  }
 }

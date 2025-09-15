@@ -24,49 +24,59 @@ import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import space.kaelus.sloth.SlothAC;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import space.kaelus.sloth.SlothAC;
+import space.kaelus.sloth.config.ConfigManager;
 
 public class WorldGuardManager {
-    private final boolean worldGuardLoaded;
-    private WorldGuard worldGuardInstance;
+  private final SlothAC plugin;
+  private final ConfigManager configManager;
+  private final boolean worldGuardLoaded;
+  private WorldGuard worldGuardInstance;
 
-    public WorldGuardManager() {
-        this.worldGuardLoaded = Bukkit.getPluginManager().isPluginEnabled("WorldGuard");
-        if (this.worldGuardLoaded) {
-            this.worldGuardInstance = WorldGuard.getInstance();
-            SlothAC.getInstance().getLogger().info("WorldGuard hook enabled.");
-        } else {
-            SlothAC.getInstance().getLogger().info("WorldGuard not found, hook disabled.");
-        }
+  public WorldGuardManager(SlothAC plugin, ConfigManager configManager) {
+    this.plugin = plugin;
+    this.configManager = configManager;
+    this.worldGuardLoaded = Bukkit.getPluginManager().isPluginEnabled("WorldGuard");
+    if (this.worldGuardLoaded) {
+      this.worldGuardInstance = WorldGuard.getInstance();
+      plugin.getLogger().info("WorldGuard hook enabled.");
+    } else {
+      plugin.getLogger().info("WorldGuard not found, hook disabled.");
+    }
+  }
+
+  public boolean isPlayerInDisabledRegion(Player player) {
+    if (!worldGuardLoaded) {
+      return false;
+    }
+    List<String> disabledRegions = configManager.getAiDisabledRegions();
+    if (disabledRegions == null || disabledRegions.isEmpty()) {
+      return false;
+    }
+    RegionContainer container = worldGuardInstance.getPlatform().getRegionContainer();
+    RegionManager regions = container.get(BukkitAdapter.adapt(player.getWorld()));
+    if (regions == null) {
+      return false;
     }
 
-    public boolean isPlayerInDisabledRegion(Player player) {
-        if (!worldGuardLoaded) {
-            return false;
-        }
-        List<String> disabledRegions = SlothAC.getInstance().getConfigManager().getAiDisabledRegions();
-        if (disabledRegions == null || disabledRegions.isEmpty()) {
-            return false;
-        }
-        RegionContainer container = worldGuardInstance.getPlatform().getRegionContainer();
-        RegionManager regions = container.get(BukkitAdapter.adapt(player.getWorld()));
-        if (regions == null) {
-            return false;
-        }
+    ApplicableRegionSet set =
+        regions.getApplicableRegions(
+            BlockVector3.at(
+                player.getLocation().getX(),
+                player.getLocation().getY(),
+                player.getLocation().getZ()));
+    Set<ProtectedRegion> playerRegions = set.getRegions();
 
-        ApplicableRegionSet set = regions.getApplicableRegions(BlockVector3.at(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ()));
-        Set<ProtectedRegion> playerRegions = set.getRegions();
-
-        if (playerRegions.isEmpty()) {
-            return false;
-        }
-
-        return playerRegions.stream()
-                .allMatch(region -> disabledRegions.contains(region.getId().toLowerCase(Locale.ROOT)));
+    if (playerRegions.isEmpty()) {
+      return false;
     }
+
+    return playerRegions.stream()
+        .allMatch(region -> disabledRegions.contains(region.getId().toLowerCase(Locale.ROOT)));
+  }
 }

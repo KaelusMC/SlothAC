@@ -21,5 +21,5 @@ import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.utils.update.RotationUpdate;
 
 public interface RotationCheck extends AbstractCheck {
-    void process(RotationUpdate rotationUpdate);
+  void process(RotationUpdate rotationUpdate);
 }

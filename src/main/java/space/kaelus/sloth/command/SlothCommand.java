@@ -21,5 +21,5 @@ import org.incendo.cloud.CommandManager;
 import space.kaelus.sloth.sender.Sender;
 
 public interface SlothCommand {
-    void register(CommandManager<Sender> manager);
+  void register(CommandManager<Sender> manager);
 }

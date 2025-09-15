@@ -22,7 +22,7 @@ import space.kaelus.sloth.entity.PacketEntity;
 import space.kaelus.sloth.player.SlothPlayer;
 
 public class PacketEntitySelf extends PacketEntity {
-    public PacketEntitySelf(SlothPlayer player) {
-        super(player, player.getUuid(), EntityTypes.PLAYER);
-    }
+  public PacketEntitySelf(SlothPlayer player) {
+    super(player, player.getUuid(), EntityTypes.PLAYER);
+  }
 }
