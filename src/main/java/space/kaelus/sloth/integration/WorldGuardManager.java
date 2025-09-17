@@ -76,7 +76,28 @@ public class WorldGuardManager {
       return false;
     }
 
+    final String worldName = player.getWorld().getName().toLowerCase(Locale.ROOT);
+
     return playerRegions.stream()
-        .allMatch(region -> disabledRegions.contains(region.getId().toLowerCase(Locale.ROOT)));
+        .anyMatch(
+            region -> {
+              final String regionId = region.getId().toLowerCase(Locale.ROOT);
+
+              for (String entry : disabledRegions) {
+                if (entry.contains(":")) {
+                  String[] parts = entry.split(":", 2);
+                  String disabledRegionName = parts[0];
+                  String disabledWorldName = parts[1];
+                  if (regionId.equals(disabledRegionName) && worldName.equals(disabledWorldName)) {
+                    return true;
+                  }
+                } else {
+                  if (regionId.equals(entry)) {
+                    return true;
+                  }
+                }
+              }
+              return false;
+            });
   }
 }
