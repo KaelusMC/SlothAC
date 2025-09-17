@@ -28,6 +28,7 @@ import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
 import com.github.retrooper.packetevents.util.Vector3d;
+import it.unimi.dsi.fastutil.ints.IntArraySet;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -88,6 +89,7 @@ public class SlothPlayer {
   public int ticksSinceAttack;
 
   public final Queue<Pair<Short, Long>> transactionsSent = new ConcurrentLinkedQueue<>();
+  public final IntArraySet entitiesDespawnedThisTransaction = new IntArraySet();
   public final Set<Short> didWeSendThatTrans = ConcurrentHashMap.newKeySet();
   public final AtomicInteger lastTransactionSent = new AtomicInteger(0);
   public final AtomicInteger lastTransactionReceived = new AtomicInteger(0);

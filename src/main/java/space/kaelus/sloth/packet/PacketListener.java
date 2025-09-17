@@ -239,6 +239,7 @@ public class PacketListener extends PacketListenerAbstract {
           new WrapperPlayServerWindowConfirmation(event);
       short id = confirmation.getActionId();
       if (id <= 0 && slothPlayer.didWeSendThatTrans.remove(id)) {
+        slothPlayer.entitiesDespawnedThisTransaction.clear();
         slothPlayer.transactionsSent.add(new Pair<>(id, System.nanoTime()));
         slothPlayer.getLastTransactionSent().getAndIncrement();
       }
@@ -247,6 +248,7 @@ public class PacketListener extends PacketListenerAbstract {
       WrapperPlayServerPing ping = new WrapperPlayServerPing(event);
       int id = ping.getId();
       if (id == (short) id && slothPlayer.didWeSendThatTrans.remove((short) id)) {
+        slothPlayer.entitiesDespawnedThisTransaction.clear();
         slothPlayer.transactionsSent.add(new Pair<>((short) id, System.nanoTime()));
         slothPlayer.getLastTransactionSent().getAndIncrement();
       }
@@ -268,6 +270,9 @@ public class PacketListener extends PacketListenerAbstract {
 
     if (event.getPacketType() == PacketType.Play.Server.SPAWN_ENTITY) {
       WrapperPlayServerSpawnEntity spawn = new WrapperPlayServerSpawnEntity(event);
+      if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
+        slothPlayer.sendTransaction();
+      }
       slothPlayer
           .getLatencyUtils()
           .addRealTimeTask(
@@ -282,6 +287,9 @@ public class PacketListener extends PacketListenerAbstract {
     }
     if (event.getPacketType() == PacketType.Play.Server.SPAWN_PLAYER) {
       WrapperPlayServerSpawnPlayer spawn = new WrapperPlayServerSpawnPlayer(event);
+      if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
+        slothPlayer.sendTransaction();
+      }
       slothPlayer
           .getLatencyUtils()
           .addRealTimeTask(
@@ -293,6 +301,11 @@ public class PacketListener extends PacketListenerAbstract {
     }
     if (event.getPacketType() == PacketType.Play.Server.DESTROY_ENTITIES) {
       WrapperPlayServerDestroyEntities destroy = new WrapperPlayServerDestroyEntities(event);
+
+      for (int id : destroy.getEntityIds()) {
+        slothPlayer.entitiesDespawnedThisTransaction.add(id);
+      }
+
       slothPlayer
           .getLatencyUtils()
           .addRealTimeTask(
