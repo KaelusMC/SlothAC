@@ -40,7 +40,7 @@ ai:
     enabled: true
     # List of WorldGuard regions where the AI check is disabled.
     disabled-regions:
-      - "spawn"
+      - "spawn:spawn"
   # Enable debug
   debug: false
 

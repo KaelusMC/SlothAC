@@ -28,7 +28,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.logging.Level;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;
@@ -186,25 +185,8 @@ public class AICheck extends Check implements PacketCheck, Reloadable {
                 byte[] flatbuffer = serialize(data);
                 aiServer
                     .sendRequest(flatbuffer)
-                    .whenComplete(
-                        (response, error) -> {
-                          if (error != null) {
-                            onError(error);
-                          } else {
-                            onResponse(response);
-                          }
-                        })
-                    .exceptionally(
-                        ex -> {
-                          plugin
-                              .getLogger()
-                              .log(
-                                  Level.SEVERE,
-                                  "Unhandled exception in AI server response for player "
-                                      + slothPlayer.getPlayer().getName(),
-                                  ex);
-                          return null;
-                        });
+                    .thenAccept(this::onResponse)
+                    .exceptionally(this::onError);
               } catch (Exception e) {
                 plugin
                     .getLogger()
@@ -305,16 +287,18 @@ public class AICheck extends Check implements PacketCheck, Reloadable {
     }
   }
 
-  private void onError(Throwable error) {
+  private Void onError(Throwable error) {
     this.lastProbability = 0.0;
     slothPlayer.setDmgMultiplier(1.0);
+
     Throwable cause =
         (error instanceof java.util.concurrent.CompletionException && error.getCause() != null)
             ? error.getCause()
             : error;
+
     if (cause instanceof AIServer.RequestException e) {
       if (e.getCode() == AIServer.ResponseCode.WAITING) {
-        return;
+        return null;
       }
       if (e.getCode() == AIServer.ResponseCode.INVALID_SEQUENCE) {
         try {
@@ -328,7 +312,7 @@ public class AICheck extends Check implements PacketCheck, Reloadable {
                 configManager.setAiSequence(newSequence);
                 this.ticks = new ArrayDeque<>(newSequence);
               }
-              return;
+              return null;
             }
           }
         } catch (Exception parseEx) {
@@ -355,6 +339,7 @@ public class AICheck extends Check implements PacketCheck, Reloadable {
                   + ": "
                   + cause.getMessage());
     }
+    return null;
   }
 
   private byte[] serialize(List<TickData> ticks) {
