@@ -270,9 +270,11 @@ public class PacketListener extends PacketListenerAbstract {
 
     if (event.getPacketType() == PacketType.Play.Server.SPAWN_ENTITY) {
       WrapperPlayServerSpawnEntity spawn = new WrapperPlayServerSpawnEntity(event);
+
       if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
         slothPlayer.sendTransaction();
       }
+
       slothPlayer
           .getLatencyUtils()
           .addRealTimeTask(
@@ -285,6 +287,40 @@ public class PacketListener extends PacketListenerAbstract {
                           spawn.getUUID().orElse(null),
                           spawn.getEntityType()));
     }
+
+    if (event.getPacketType() == PacketType.Play.Server.SPAWN_LIVING_ENTITY) {
+      WrapperPlayServerSpawnLivingEntity spawn = new WrapperPlayServerSpawnLivingEntity(event);
+
+      if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
+        slothPlayer.sendTransaction();
+      }
+
+      slothPlayer
+          .getLatencyUtils()
+          .addRealTimeTask(
+              slothPlayer.getLastTransactionSent().get(),
+              () ->
+                  slothPlayer
+                      .getCompensatedEntities()
+                      .addEntity(
+                          spawn.getEntityId(), spawn.getEntityUUID(), spawn.getEntityType()));
+    }
+
+    if (event.getPacketType() == PacketType.Play.Server.SPAWN_PAINTING) {
+      WrapperPlayServerSpawnPainting spawn = new WrapperPlayServerSpawnPainting(event);
+      if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
+        slothPlayer.sendTransaction();
+      }
+      slothPlayer
+          .getLatencyUtils()
+          .addRealTimeTask(
+              slothPlayer.getLastTransactionSent().get(),
+              () ->
+                  slothPlayer
+                      .getCompensatedEntities()
+                      .addEntity(spawn.getEntityId(), spawn.getUUID(), EntityTypes.PAINTING));
+    }
+
     if (event.getPacketType() == PacketType.Play.Server.SPAWN_PLAYER) {
       WrapperPlayServerSpawnPlayer spawn = new WrapperPlayServerSpawnPlayer(event);
       if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
@@ -299,6 +335,7 @@ public class PacketListener extends PacketListenerAbstract {
                       .getCompensatedEntities()
                       .addEntity(spawn.getEntityId(), spawn.getUUID(), EntityTypes.PLAYER));
     }
+
     if (event.getPacketType() == PacketType.Play.Server.DESTROY_ENTITIES) {
       WrapperPlayServerDestroyEntities destroy = new WrapperPlayServerDestroyEntities(event);
 

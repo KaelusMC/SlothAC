@@ -33,7 +33,8 @@ import lombok.Setter;
 import org.bukkit.Bukkit;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.alert.AlertManager;
-import space.kaelus.sloth.checks.Check;
+import space.kaelus.sloth.alert.AlertType;
+import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
 import space.kaelus.sloth.checks.Reloadable;
 import space.kaelus.sloth.checks.type.PacketCheck;
@@ -42,13 +43,14 @@ import space.kaelus.sloth.data.TickData;
 import space.kaelus.sloth.flatbuffers.TickDataSequence;
 import space.kaelus.sloth.integration.WorldGuardManager;
 import space.kaelus.sloth.player.SlothPlayer;
+import space.kaelus.sloth.server.AIResponse;
 import space.kaelus.sloth.server.AIServer;
 import space.kaelus.sloth.server.AIServerProvider;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
 @CheckData(name = "AI (Aim)")
-public class AICheck extends Check implements PacketCheck, Reloadable {
+public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
   private final SlothAC plugin;
   private final AIServerProvider aiServerProvider;
   private final ConfigManager configManager;
@@ -201,8 +203,9 @@ public class AICheck extends Check implements PacketCheck, Reloadable {
 
   private void onResponse(String response) {
     try {
-      JsonObject jsonObject = GSON.fromJson(response, JsonObject.class);
-      if (!jsonObject.has("probability")) {
+      AIResponse apiResponse = GSON.fromJson(response, AIResponse.class);
+
+      if (apiResponse == null) {
         plugin
             .getLogger()
             .warning("[AICheck] API response is missing probability. Response: " + response);
@@ -210,7 +213,8 @@ public class AICheck extends Check implements PacketCheck, Reloadable {
         slothPlayer.setDmgMultiplier(1.0);
         return;
       }
-      double probability = jsonObject.get("probability").getAsDouble();
+
+      double probability = apiResponse.probability();
       this.lastProbability = probability;
 
       if (aiDamageReductionEnabled) {
@@ -236,13 +240,14 @@ public class AICheck extends Check implements PacketCheck, Reloadable {
       }
 
       if (this.buffer > suspiciousAlertBuffer && oldBuffer <= suspiciousAlertBuffer) {
-        alertManager.sendSuspiciousAlert(
+        alertManager.send(
             MessageUtil.getMessage(
                 Message.SUSPICIOUS_ALERT_TRIGGERED,
                 "player",
                 this.slothPlayer.getPlayer().getName(),
                 "buffer",
-                String.format("%.1f", this.buffer)));
+                String.format("%.1f", this.buffer)),
+            AlertType.SUSPICIOUS);
       }
 
       if (debug) {

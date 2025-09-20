@@ -23,7 +23,7 @@
 package space.kaelus.sloth.checks.impl.aim;
 
 import lombok.Getter;
-import space.kaelus.sloth.checks.Check;
+import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
 import space.kaelus.sloth.checks.type.RotationCheck;
 import space.kaelus.sloth.player.SlothPlayer;
@@ -34,7 +34,7 @@ import space.kaelus.sloth.utils.update.RotationUpdate;
 
 @CheckData(name = "AimProcessor_Internal")
 @Getter
-public class AimProcessor extends Check implements RotationCheck {
+public class AimProcessor extends AbstractCheck implements RotationCheck {
 
   private static final int SIGNIFICANT_SAMPLES_THRESHOLD = 15;
   private static final int TOTAL_SAMPLES_THRESHOLD = 80;

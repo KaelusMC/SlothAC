@@ -51,6 +51,7 @@ dependencies {
     implementation("com.google.flatbuffers:flatbuffers-java:25.2.10")
     implementation("com.google.code.gson:gson:2.10.1")
 
+    // Error Prone
     errorprone("com.google.errorprone:error_prone_core:2.41.0")
 }
 
@@ -74,8 +75,8 @@ tasks.shadowJar {
 
     transformers.add(ServiceFileTransformer())
 
-    relocate("io.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents")
-    relocate("com.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents")
+    relocate("com.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents.api")
+    relocate("io.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents.impl")
     relocate("net.kyori", "space.kaelus.sloth.libs.kyori")
     relocate("com.google.gson", "space.kaelus.sloth.libs.gson")
     relocate("org.incendo", "space.kaelus.sloth.libs.incendo")
@@ -90,6 +91,10 @@ tasks.shadowJar {
 
 tasks.build {
     dependsOn(tasks.shadowJar)
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    dependsOn(tasks.spotlessApply)
 }
 
 bukkit {

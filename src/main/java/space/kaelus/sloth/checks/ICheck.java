@@ -15,11 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package space.kaelus.sloth.checks.type;
+package space.kaelus.sloth.checks;
 
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import space.kaelus.sloth.checks.ICheck;
-
-public interface PacketCheck extends ICheck {
-  default void onPacketReceive(PacketReceiveEvent event) {}
+public interface ICheck {
+  String getCheckName();
 }

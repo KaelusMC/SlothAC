@@ -20,7 +20,7 @@ package space.kaelus.sloth.checks.impl.ai;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 import space.kaelus.sloth.SlothAC;
-import space.kaelus.sloth.checks.Check;
+import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
 import space.kaelus.sloth.checks.type.PacketCheck;
 import space.kaelus.sloth.data.DataSession;
@@ -28,7 +28,7 @@ import space.kaelus.sloth.data.TickData;
 import space.kaelus.sloth.player.SlothPlayer;
 
 @CheckData(name = "DataCollector_Internal")
-public class DataCollectorCheck extends Check implements PacketCheck {
+public class DataCollectorCheck extends AbstractCheck implements PacketCheck {
   private final DataCollectorManager dataCollectorManager;
   private final SlothAC plugin;
 

@@ -44,7 +44,7 @@ public class CheckManager {
   private final List<RotationCheck> rotationChecks = new ArrayList<>();
   private final List<PacketCheck> packetChecks = new ArrayList<>();
 
-  private final Map<Class<? extends AbstractCheck>, AbstractCheck> checks = new HashMap<>();
+  private final Map<Class<? extends ICheck>, ICheck> checks = new HashMap<>();
 
   public CheckManager(
       SlothPlayer player,
@@ -64,7 +64,7 @@ public class CheckManager {
     registerCheck(new ClientBrand(player, configManager, alertManager));
   }
 
-  private void registerCheck(AbstractCheck check) {
+  private void registerCheck(ICheck check) {
     checks.put(check.getClass(), check);
 
     if (check instanceof RotationCheck rotationCheck) {
@@ -77,7 +77,7 @@ public class CheckManager {
   }
 
   public void reloadChecks() {
-    for (AbstractCheck check : checks.values()) {
+    for (ICheck check : checks.values()) {
       if (check instanceof Reloadable reloadable) {
         reloadable.reload();
       }
@@ -97,11 +97,11 @@ public class CheckManager {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends AbstractCheck> T getCheck(Class<T> clazz) {
+  public <T extends ICheck> T getCheck(Class<T> clazz) {
     return (T) checks.get(clazz);
   }
 
-  public Collection<AbstractCheck> getAllChecks() {
+  public Collection<ICheck> getAllChecks() {
     return checks.values();
   }
 }
