@@ -24,7 +24,7 @@ package space.kaelus.sloth.punishment;
 
 import java.util.*;
 import lombok.Getter;
-import space.kaelus.sloth.checks.AbstractCheck;
+import space.kaelus.sloth.checks.ICheck;
 
 @Getter
 public class PunishGroup {
@@ -40,7 +40,7 @@ public class PunishGroup {
     this.actions = actions;
   }
 
-  public boolean isCheckAssociated(AbstractCheck check) {
+  public boolean isCheckAssociated(ICheck check) {
     String checkNameLower = check.getCheckName().toLowerCase(Locale.ROOT);
     for (String filter : associatedCheckNames) {
       if (checkNameLower.contains(filter)) {

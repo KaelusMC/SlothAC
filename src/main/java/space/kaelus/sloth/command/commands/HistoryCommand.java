@@ -22,9 +22,7 @@
  */
 package space.kaelus.sloth.command.commands;
 
-import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.incendo.cloud.CommandManager;
@@ -40,6 +38,7 @@ import space.kaelus.sloth.database.Violation;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
+import space.kaelus.sloth.utils.TimeUtil;
 
 public class HistoryCommand implements SlothCommand {
 
@@ -127,29 +126,8 @@ public class HistoryCommand implements SlothCommand {
                         "verbose",
                         violation.verbose(),
                         "timeago",
-                        getTimeAgo(violation.createdAt())));
+                        TimeUtil.formatTimeAgo(violation.createdAt(), localeManager)));
               }
             });
-  }
-
-  private String getTimeAgo(Date date) {
-    LocaleManager lm = this.localeManager;
-    String ago = lm.getRawMessage(Message.TIME_AGO);
-    String d = lm.getRawMessage(Message.TIME_DAYS);
-    String h = lm.getRawMessage(Message.TIME_HOURS);
-    String m = lm.getRawMessage(Message.TIME_MINUTES);
-    String s = lm.getRawMessage(Message.TIME_SECONDS);
-
-    long durationMillis = System.currentTimeMillis() - date.getTime();
-    long days = TimeUnit.MILLISECONDS.toDays(durationMillis);
-    durationMillis -= TimeUnit.DAYS.toMillis(days);
-    long hours = TimeUnit.MILLISECONDS.toHours(durationMillis);
-    durationMillis -= TimeUnit.HOURS.toMillis(hours);
-    long minutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis);
-
-    if (days > 0) return days + d + ago;
-    if (hours > 0) return hours + h + ago;
-    if (minutes > 0) return minutes + m + ago;
-    return TimeUnit.MILLISECONDS.toSeconds(durationMillis) + s + ago;
   }
 }

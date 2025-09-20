@@ -28,7 +28,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.alert.AlertManager;
-import space.kaelus.sloth.checks.AbstractCheck;
+import space.kaelus.sloth.alert.AlertType;
+import space.kaelus.sloth.checks.ICheck;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.database.ViolationDatabase;
 import space.kaelus.sloth.player.SlothPlayer;
@@ -93,7 +94,7 @@ public class PunishmentManager {
     }
   }
 
-  public void handleFlag(AbstractCheck check, String debug) {
+  public void handleFlag(ICheck check, String debug) {
     for (PunishGroup group : punishmentGroups.values()) {
       if (group.isCheckAssociated(check)) {
         Bukkit.getScheduler()
@@ -113,7 +114,7 @@ public class PunishmentManager {
   }
 
   private void executeCommands(
-      AbstractCheck check, PunishGroup group, int vl, String verbose, List<String> commands) {
+      ICheck check, PunishGroup group, int vl, String verbose, List<String> commands) {
     for (String command : commands) {
       String commandLower = command.toLowerCase(Locale.ROOT);
 
@@ -157,7 +158,7 @@ public class PunishmentManager {
     }
   }
 
-  private void sendAlert(AbstractCheck check, int vl, String verbose) {
+  private void sendAlert(ICheck check, int vl, String verbose) {
     final Component message =
         MessageUtil.getMessage(
             Message.ALERTS_FORMAT,
@@ -174,7 +175,7 @@ public class PunishmentManager {
         .runTask(
             plugin,
             () -> {
-              alertManager.sendAlert(message);
+              alertManager.send(message, AlertType.REGULAR);
             });
   }
 }

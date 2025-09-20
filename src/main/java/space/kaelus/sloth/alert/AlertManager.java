@@ -22,8 +22,7 @@
  */
 package space.kaelus.sloth.alert;
 
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 import lombok.Getter;
 import net.kyori.adventure.audience.Audience;
@@ -45,11 +44,10 @@ public class AlertManager {
   private final LocaleManager localeManager;
   private final BukkitAudiences adventure;
 
-  private final Set<UUID> playersWithAlerts = new CopyOnWriteArraySet<>();
-  private final Set<UUID> playersWithBrandAlerts = new CopyOnWriteArraySet<>();
-  private final Set<UUID> playersWithSuspiciousAlerts = new CopyOnWriteArraySet<>();
-  @Getter private boolean consoleAlertsEnabled = true;
-  @Getter private boolean consoleBrandAlertsEnabled = true;
+  private final Map<AlertType, Set<UUID>> playersWithAlerts = new EnumMap<>(AlertType.class);
+
+  private final Set<AlertType> consoleAlertsEnabled = EnumSet.allOf(AlertType.class);
+
   private boolean logToConsole;
 
   @Getter private String alertFormat;
@@ -64,6 +62,11 @@ public class AlertManager {
     this.configManager = configManager;
     this.localeManager = localeManager;
     this.adventure = adventure;
+
+    for (AlertType type : AlertType.values()) {
+      playersWithAlerts.put(type, new CopyOnWriteArraySet<>());
+    }
+
     reload();
   }
 
@@ -73,92 +76,27 @@ public class AlertManager {
     this.brandAlertFormat = localeManager.getRawMessage(Message.BRAND_NOTIFICATION);
   }
 
-  public boolean hasAlertsEnabled(Player player) {
-    return playersWithAlerts.contains(player.getUniqueId());
-  }
-
-  public void toggleAlerts(Player player, boolean silent) {
-    toggle(player, playersWithAlerts, Message.ALERTS_ENABLED, Message.ALERTS_DISABLED, silent);
-  }
-
-  public void toggleConsoleAlerts() {
-    this.consoleAlertsEnabled = !this.consoleAlertsEnabled;
-  }
-
-  public boolean hasBrandAlertsEnabled(Player player) {
-    return playersWithBrandAlerts.contains(player.getUniqueId());
-  }
-
-  public void toggleBrandAlerts(Player player, boolean silent) {
-    toggle(
-        player,
-        playersWithBrandAlerts,
-        Message.BRAND_ALERTS_ENABLED,
-        Message.BRAND_ALERTS_DISABLED,
-        silent);
-  }
-
-  public void toggleConsoleBrandAlerts() {
-    this.consoleBrandAlertsEnabled = !this.consoleBrandAlertsEnabled;
-  }
-
-  public void toggleSuspiciousAlerts(Player player) {
+  public void toggle(Player player, AlertType type, boolean silent) {
+    Set<UUID> playersSet = playersWithAlerts.get(type);
     UUID uuid = player.getUniqueId();
-    if (playersWithSuspiciousAlerts.contains(uuid)) {
-      playersWithSuspiciousAlerts.remove(uuid);
-      MessageUtil.sendMessage(player, Message.SUSPICIOUS_ALERTS_DISABLED);
-    } else {
-      playersWithSuspiciousAlerts.add(uuid);
-      MessageUtil.sendMessage(player, Message.SUSPICIOUS_ALERTS_ENABLED);
-    }
-  }
 
-  public void sendSuspiciousAlert(Component component) {
-    for (UUID uuid : playersWithSuspiciousAlerts) {
-      Player p = Bukkit.getPlayer(uuid);
-      if (p != null && p.hasPermission("sloth.suspicious.alerts")) {
-        adventure(p).sendMessage(component);
-      }
-    }
-  }
-
-  public void handlePlayerQuit(Player player) {
-    UUID uuid = player.getUniqueId();
-    playersWithAlerts.remove(uuid);
-    playersWithBrandAlerts.remove(uuid);
-    playersWithSuspiciousAlerts.remove(uuid);
-  }
-
-  public void sendAlert(Component component) {
-    send(component, playersWithAlerts, "sloth.alerts", consoleAlertsEnabled);
-  }
-
-  public void sendBrandAlert(Component component) {
-    send(component, playersWithBrandAlerts, "sloth.brand", consoleBrandAlertsEnabled);
-  }
-
-  private void toggle(
-      Player player,
-      Set<UUID> playersSet,
-      Message enabledMsg,
-      Message disabledMsg,
-      boolean silent) {
-    UUID uuid = player.getUniqueId();
     if (playersSet.contains(uuid)) {
       playersSet.remove(uuid);
       if (!silent) {
-        adventure(player).sendMessage(MessageUtil.getMessage(disabledMsg));
+        adventure(player).sendMessage(MessageUtil.getMessage(type.getDisabledMessage()));
       }
     } else {
       playersSet.add(uuid);
       if (!silent) {
-        adventure(player).sendMessage(MessageUtil.getMessage(enabledMsg));
+        adventure(player).sendMessage(MessageUtil.getMessage(type.getEnabledMessage()));
       }
     }
   }
 
-  private void send(
-      Component component, Set<UUID> playersSet, String permission, boolean consoleFlag) {
+  public void send(Component component, AlertType type) {
+    Set<UUID> playersSet = playersWithAlerts.get(type);
+    String permission = type.getPermission();
+
     for (UUID uuid : playersSet) {
       Player p = Bukkit.getPlayer(uuid);
       if (p != null && p.hasPermission(permission)) {
@@ -166,8 +104,31 @@ public class AlertManager {
       }
     }
 
-    if (logToConsole && consoleFlag) {
+    if (logToConsole && consoleAlertsEnabled.contains(type)) {
       adventure(Bukkit.getConsoleSender()).sendMessage(component);
+    }
+  }
+
+  public boolean hasAlertsEnabled(Player player, AlertType type) {
+    return playersWithAlerts.get(type).contains(player.getUniqueId());
+  }
+
+  public boolean isConsoleAlertsEnabled(AlertType type) {
+    return consoleAlertsEnabled.contains(type);
+  }
+
+  public void toggleConsoleAlerts(AlertType type) {
+    if (consoleAlertsEnabled.contains(type)) {
+      consoleAlertsEnabled.remove(type);
+    } else {
+      consoleAlertsEnabled.add(type);
+    }
+  }
+
+  public void handlePlayerQuit(Player player) {
+    UUID uuid = player.getUniqueId();
+    for (Set<UUID> players : playersWithAlerts.values()) {
+      players.remove(uuid);
     }
   }
 

@@ -27,7 +27,8 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import space.kaelus.sloth.alert.AlertManager;
-import space.kaelus.sloth.checks.Check;
+import space.kaelus.sloth.alert.AlertType;
+import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
 import space.kaelus.sloth.checks.type.PacketCheck;
 import space.kaelus.sloth.config.ConfigManager;
@@ -37,7 +38,7 @@ import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
 @CheckData(name = "ClientBrand_Internal")
-public class ClientBrand extends Check implements PacketCheck {
+public class ClientBrand extends AbstractCheck implements PacketCheck {
 
   private static final String CHANNEL =
       PacketEvents.getAPI()
@@ -97,7 +98,7 @@ public class ClientBrand extends Check implements PacketCheck {
               slothPlayer.getPlayer().getName(),
               "brand",
               brand);
-      alertManager.sendBrandAlert(component);
+      alertManager.send(component, AlertType.BRAND);
     }
 
     // https://github.com/MinecraftForge/MinecraftForge/issues/9309

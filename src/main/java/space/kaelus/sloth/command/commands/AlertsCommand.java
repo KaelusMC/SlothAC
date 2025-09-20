@@ -27,6 +27,7 @@ import org.bukkit.entity.Player;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import space.kaelus.sloth.alert.AlertManager;
+import space.kaelus.sloth.alert.AlertType;
 import space.kaelus.sloth.command.SlothCommand;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
@@ -53,11 +54,11 @@ public class AlertsCommand implements SlothCommand {
   private void execute(CommandContext<Sender> context) {
     CommandSender nativeSender = context.sender().getNativeSender();
 
-    if (nativeSender instanceof Player) {
-      alertManager.toggleAlerts((Player) nativeSender, false);
+    if (nativeSender instanceof Player player) {
+      alertManager.toggle(player, AlertType.REGULAR, false);
     } else {
-      alertManager.toggleConsoleAlerts();
-      if (alertManager.isConsoleAlertsEnabled()) {
+      alertManager.toggleConsoleAlerts(AlertType.REGULAR);
+      if (alertManager.isConsoleAlertsEnabled(AlertType.REGULAR)) {
         MessageUtil.sendMessage(nativeSender, Message.ALERTS_ENABLED);
       } else {
         MessageUtil.sendMessage(nativeSender, Message.ALERTS_DISABLED);

@@ -33,6 +33,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.alert.AlertManager;
+import space.kaelus.sloth.alert.AlertType;
 import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.data.DataSession;
@@ -86,14 +87,14 @@ public class PlayerDataManager implements Listener {
 
     if (player.hasPermission("sloth.alerts")
         && player.hasPermission("sloth.alerts.enable-on-join")) {
-      if (!alertManager.hasAlertsEnabled(player)) {
-        alertManager.toggleAlerts(player, true);
+      if (!alertManager.hasAlertsEnabled(player, AlertType.REGULAR)) {
+        alertManager.toggle(player, AlertType.REGULAR, true);
       }
     }
 
     if (player.hasPermission("sloth.brand") && player.hasPermission("sloth.brand.enable-on-join")) {
-      if (!alertManager.hasBrandAlertsEnabled(player)) {
-        alertManager.toggleBrandAlerts(player, true);
+      if (!alertManager.hasAlertsEnabled(player, AlertType.BRAND)) {
+        alertManager.toggle(player, AlertType.BRAND, true);
       }
     }
 

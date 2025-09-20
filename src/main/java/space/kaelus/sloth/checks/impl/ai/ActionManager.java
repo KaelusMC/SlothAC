@@ -21,7 +21,7 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
-import space.kaelus.sloth.checks.Check;
+import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
 import space.kaelus.sloth.checks.type.PacketCheck;
 import space.kaelus.sloth.config.ConfigManager;
@@ -29,7 +29,7 @@ import space.kaelus.sloth.entity.PacketEntity;
 import space.kaelus.sloth.player.SlothPlayer;
 
 @CheckData(name = "ActionManager_Internal")
-public class ActionManager extends Check implements PacketCheck {
+public class ActionManager extends AbstractCheck implements PacketCheck {
 
   public ActionManager(SlothPlayer player, ConfigManager configManager) {
     super(player);

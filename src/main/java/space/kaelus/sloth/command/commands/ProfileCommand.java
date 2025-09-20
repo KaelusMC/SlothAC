@@ -22,7 +22,6 @@
  */
 package space.kaelus.sloth.command.commands;
 
-import java.util.concurrent.TimeUnit;
 import org.bukkit.Statistic;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -38,6 +37,7 @@ import space.kaelus.sloth.player.SlothPlayer;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
+import space.kaelus.sloth.utils.TimeUtil;
 
 public class ProfileCommand implements SlothCommand {
   private final PlayerDataManager playerDataManager;
@@ -93,9 +93,9 @@ public class ProfileCommand implements SlothCommand {
         "brand",
         slothPlayer.getBrand(),
         "session_time",
-        formatDuration(sessionMillis),
+        TimeUtil.formatDuration(sessionMillis, localeManager),
         "total_playtime",
-        formatDuration(totalPlayMillis),
+        TimeUtil.formatDuration(totalPlayMillis, localeManager),
         "sens_x",
         (aimProcessor != null)
             ? String.format("%.2f", aimProcessor.getSensitivityX() * 200)
@@ -108,31 +108,5 @@ public class ProfileCommand implements SlothCommand {
         (aiCheck != null) ? String.format("%.2f", aiCheck.getBuffer()) : "N/A",
         "ai_probs_90",
         (aiCheck != null) ? String.valueOf(aiCheck.getProb90()) : "N/A");
-  }
-
-  private String formatDuration(long millis) {
-    if (millis < 0) return "0" + localeManager.getRawMessage(Message.TIME_SECONDS);
-
-    LocaleManager lm = localeManager;
-    String d = lm.getRawMessage(Message.TIME_DAYS);
-    String h = lm.getRawMessage(Message.TIME_HOURS);
-    String m = lm.getRawMessage(Message.TIME_MINUTES);
-    String s = lm.getRawMessage(Message.TIME_SECONDS);
-
-    long days = TimeUnit.MILLISECONDS.toDays(millis);
-    millis -= TimeUnit.DAYS.toMillis(days);
-    long hours = TimeUnit.MILLISECONDS.toHours(millis);
-    millis -= TimeUnit.HOURS.toMillis(hours);
-    long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
-    millis -= TimeUnit.MINUTES.toMillis(minutes);
-    long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
-
-    StringBuilder sb = new StringBuilder();
-    if (days > 0) sb.append(days).append(d).append(" ");
-    if (hours > 0) sb.append(hours).append(h).append(" ");
-    if (minutes > 0) sb.append(minutes).append(m).append(" ");
-    sb.append(seconds).append(s);
-
-    return sb.toString().trim();
   }
 }
