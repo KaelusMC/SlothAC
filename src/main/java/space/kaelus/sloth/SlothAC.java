@@ -28,6 +28,7 @@ import space.kaelus.sloth.command.CommandManager;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.config.LocaleManager;
 import space.kaelus.sloth.database.DatabaseManager;
+import space.kaelus.sloth.debug.DebugManager;
 import space.kaelus.sloth.event.DamageEvent;
 import space.kaelus.sloth.integration.WorldGuardManager;
 import space.kaelus.sloth.packet.PacketListener;
@@ -45,6 +46,7 @@ public final class SlothAC extends JavaPlugin {
   private AlertManager alertManager;
   private DatabaseManager databaseManager;
   private DataCollectorManager dataCollectorManager;
+  @Getter private DebugManager debugManager;
 
   @Getter private BukkitAudiences adventure;
 
@@ -61,6 +63,7 @@ public final class SlothAC extends JavaPlugin {
 
     this.configManager = new ConfigManager(this);
     this.localeManager = new LocaleManager(this, configManager);
+    this.debugManager = new DebugManager(this, configManager);
 
     MessageUtil.init(this.localeManager, this.adventure);
 
@@ -101,6 +104,7 @@ public final class SlothAC extends JavaPlugin {
   public void reloadPlugin() {
     configManager.reloadConfig();
     localeManager.reload();
+    debugManager.reload();
     alertManager.reload();
 
     aiServerProvider.reload();

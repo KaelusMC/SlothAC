@@ -24,6 +24,7 @@ package space.kaelus.sloth.config;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -45,7 +46,6 @@ public class ConfigManager {
   private String aiApiKey;
   @Setter private int aiSequence;
   private int aiStep;
-  private boolean aiDebug;
   private double aiFlag;
   private double aiResetOnFlag;
   private double aiBufferMultiplier;
@@ -61,6 +61,8 @@ public class ConfigManager {
   private boolean disconnectBlacklistedForge;
 
   private double suspiciousAlertsBuffer;
+
+  private List<String> enabledDebugCategories;
 
   public ConfigManager(SlothAC plugin) {
     this.plugin = plugin;
@@ -91,12 +93,11 @@ public class ConfigManager {
     aiApiKey = config.getString("ai.api-key", "API-KEY");
     aiSequence = config.getInt("ai.sequence", 40);
     aiStep = config.getInt("ai.step", 10);
-    aiDebug = config.getBoolean("ai.debug", false);
 
-    aiFlag = config.getDouble("ai.buffer-settings.flag", 50.0);
-    aiResetOnFlag = config.getDouble("ai.buffer-settings.reset-on-flag", 25.0);
-    aiBufferMultiplier = config.getDouble("ai.buffer-settings.multiplier", 100.0);
-    aiBufferDecrease = config.getDouble("ai.buffer-settings.decrease", 0.25);
+    aiFlag = config.getDouble("ai.buffer.flag", 50.0);
+    aiResetOnFlag = config.getDouble("ai.buffer.reset-on-flag", 25.0);
+    aiBufferMultiplier = config.getDouble("ai.buffer.multiplier", 100.0);
+    aiBufferDecrease = config.getDouble("ai.buffer.decrease", 0.25);
 
     aiDamageReductionEnabled = config.getBoolean("ai.damage-reduction.enabled", true);
     aiDamageReductionProb = config.getDouble("ai.damage-reduction.prob", 0.9);
@@ -121,6 +122,11 @@ public class ConfigManager {
         config.getBoolean("client-brand.disconnect-blacklisted-forge-versions", true);
 
     suspiciousAlertsBuffer = config.getDouble("suspicious.alerts.buffer", 25.0);
+
+    enabledDebugCategories = config.getStringList("debug.enabled-categories");
+    if (enabledDebugCategories == null) {
+      enabledDebugCategories = Collections.emptyList();
+    }
   }
 
   public boolean isClientIgnored(String brand) {

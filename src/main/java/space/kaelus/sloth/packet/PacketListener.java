@@ -125,100 +125,118 @@ public class PacketListener extends PacketListenerAbstract {
       return;
     }
 
-    Player player = event.getPlayer();
-    SlothPlayer slothPlayer = playerDataManager.getPlayer(player);
+    SlothPlayer slothPlayer = playerDataManager.getPlayer((Player) event.getPlayer());
     if (slothPlayer == null) return;
 
-    if (event.getPacketType() == PacketType.Play.Client.WINDOW_CONFIRMATION) {
-      WrapperPlayClientWindowConfirmation transaction =
-          new WrapperPlayClientWindowConfirmation(event);
-      if (transaction.getActionId() <= 0
-          && addTransactionResponse(slothPlayer, transaction.getActionId())) {
-        event.setCancelled(true);
-      }
-      return;
-    }
-    if (event.getPacketType() == PacketType.Play.Client.PONG) {
-      WrapperPlayClientPong pong = new WrapperPlayClientPong(event);
-      int id = pong.getId();
-      if (id == (short) id && addTransactionResponse(slothPlayer, (short) id)) {
-        event.setCancelled(true);
-      }
+    if (handleTransaction(event, slothPlayer)) {
       return;
     }
 
     if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
-      WrapperPlayClientPlayerFlying flying = new WrapperPlayClientPlayerFlying(event);
-
-      boolean teleported = checkTeleportQueue(slothPlayer, flying);
-      boolean serverRotated = !teleported && checkRotationQueue(slothPlayer, flying);
-
-      slothPlayer.packetStateData.lastPacketWasTeleport = teleported;
-      slothPlayer.packetStateData.lastPacketWasServerRotation = serverRotated;
-
-      isMojangStupid(slothPlayer, flying, event);
+      handleFlying(event, slothPlayer);
     }
 
     if (event.isCancelled()) {
-      slothPlayer.packetStateData.lastPacketWasOnePointSeventeenDuplicate = false;
-      slothPlayer.packetStateData.lastPacketWasTeleport = false;
-      slothPlayer.packetStateData.lastPacketWasServerRotation = false;
+      resetFlags(slothPlayer);
       return;
     }
 
     if (slothPlayer.packetStateData.lastPacketWasTeleport
         || slothPlayer.packetStateData.lastPacketWasServerRotation) {
-      WrapperPlayClientPlayerFlying flying = new WrapperPlayClientPlayerFlying(event);
-      if (flying.hasPositionChanged()) {
-        slothPlayer.x = flying.getLocation().getX();
-        slothPlayer.y = flying.getLocation().getY();
-        slothPlayer.z = flying.getLocation().getZ();
-      }
-      if (flying.hasRotationChanged()) {
-        slothPlayer.yaw = flying.getLocation().getYaw();
-        slothPlayer.pitch = flying.getLocation().getPitch();
-      }
-    }
-
-    if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
-      WrapperPlayClientPlayerFlying packet = new WrapperPlayClientPlayerFlying(event);
-      boolean ignoreRotation =
-          slothPlayer.packetStateData.lastPacketWasOnePointSeventeenDuplicate
-              && slothPlayer.packetStateData.ignoreDuplicatePacketRotation;
-
-      if (packet.hasPositionChanged()) {
-        slothPlayer.x = packet.getLocation().getX();
-        slothPlayer.y = packet.getLocation().getY();
-        slothPlayer.z = packet.getLocation().getZ();
-        slothPlayer.packetStateData.lastClaimedPosition = packet.getLocation().getPosition();
-      }
-
-      if (packet.hasRotationChanged() && !ignoreRotation) {
-        float newYaw = packet.getLocation().getYaw();
-        float newPitch = packet.getLocation().getPitch();
-        float deltaYaw = newYaw - slothPlayer.yaw;
-        float deltaPitch = newPitch - slothPlayer.pitch;
-
-        RotationUpdate update = slothPlayer.rotationUpdate;
-
-        update.getFrom().setYaw(slothPlayer.yaw);
-        update.getFrom().setPitch(slothPlayer.pitch);
-        update.getTo().setYaw(newYaw);
-        update.getTo().setPitch(newPitch);
-        update.setDeltaYaw(deltaYaw);
-        update.setDeltaPitch(deltaPitch);
-
-        slothPlayer.getCheckManager().onRotationUpdate(update);
-
-        slothPlayer.lastYaw = slothPlayer.yaw;
-        slothPlayer.lastPitch = slothPlayer.pitch;
-        slothPlayer.yaw = newYaw;
-        slothPlayer.pitch = newPitch;
-      }
+      updatePlayerState(slothPlayer, new WrapperPlayClientPlayerFlying(event));
     }
 
     slothPlayer.getCheckManager().onPacketReceive(event);
 
+    resetFlags(slothPlayer);
+  }
+
+  private boolean handleTransaction(PacketReceiveEvent event, SlothPlayer slothPlayer) {
+    short id;
+    if (event.getPacketType() == PacketType.Play.Client.WINDOW_CONFIRMATION) {
+      WrapperPlayClientWindowConfirmation transaction =
+          new WrapperPlayClientWindowConfirmation(event);
+      id = transaction.getActionId();
+      if (id <= 0 && addTransactionResponse(slothPlayer, id)) {
+        event.setCancelled(true);
+      }
+      return true;
+    } else if (event.getPacketType() == PacketType.Play.Client.PONG) {
+      WrapperPlayClientPong pong = new WrapperPlayClientPong(event);
+      id = (short) pong.getId();
+      if (addTransactionResponse(slothPlayer, id)) {
+        event.setCancelled(true);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private void handleFlying(PacketReceiveEvent event, SlothPlayer slothPlayer) {
+    WrapperPlayClientPlayerFlying flying = new WrapperPlayClientPlayerFlying(event);
+
+    boolean teleported = checkTeleportQueue(slothPlayer, flying);
+    boolean serverRotated = !teleported && checkRotationQueue(slothPlayer, flying);
+
+    slothPlayer.packetStateData.lastPacketWasTeleport = teleported;
+    slothPlayer.packetStateData.lastPacketWasServerRotation = serverRotated;
+
+    isMojangStupid(slothPlayer, flying, event);
+
+    if (!event.isCancelled()) {
+      processRotation(slothPlayer, flying);
+    }
+  }
+
+  private void processRotation(SlothPlayer slothPlayer, WrapperPlayClientPlayerFlying packet) {
+    boolean ignoreRotation =
+        slothPlayer.packetStateData.lastPacketWasOnePointSeventeenDuplicate
+            && slothPlayer.packetStateData.ignoreDuplicatePacketRotation;
+
+    if (packet.hasPositionChanged()) {
+      slothPlayer.x = packet.getLocation().getX();
+      slothPlayer.y = packet.getLocation().getY();
+      slothPlayer.z = packet.getLocation().getZ();
+      slothPlayer.packetStateData.lastClaimedPosition = packet.getLocation().getPosition();
+    }
+
+    if (packet.hasRotationChanged() && !ignoreRotation) {
+      float newYaw = packet.getLocation().getYaw();
+      float newPitch = packet.getLocation().getPitch();
+      float deltaYaw = newYaw - slothPlayer.yaw;
+      float deltaPitch = newPitch - slothPlayer.pitch;
+
+      RotationUpdate update = slothPlayer.rotationUpdate;
+
+      update.getFrom().setYaw(slothPlayer.yaw);
+      update.getFrom().setPitch(slothPlayer.pitch);
+      update.getTo().setYaw(newYaw);
+      update.getTo().setPitch(newPitch);
+      update.setDeltaYaw(deltaYaw);
+      update.setDeltaPitch(deltaPitch);
+
+      slothPlayer.getCheckManager().onRotationUpdate(update);
+
+      slothPlayer.lastYaw = slothPlayer.yaw;
+      slothPlayer.lastPitch = slothPlayer.pitch;
+      slothPlayer.yaw = newYaw;
+      slothPlayer.pitch = newPitch;
+    }
+  }
+
+  private void updatePlayerState(SlothPlayer slothPlayer, WrapperPlayClientPlayerFlying flying) {
+    if (flying.hasPositionChanged()) {
+      slothPlayer.x = flying.getLocation().getX();
+      slothPlayer.y = flying.getLocation().getY();
+      slothPlayer.z = flying.getLocation().getZ();
+    }
+    if (flying.hasRotationChanged()) {
+      slothPlayer.yaw = flying.getLocation().getYaw();
+      slothPlayer.pitch = flying.getLocation().getPitch();
+    }
+  }
+
+  private void resetFlags(SlothPlayer slothPlayer) {
     slothPlayer.packetStateData.lastPacketWasOnePointSeventeenDuplicate = false;
     slothPlayer.packetStateData.lastPacketWasTeleport = false;
     slothPlayer.packetStateData.lastPacketWasServerRotation = false;
@@ -230,174 +248,167 @@ public class PacketListener extends PacketListenerAbstract {
       return;
     }
 
-    Player player = event.getPlayer();
-    SlothPlayer slothPlayer = playerDataManager.getPlayer(player);
+    SlothPlayer slothPlayer = playerDataManager.getPlayer((Player) event.getPlayer());
     if (slothPlayer == null) return;
 
-    if (event.getPacketType() == PacketType.Play.Server.WINDOW_CONFIRMATION) {
-      WrapperPlayServerWindowConfirmation confirmation =
-          new WrapperPlayServerWindowConfirmation(event);
-      short id = confirmation.getActionId();
-      if (id <= 0 && slothPlayer.didWeSendThatTrans.remove(id)) {
-        slothPlayer.entitiesDespawnedThisTransaction.clear();
-        slothPlayer.transactionsSent.add(new Pair<>(id, System.nanoTime()));
-        slothPlayer.getLastTransactionSent().getAndIncrement();
-      }
+    final PacketType.Play.Server packetType = (PacketType.Play.Server) event.getPacketType();
+
+    if (packetType == PacketType.Play.Server.WINDOW_CONFIRMATION) {
+      handleWindowConfirmation(new WrapperPlayServerWindowConfirmation(event), slothPlayer);
+    } else if (packetType == PacketType.Play.Server.PING) {
+      handlePing(new WrapperPlayServerPing(event), slothPlayer);
+    } else if (packetType == PacketType.Play.Server.SPAWN_ENTITY) {
+      handleSpawnEntity(new WrapperPlayServerSpawnEntity(event), slothPlayer);
+    } else if (packetType == PacketType.Play.Server.SPAWN_LIVING_ENTITY) {
+      handleSpawnLivingEntity(new WrapperPlayServerSpawnLivingEntity(event), slothPlayer);
+    } else if (packetType == PacketType.Play.Server.SPAWN_PAINTING) {
+      handleSpawnPainting(new WrapperPlayServerSpawnPainting(event), slothPlayer);
+    } else if (packetType == PacketType.Play.Server.SPAWN_PLAYER) {
+      handleSpawnPlayer(new WrapperPlayServerSpawnPlayer(event), slothPlayer);
+    } else if (packetType == PacketType.Play.Server.DESTROY_ENTITIES) {
+      handleDestroyEntities(new WrapperPlayServerDestroyEntities(event), slothPlayer);
+    } else if (packetType == PacketType.Play.Server.JOIN_GAME) {
+      handleJoinGame(new WrapperPlayServerJoinGame(event), slothPlayer);
+    } else if (packetType == PacketType.Play.Server.RESPAWN) {
+      handleRespawn(slothPlayer);
+    } else if (packetType == PacketType.Play.Server.PLAYER_POSITION_AND_LOOK) {
+      handlePositionAndLook(new WrapperPlayServerPlayerPositionAndLook(event), slothPlayer);
+    } else if (packetType == PacketType.Play.Server.PLAYER_ROTATION) {
+      handlePlayerRotation(new WrapperPlayServerPlayerRotation(event), slothPlayer);
     }
-    if (event.getPacketType() == PacketType.Play.Server.PING) {
-      WrapperPlayServerPing ping = new WrapperPlayServerPing(event);
-      int id = ping.getId();
-      if (id == (short) id && slothPlayer.didWeSendThatTrans.remove((short) id)) {
-        slothPlayer.entitiesDespawnedThisTransaction.clear();
-        slothPlayer.transactionsSent.add(new Pair<>((short) id, System.nanoTime()));
-        slothPlayer.getLastTransactionSent().getAndIncrement();
-      }
+  }
+
+  private void handleWindowConfirmation(
+      WrapperPlayServerWindowConfirmation confirmation, SlothPlayer slothPlayer) {
+    short id = confirmation.getActionId();
+    if (id <= 0 && slothPlayer.didWeSendThatTrans.remove(id)) {
+      slothPlayer.entitiesDespawnedThisTransaction.clear();
+      slothPlayer.transactionsSent.add(new Pair<>(id, System.nanoTime()));
+      slothPlayer.getLastTransactionSent().getAndIncrement();
     }
+  }
 
-    if (event.getPacketType() == PacketType.Play.Server.CHUNK_DATA) {
-      WrapperPlayServerChunkData chunkData = new WrapperPlayServerChunkData(event);
-      slothPlayer
-          .getCompensatedWorld()
-          .addToCache(
-              new space.kaelus.sloth.world.Column(
-                  chunkData.getColumn().getX(),
-                  chunkData.getColumn().getZ(),
-                  chunkData.getColumn().getChunks(),
-                  slothPlayer.getLastTransactionSent().get()),
-              chunkData.getColumn().getX(),
-              chunkData.getColumn().getZ());
+  private void handlePing(WrapperPlayServerPing ping, SlothPlayer slothPlayer) {
+    int id = ping.getId();
+    if (id == (short) id && slothPlayer.didWeSendThatTrans.remove((short) id)) {
+      slothPlayer.entitiesDespawnedThisTransaction.clear();
+      slothPlayer.transactionsSent.add(new Pair<>((short) id, System.nanoTime()));
+      slothPlayer.getLastTransactionSent().getAndIncrement();
     }
+  }
 
-    if (event.getPacketType() == PacketType.Play.Server.SPAWN_ENTITY) {
-      WrapperPlayServerSpawnEntity spawn = new WrapperPlayServerSpawnEntity(event);
-
-      if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
-        slothPlayer.sendTransaction();
-      }
-
-      slothPlayer
-          .getLatencyUtils()
-          .addRealTimeTask(
-              slothPlayer.getLastTransactionSent().get(),
-              () ->
-                  slothPlayer
-                      .getCompensatedEntities()
-                      .addEntity(
-                          spawn.getEntityId(),
-                          spawn.getUUID().orElse(null),
-                          spawn.getEntityType()));
-    }
-
-    if (event.getPacketType() == PacketType.Play.Server.SPAWN_LIVING_ENTITY) {
-      WrapperPlayServerSpawnLivingEntity spawn = new WrapperPlayServerSpawnLivingEntity(event);
-
-      if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
-        slothPlayer.sendTransaction();
-      }
-
-      slothPlayer
-          .getLatencyUtils()
-          .addRealTimeTask(
-              slothPlayer.getLastTransactionSent().get(),
-              () ->
-                  slothPlayer
-                      .getCompensatedEntities()
-                      .addEntity(
-                          spawn.getEntityId(), spawn.getEntityUUID(), spawn.getEntityType()));
-    }
-
-    if (event.getPacketType() == PacketType.Play.Server.SPAWN_PAINTING) {
-      WrapperPlayServerSpawnPainting spawn = new WrapperPlayServerSpawnPainting(event);
-      if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
-        slothPlayer.sendTransaction();
-      }
-      slothPlayer
-          .getLatencyUtils()
-          .addRealTimeTask(
-              slothPlayer.getLastTransactionSent().get(),
-              () ->
-                  slothPlayer
-                      .getCompensatedEntities()
-                      .addEntity(spawn.getEntityId(), spawn.getUUID(), EntityTypes.PAINTING));
-    }
-
-    if (event.getPacketType() == PacketType.Play.Server.SPAWN_PLAYER) {
-      WrapperPlayServerSpawnPlayer spawn = new WrapperPlayServerSpawnPlayer(event);
-      if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
-        slothPlayer.sendTransaction();
-      }
-      slothPlayer
-          .getLatencyUtils()
-          .addRealTimeTask(
-              slothPlayer.getLastTransactionSent().get(),
-              () ->
-                  slothPlayer
-                      .getCompensatedEntities()
-                      .addEntity(spawn.getEntityId(), spawn.getUUID(), EntityTypes.PLAYER));
-    }
-
-    if (event.getPacketType() == PacketType.Play.Server.DESTROY_ENTITIES) {
-      WrapperPlayServerDestroyEntities destroy = new WrapperPlayServerDestroyEntities(event);
-
-      for (int id : destroy.getEntityIds()) {
-        slothPlayer.entitiesDespawnedThisTransaction.add(id);
-      }
-
-      slothPlayer
-          .getLatencyUtils()
-          .addRealTimeTask(
-              slothPlayer.getLastTransactionSent().get() + 1,
-              () -> {
-                for (int id : destroy.getEntityIds()) {
-                  slothPlayer.getCompensatedEntities().removeEntity(id);
-                }
-              });
-    }
-
-    if (event.getPacketType() == PacketType.Play.Server.JOIN_GAME) {
-      WrapperPlayServerJoinGame join = new WrapperPlayServerJoinGame(event);
-      slothPlayer
-          .getLatencyUtils()
-          .addRealTimeTask(
-              slothPlayer.getLastTransactionSent().get(),
-              () -> {
-                slothPlayer.setEntityId(join.getEntityId());
-                slothPlayer.setGameMode(join.getGameMode());
-                slothPlayer.getCompensatedEntities().clear();
-                slothPlayer.getCompensatedWorld().clear();
-              });
-    }
-    if (event.getPacketType() == PacketType.Play.Server.RESPAWN) {
-      slothPlayer
-          .getLatencyUtils()
-          .addRealTimeTask(
-              slothPlayer.getLastTransactionSent().get(),
-              () -> {
-                slothPlayer.getCompensatedEntities().clear();
-                slothPlayer.getCompensatedWorld().clear();
-              });
-    }
-
-    if (event.getPacketType() == PacketType.Play.Server.PLAYER_POSITION_AND_LOOK) {
-      WrapperPlayServerPlayerPositionAndLook wrapper =
-          new WrapperPlayServerPlayerPositionAndLook(event);
+  private void handleSpawnEntity(WrapperPlayServerSpawnEntity spawn, SlothPlayer slothPlayer) {
+    if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
       slothPlayer.sendTransaction();
-      int transactionId = slothPlayer.getLastTransactionSent().get();
-      Vector3d location = new Vector3d(wrapper.getX(), wrapper.getY(), wrapper.getZ());
-      RelativeFlag flags = wrapper.getRelativeFlags();
-      slothPlayer
-          .getPendingTeleports()
-          .add(new SlothPlayer.TeleportData(location, flags, transactionId));
     }
+    slothPlayer
+        .getLatencyUtils()
+        .addRealTimeTask(
+            slothPlayer.getLastTransactionSent().get(),
+            () ->
+                slothPlayer
+                    .getCompensatedEntities()
+                    .addEntity(
+                        spawn.getEntityId(), spawn.getUUID().orElse(null), spawn.getEntityType()));
+  }
 
-    if (event.getPacketType() == PacketType.Play.Server.PLAYER_ROTATION) {
-      WrapperPlayServerPlayerRotation wrapper = new WrapperPlayServerPlayerRotation(event);
+  private void handleSpawnLivingEntity(
+      WrapperPlayServerSpawnLivingEntity spawn, SlothPlayer slothPlayer) {
+    if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
       slothPlayer.sendTransaction();
-      int transactionId = slothPlayer.getLastTransactionSent().get();
-      slothPlayer
-          .getPendingRotations()
-          .add(new SlothPlayer.RotationData(wrapper.getYaw(), wrapper.getPitch(), transactionId));
     }
+    slothPlayer
+        .getLatencyUtils()
+        .addRealTimeTask(
+            slothPlayer.getLastTransactionSent().get(),
+            () ->
+                slothPlayer
+                    .getCompensatedEntities()
+                    .addEntity(spawn.getEntityId(), spawn.getEntityUUID(), spawn.getEntityType()));
+  }
+
+  private void handleSpawnPainting(WrapperPlayServerSpawnPainting spawn, SlothPlayer slothPlayer) {
+    if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
+      slothPlayer.sendTransaction();
+    }
+    slothPlayer
+        .getLatencyUtils()
+        .addRealTimeTask(
+            slothPlayer.getLastTransactionSent().get(),
+            () ->
+                slothPlayer
+                    .getCompensatedEntities()
+                    .addEntity(spawn.getEntityId(), spawn.getUUID(), EntityTypes.PAINTING));
+  }
+
+  private void handleSpawnPlayer(WrapperPlayServerSpawnPlayer spawn, SlothPlayer slothPlayer) {
+    if (slothPlayer.entitiesDespawnedThisTransaction.contains(spawn.getEntityId())) {
+      slothPlayer.sendTransaction();
+    }
+    slothPlayer
+        .getLatencyUtils()
+        .addRealTimeTask(
+            slothPlayer.getLastTransactionSent().get(),
+            () ->
+                slothPlayer
+                    .getCompensatedEntities()
+                    .addEntity(spawn.getEntityId(), spawn.getUUID(), EntityTypes.PLAYER));
+  }
+
+  private void handleDestroyEntities(
+      WrapperPlayServerDestroyEntities destroy, SlothPlayer slothPlayer) {
+    for (int id : destroy.getEntityIds()) {
+      slothPlayer.entitiesDespawnedThisTransaction.add(id);
+    }
+    slothPlayer
+        .getLatencyUtils()
+        .addRealTimeTask(
+            slothPlayer.getLastTransactionSent().get() + 1,
+            () -> {
+              for (int id : destroy.getEntityIds()) {
+                slothPlayer.getCompensatedEntities().removeEntity(id);
+              }
+            });
+  }
+
+  private void handleJoinGame(WrapperPlayServerJoinGame join, SlothPlayer slothPlayer) {
+    slothPlayer
+        .getLatencyUtils()
+        .addRealTimeTask(
+            slothPlayer.getLastTransactionSent().get(),
+            () -> {
+              slothPlayer.setEntityId(join.getEntityId());
+              slothPlayer.setGameMode(join.getGameMode());
+              slothPlayer.getCompensatedEntities().clear();
+            });
+  }
+
+  private void handleRespawn(SlothPlayer slothPlayer) {
+    slothPlayer
+        .getLatencyUtils()
+        .addRealTimeTask(
+            slothPlayer.getLastTransactionSent().get(),
+            () -> slothPlayer.getCompensatedEntities().clear());
+  }
+
+  private void handlePositionAndLook(
+      WrapperPlayServerPlayerPositionAndLook wrapper, SlothPlayer slothPlayer) {
+    slothPlayer.sendTransaction();
+    int transactionId = slothPlayer.getLastTransactionSent().get();
+    Vector3d location = new Vector3d(wrapper.getX(), wrapper.getY(), wrapper.getZ());
+    RelativeFlag flags = wrapper.getRelativeFlags();
+    slothPlayer
+        .getPendingTeleports()
+        .add(new SlothPlayer.TeleportData(location, flags, transactionId));
+  }
+
+  private void handlePlayerRotation(
+      WrapperPlayServerPlayerRotation wrapper, SlothPlayer slothPlayer) {
+    slothPlayer.sendTransaction();
+    int transactionId = slothPlayer.getLastTransactionSent().get();
+    slothPlayer
+        .getPendingRotations()
+        .add(new SlothPlayer.RotationData(wrapper.getYaw(), wrapper.getPitch(), transactionId));
   }
 
   private boolean addTransactionResponse(SlothPlayer player, short id) {

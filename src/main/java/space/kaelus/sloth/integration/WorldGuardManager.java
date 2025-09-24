@@ -26,7 +26,6 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import space.kaelus.sloth.SlothAC;
@@ -70,7 +69,9 @@ public class WorldGuardManager {
                 player.getLocation().getX(),
                 player.getLocation().getY(),
                 player.getLocation().getZ()));
-    Set<ProtectedRegion> playerRegions = set.getRegions();
+
+    List<ProtectedRegion> playerRegions =
+        set.getRegions().stream().filter(r -> !r.getId().equalsIgnoreCase("__global__")).toList();
 
     if (playerRegions.isEmpty()) {
       return false;
@@ -79,7 +80,7 @@ public class WorldGuardManager {
     final String worldName = player.getWorld().getName().toLowerCase(Locale.ROOT);
 
     return playerRegions.stream()
-        .anyMatch(
+        .allMatch(
             region -> {
               final String regionId = region.getId().toLowerCase(Locale.ROOT);
 

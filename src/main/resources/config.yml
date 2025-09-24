@@ -41,8 +41,6 @@ ai:
     # List of WorldGuard regions where the AI check is disabled.
     disabled-regions:
       - "spawn:spawn"
-  # Enable debug
-  debug: false
 
 client-brand:
   # This means it won't broadcast their brand to operators if the brand matches the following regexes
@@ -65,3 +63,7 @@ history:
 suspicious:
   alerts:
     buffer: 25.0
+
+debug:
+  # AI_PROBABILITY, AI_TIMEOUT, WORLDGUARD, PACKET_DUPLICATION
+  enabled-categories: []

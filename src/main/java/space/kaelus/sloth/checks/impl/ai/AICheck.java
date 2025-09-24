@@ -40,6 +40,7 @@ import space.kaelus.sloth.checks.Reloadable;
 import space.kaelus.sloth.checks.type.PacketCheck;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.data.TickData;
+import space.kaelus.sloth.debug.DebugCategory;
 import space.kaelus.sloth.flatbuffers.TickDataSequence;
 import space.kaelus.sloth.integration.WorldGuardManager;
 import space.kaelus.sloth.player.SlothPlayer;
@@ -58,7 +59,6 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
   private final AlertManager alertManager;
 
   private int step;
-  private boolean debug;
   private AIServer aiServer;
   private Deque<TickData> ticks;
   private int ticksStep = 0;
@@ -108,7 +108,6 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
     }
 
     this.step = configManager.getAiStep();
-    this.debug = configManager.isAiDebug();
     this.aiDamageReductionEnabled = configManager.isAiDamageReductionEnabled();
     this.aiDamageReductionProb = configManager.getAiDamageReductionProb();
     this.aiDamageReductionMultiplier = configManager.getAiDamageReductionMultiplier();
@@ -128,12 +127,12 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
     int sequence = configManager.getAiSequence();
 
     if (slothPlayer.packetStateData.lastPacketWasOnePointSeventeenDuplicate) {
-      if (debug) {
-        plugin
-            .getLogger()
-            .warning("Mojang failed IQ Test for: " + slothPlayer.getPlayer().getName() + ".");
-        return;
-      }
+      plugin
+          .getDebugManager()
+          .log(
+              DebugCategory.PACKET_DUPLICATION,
+              "Mojang failed IQ Test for: " + slothPlayer.getPlayer().getName() + ".");
+      return;
     }
 
     if (slothPlayer.packetStateData.lastPacketWasTeleport
@@ -159,14 +158,13 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
     if (ticks.size() == sequence && ticksStep >= step) {
       if (configManager.isAiWorldGuardEnabled()
           && worldGuardManager.isPlayerInDisabledRegion(slothPlayer.getPlayer())) {
-        if (debug) {
-          plugin
-              .getLogger()
-              .info(
-                  "[AICheck] Player "
-                      + slothPlayer.getPlayer().getName()
-                      + " is in a disabled region.");
-        }
+        plugin
+            .getDebugManager()
+            .log(
+                DebugCategory.WORLDGUARD,
+                "Player "
+                    + slothPlayer.getPlayer().getName()
+                    + " is in a disabled region. Skipping AI check.");
         ticksStep = 0;
         return;
       }
@@ -250,18 +248,17 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
             AlertType.SUSPICIOUS);
       }
 
-      if (debug) {
-        plugin
-            .getLogger()
-            .info(
-                String.format(
-                    "[AICheck DEBUG | %s] Prob: %.4f | Buffer: %.2f -> %.2f | Damage Multiplier: %.2f",
-                    this.slothPlayer.getPlayer().getName(),
-                    probability,
-                    oldBuffer,
-                    this.buffer,
-                    slothPlayer.getDmgMultiplier()));
-      }
+      plugin
+          .getDebugManager()
+          .log(
+              DebugCategory.AI_PROBABILITY,
+              String.format(
+                  "[%s] Prob: %.4f | Buffer: %.2f -> %.2f | Damage Multiplier: %.2f",
+                  this.slothPlayer.getPlayer().getName(),
+                  probability,
+                  oldBuffer,
+                  this.buffer,
+                  slothPlayer.getDmgMultiplier()));
 
       if (this.buffer > this.flag) {
         flag(
@@ -326,15 +323,20 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
               .warning("[AICheck] Failed to parse correct sequence: " + parseEx.getMessage());
         }
       }
-      plugin
-          .getLogger()
-          .warning(
-              "[AICheck] API Error "
-                  + e.getCode()
-                  + " for player "
-                  + slothPlayer.getPlayer().getName()
-                  + ": "
-                  + e.getMessage());
+
+      String logMessage =
+          "[AICheck] API Error "
+              + e.getCode()
+              + " for player "
+              + slothPlayer.getPlayer().getName()
+              + ": "
+              + e.getMessage();
+
+      if (e.getCode() == AIServer.ResponseCode.TIMEOUT) {
+        plugin.getDebugManager().log(DebugCategory.AI_TIMEOUT, logMessage);
+      } else {
+        plugin.getLogger().warning(logMessage);
+      }
     } else {
       plugin
           .getLogger()
