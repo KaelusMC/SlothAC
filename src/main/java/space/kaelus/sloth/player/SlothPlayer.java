@@ -57,7 +57,6 @@ import space.kaelus.sloth.utils.data.Pair;
 import space.kaelus.sloth.utils.latency.ILatencyUtils;
 import space.kaelus.sloth.utils.latency.LatencyUtils;
 import space.kaelus.sloth.utils.update.RotationUpdate;
-import space.kaelus.sloth.world.CompensatedWorld;
 
 @Getter
 public class SlothPlayer {
@@ -67,7 +66,6 @@ public class SlothPlayer {
   private final CheckManager checkManager;
   private final PunishmentManager punishmentManager;
   public final CompensatedEntities compensatedEntities;
-  public final CompensatedWorld compensatedWorld;
   public final ILatencyUtils latencyUtils;
   public final PacketStateData packetStateData = new PacketStateData();
   public final RotationUpdate rotationUpdate =
@@ -112,7 +110,6 @@ public class SlothPlayer {
     this.joinTime = System.currentTimeMillis();
 
     this.latencyUtils = new LatencyUtils(this, plugin);
-    this.compensatedWorld = new CompensatedWorld(this);
     this.compensatedEntities = new CompensatedEntities(this);
 
     this.checkManager =

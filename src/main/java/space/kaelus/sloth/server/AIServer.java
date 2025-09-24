@@ -95,9 +95,14 @@ public final class AIServer {
     if (cause instanceof RequestException) {
       return CompletableFuture.failedFuture(cause);
     }
-    waiting = System.currentTimeMillis() + 15000;
-    ResponseCode code =
-        (cause instanceof HttpTimeoutException) ? ResponseCode.TIMEOUT : ResponseCode.NETWORK_ERROR;
+
+    final boolean isTimeout = cause instanceof HttpTimeoutException;
+    if (!isTimeout) {
+      waiting = System.currentTimeMillis() + 15000;
+    }
+
+    final ResponseCode code = isTimeout ? ResponseCode.TIMEOUT : ResponseCode.NETWORK_ERROR;
+
     return CompletableFuture.failedFuture(
         new RequestException(code, "Request failed: " + cause.getMessage(), cause));
   }

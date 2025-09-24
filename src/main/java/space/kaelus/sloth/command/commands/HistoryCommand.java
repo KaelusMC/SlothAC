@@ -26,7 +26,7 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.incendo.cloud.CommandManager;
-import org.incendo.cloud.bukkit.parser.PlayerParser;
+import org.incendo.cloud.bukkit.parser.OfflinePlayerParser;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.IntegerParser;
 import space.kaelus.sloth.SlothAC;
@@ -65,7 +65,7 @@ public class HistoryCommand implements SlothCommand {
             .commandBuilder("sloth", "slothac")
             .literal("history", "hist")
             .permission("sloth.history")
-            .required("target", PlayerParser.playerParser())
+            .required("target", OfflinePlayerParser.offlinePlayerParser())
             .optional("page", IntegerParser.integerParser(1))
             .handler(this::handleHistory));
   }

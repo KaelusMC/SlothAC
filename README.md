@@ -7,6 +7,10 @@
    <img alt="Java CI" src="https://github.com/KaelusMC/SlothAC/actions/workflows/gradle.yml/badge.svg">
   </a>
 
+  <a href="https://www.codefactor.io/repository/github/kaelusmc/slothac">
+   <img alt="CodeFactor" src="https://www.codefactor.io/repository/github/kaelusmc/slothac/badge">
+  </a>
+
   <a href="https://dsc.gg/kaelus">
    <img alt="Discord" src="https://img.shields.io/discord/1297490292349468715?style=flat&label=Discord&logo=discord&color=7289DA&logoColor=white">
   </a>
