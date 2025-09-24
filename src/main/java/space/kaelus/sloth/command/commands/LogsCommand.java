@@ -33,6 +33,7 @@ import space.kaelus.sloth.database.Violation;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
+import space.kaelus.sloth.utils.TimeUtil;
 
 public class LogsCommand implements SlothCommand {
   private final SlothAC plugin;
@@ -120,7 +121,7 @@ public class LogsCommand implements SlothCommand {
                         "verbose",
                         violation.verbose(),
                         "timeago",
-                        getTimeAgo(violation.createdAt())));
+                        TimeUtil.formatTimeAgo(violation.createdAt(), localeManager)));
               }
             });
   }
@@ -151,26 +152,5 @@ public class LogsCommand implements SlothCommand {
     } catch (NumberFormatException e) {
       return -1L;
     }
-  }
-
-  private String getTimeAgo(Date date) {
-    LocaleManager lm = localeManager;
-    String ago = lm.getRawMessage(Message.TIME_AGO);
-    String d = lm.getRawMessage(Message.TIME_DAYS);
-    String h = lm.getRawMessage(Message.TIME_HOURS);
-    String m = lm.getRawMessage(Message.TIME_MINUTES);
-    String s = lm.getRawMessage(Message.TIME_SECONDS);
-
-    long durationMillis = System.currentTimeMillis() - date.getTime();
-    long days = TimeUnit.MILLISECONDS.toDays(durationMillis);
-    durationMillis -= TimeUnit.DAYS.toMillis(days);
-    long hours = TimeUnit.MILLISECONDS.toHours(durationMillis);
-    durationMillis -= TimeUnit.HOURS.toMillis(hours);
-    long minutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis);
-
-    if (days > 0) return days + d + ago;
-    if (hours > 0) return hours + h + ago;
-    if (minutes > 0) return minutes + m + ago;
-    return TimeUnit.MILLISECONDS.toSeconds(durationMillis) + s + ago;
   }
 }
