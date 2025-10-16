@@ -1,8 +1,15 @@
 <div align="center">
- <h1>SlothAC</h1>
+  <h1 align="center">SlothAC</h1>
+
+  <p align="center">
+    An AI-powered, free and open-source anti-cheat for Minecraft servers.
+  <br />
+  <a href="https://github.com/KaelusMC/SlothAC/issues">Report Bug</a>
+   ·
+  <a href="https://github.com/KaelusMC/SlothAC/issues">Request Feature</a>
+ </p>
 
  <div>
-
   <a href="https://github.com/KaelusMC/SlothAC/actions/workflows/gradle.yml">
    <img alt="Java CI" src="https://github.com/KaelusMC/SlothAC/actions/workflows/gradle.yml/badge.svg">
   </a>
@@ -19,9 +26,19 @@
    <img alt="Views" src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2FKaelusMC%2FSlothAC%2FREADME.md&label=Views&countColor=%23555555&style=flat&labelStyle=none">
   </a>
  </div>
- <br>
- <p>An AI-powered, free and open-source anti-cheat for Minecraft servers.</p>
+
+[//]: # ( <p align="center">)
+
+[//]: # (    <a href="README.md"><b>English</b></a>)
+
+[//]: # (    ·)
+
+[//]: # (    <a href="README.ru.md">Русский</a>)
+
+[//]: # ( </p>)
 </div>
+
+---
 
 ## Downloads
 

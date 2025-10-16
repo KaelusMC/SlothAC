@@ -73,7 +73,12 @@ public class PlayerDataManager implements Listener {
   @EventHandler
   public void onJoin(PlayerJoinEvent event) {
     Player player = event.getPlayer();
-    players.put(
+
+      if (player.hasPermission("sloth.exempt")) {
+          return;
+      }
+
+      players.put(
         player.getUniqueId(),
         new SlothPlayer(
             player,
