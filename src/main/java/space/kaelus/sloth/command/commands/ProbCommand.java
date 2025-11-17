@@ -21,11 +21,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
+import lombok.Setter;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.tag.Tag;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -51,13 +54,11 @@ public class ProbCommand implements SlothCommand, Listener {
   private final Map<UUID, ProbSession> activeSessions = new ConcurrentHashMap<>();
 
   private final PlayerDataManager playerDataManager;
-  private final LocaleManager localeManager;
   private final SlothAC plugin;
 
   public ProbCommand(
       PlayerDataManager playerDataManager, LocaleManager localeManager, SlothAC plugin) {
     this.playerDataManager = playerDataManager;
-    this.localeManager = localeManager;
     this.plugin = plugin;
     plugin.getServer().getPluginManager().registerEvents(this, plugin);
   }
@@ -87,7 +88,7 @@ public class ProbCommand implements SlothCommand, Listener {
 
     UUID viewerUuid = null;
     for (Map.Entry<UUID, ProbSession> entry : activeSessions.entrySet()) {
-      if (entry.getValue().targetUuid().equals(uuid)) {
+      if (entry.getValue().getTargetUuid().equals(uuid)) {
         viewerUuid = entry.getKey();
         break;
       }
@@ -110,7 +111,7 @@ public class ProbCommand implements SlothCommand, Listener {
 
     final ProbSession session = activeSessions.get(player.getUniqueId());
 
-    if (session != null && session.targetUuid().equals(target.getUniqueId())) {
+    if (session != null && session.getTargetUuid().equals(target.getUniqueId())) {
       stop(player);
       MessageUtil.sendMessage(player, Message.PROB_DISABLED, "player", target.getName());
       return;
@@ -128,7 +129,8 @@ public class ProbCommand implements SlothCommand, Listener {
     final UUID viewerId = viewer.getUniqueId();
     final UUID targetId = target.getUniqueId();
 
-    final ActionBarComponents components = new ActionBarComponents(localeManager);
+    final ProbSession newSession = new ProbSession(targetId);
+    activeSessions.put(viewerId, newSession);
 
     final BukkitTask task =
         plugin
@@ -166,54 +168,69 @@ public class ProbCommand implements SlothCommand, Listener {
                     return;
                   }
 
-                  sendActionBar(onlineViewer, buildActionBar(aiCheck, onlineTarget, components));
+                  sendActionBar(onlineViewer, onlineTarget, aiCheck, newSession);
                 },
                 0L,
                 2L);
 
-    final ProbSession newSession = new ProbSession(targetId, task, components);
-    activeSessions.put(viewerId, newSession);
+    newSession.setTask(task);
   }
 
   private void stop(Player viewer) {
     final ProbSession session = activeSessions.remove(viewer.getUniqueId());
-    if (session != null) {
-      session.task().cancel();
+    if (session != null && session.getTask() != null) {
+      session.getTask().cancel();
       sendActionBar(viewer, Component.empty());
     }
   }
 
-  private Component buildActionBar(AICheck aiCheck, Player target, ActionBarComponents components) {
+  private void sendActionBar(
+      Player viewer, Player target, AICheck aiCheck, ProbSession session) {
     final double probability = aiCheck.getLastProbability();
-    final double violationLevel = aiCheck.getBuffer();
+    final double buffer = aiCheck.getBuffer();
     final int ping = target.getPing();
 
-    final TextColor probColor = getProbColor(probability);
-    final TextColor vlColor = getVlColor(violationLevel);
-    final TextColor pingColor = getPingColor(ping);
-
-    TextComponent bufferComponent =
-        Component.text(String.format(Locale.US, "%.2f", violationLevel), vlColor);
-    if (violationLevel > 30) {
-      bufferComponent = bufferComponent.decorate(TextDecoration.BOLD);
+    if (Math.abs(probability - session.getLastProbability()) < 0.0001
+        && Math.abs(buffer - session.getLastBuffer()) < 0.01
+        && ping == session.getLastPing()
+        && session.getLastSentComponent() != null) {
+      sendActionBar(viewer, session.getLastSentComponent());
+      return;
     }
 
-    return Component.text()
-        .append(components.labelProb().color(probColor))
-        .append(components.openParen().color(probColor))
-        .append(Component.text(target.getName(), probColor))
-        .append(components.closeParen().color(probColor))
-        .append(Component.text(String.format(Locale.US, "%.4f", probability), probColor))
-        .append(components.separator())
-        .append(components.labelBuffer().color(vlColor))
-        .append(components.colon().color(vlColor))
-        .append(bufferComponent)
-        .append(components.separator())
-        .append(components.labelPing().color(pingColor))
-        .append(components.colon().color(pingColor))
-        .append(Component.text(ping, pingColor))
-        .append(components.suffixPing().color(pingColor))
-        .build();
+    Component newComponent = buildActionBar(target, probability, buffer, ping);
+
+    session.setLastProbability(probability);
+    session.setLastBuffer(buffer);
+    session.setLastPing(ping);
+    session.setLastSentComponent(newComponent);
+
+    sendActionBar(viewer, newComponent);
+  }
+
+  private Component buildActionBar(Player target, double probability, double buffer, int ping) {
+    final TextColor probColor = getProbColor(probability);
+    final TextColor vlColor = getVlColor(buffer);
+    final TextColor pingColor = getPingColor(ping);
+
+    String bufferString = String.format(Locale.US, "%.2f", buffer);
+    if (buffer > 30) {
+      bufferString = "<bold>" + bufferString + "</bold>";
+    }
+
+    TagResolver resolver =
+        TagResolver.builder()
+            .resolver(Placeholder.unparsed("player", target.getName()))
+            .resolver(TagResolver.resolver("prob_color", Tag.styling(probColor)))
+            .resolver(
+                Placeholder.unparsed("prob_value", String.format(Locale.US, "%.4f", probability)))
+            .resolver(TagResolver.resolver("buffer_color", Tag.styling(vlColor)))
+            .resolver(Placeholder.parsed("buffer_value", bufferString))
+            .resolver(TagResolver.resolver("ping_color", Tag.styling(pingColor)))
+            .resolver(Placeholder.unparsed("ping_value", String.valueOf(ping)))
+            .build();
+
+    return MessageUtil.getMessage(Message.PROB_FORMAT, resolver);
   }
 
   private void sendActionBar(Player player, Component message) {
@@ -239,27 +256,19 @@ public class ProbCommand implements SlothCommand, Listener {
     return NamedTextColor.GREEN;
   }
 
-  private record ProbSession(UUID targetUuid, BukkitTask task, ActionBarComponents components) {}
+  @Getter
+  @Setter
+  private static class ProbSession {
+    private final UUID targetUuid;
+    private BukkitTask task;
 
-  private record ActionBarComponents(
-      Component labelProb,
-      Component labelBuffer,
-      Component labelPing,
-      Component separator,
-      Component suffixPing,
-      Component openParen,
-      Component closeParen,
-      Component colon) {
-    ActionBarComponents(LocaleManager lm) {
-      this(
-          Component.text(lm.getRawMessage(Message.PROB_FORMAT_LABEL_PROB)),
-          Component.text(lm.getRawMessage(Message.PROB_FORMAT_LABEL_BUFFER)),
-          Component.text(lm.getRawMessage(Message.PROB_FORMAT_LABEL_PING)),
-          Component.text(lm.getRawMessage(Message.PROB_FORMAT_SEPARATOR), NamedTextColor.DARK_GRAY),
-          Component.text(lm.getRawMessage(Message.PROB_FORMAT_SUFFIX_PING)),
-          Component.text(" ("),
-          Component.text("): "),
-          Component.text(": "));
+    private Component lastSentComponent;
+    private double lastProbability = -1.0;
+    private double lastBuffer = -1.0;
+    private int lastPing = -1;
+
+    public ProbSession(UUID targetUuid) {
+      this.targetUuid = targetUuid;
     }
   }
 }

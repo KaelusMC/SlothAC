@@ -2,11 +2,6 @@
  * This file is part of SlothAC - https://github.com/KaelusMC/SlothAC
  * Copyright (C) 2025 KaelusMC
  *
- * This file contains code derived from GrimAC.
- * The original authors of GrimAC are credited below.
- *
- * Copyright (c) 2021-2025 GrimAC, DefineOutside and contributors.
- *
  * SlothAC is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or

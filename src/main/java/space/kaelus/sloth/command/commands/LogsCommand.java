@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.IntegerParser;
-import org.incendo.cloud.parser.standard.StringParser;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.command.SlothCommand;
 import space.kaelus.sloth.config.ConfigManager;
@@ -59,14 +58,13 @@ public class LogsCommand implements SlothCommand {
             .literal("logs")
             .permission("sloth.logs")
             .optional("page", IntegerParser.integerParser(1))
-            .flag(manager.flagBuilder("time").withComponent(StringParser.stringParser()))
             .handler(this::handleLogs));
   }
 
   private void handleLogs(CommandContext<Sender> context) {
     Sender sender = context.sender();
     int page = context.getOrDefault("page", 1);
-    String timeArg = context.flags().get("time");
+    String timeArg = null;
 
     if (databaseManager.getDatabase() == null
         || !configManager.getConfig().getBoolean("history.enabled", false)) {

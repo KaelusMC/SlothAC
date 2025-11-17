@@ -39,12 +39,7 @@ prob:
   disabled: "<yellow>Отображение вероятностей для <player> выключено."
   no-data: "<red>Не удалось получить данные для <player>."
   no-aicheck: "<red>AI-Чек неактивен для <player>."
-  format:
-    label-prob: "Вер-ть"
-    label-buffer: "Буфер"
-    label-ping: "Пинг"
-    separator: " | "
-    suffix-ping: "мс"
+  format: "<prob_color>Вер-ть (<player>): <prob_value></prob_color> <dark_gray>|</dark_gray> <buffer_color>Буфер: <buffer_value></buffer_color> <dark_gray>|</dark_gray> <ping_color>Пинг: <ping_value>мс</ping_color>"
 
 brand:
   alerts-enabled: "<prefix> <white>Оповещения о клиентах включены."
@@ -118,12 +113,16 @@ help:
   - "<gray>================== <aqua>SlothAC помощь</aqua> <gray>=================="
   - "<aqua>/<command> alerts</aqua> <gray>-</gray> <white>Включить/выключить оповещения о нарушениях."
   - "<aqua>/<command> brands</aqua> <gray>-</gray> <white>Включить/выключить оповещения о клиенте игрока."
+  - "<aqua>/<command> suspicious alerts</aqua> <gray>-</gray> <white>Включить/выключить оповещения о подозрительных игроках."
+  - "<aqua>/<command> suspicious <list|top></aqua> <gray>-</gray> <white>Просмотр подозрительных игроков."
   - "<aqua>/<command> profile <player></aqua> <gray>-</gray> <white>Просмотреть профиль игрока."
   - "<aqua>/<command> prob <player></aqua> <gray>-</gray> <white>Просмотр вероятностей ИИ для игрока в реальном времени."
-  - "<aqua>/<command> reload</aqua> <gray>-</gray> <white>Перезагрузить конфигурацию."
   - "<aqua>/<command> history <player> [page]</aqua> <gray>-</gray> <white>Просмотреть историю нарушений игрока."
-  - "<aqua>/<command> dc <start|stop|status></aqua> <gray>-</gray> <white>Сбор данных."
+  - "<aqua>/<command> logs [page]</aqua> <gray>-</gray> <white>Просмотр недавних нарушений."
+  - "<aqua>/<command> stats</aqua> <gray>-</gray> <white>Просмотр статистики сервера."
+  - "<aqua>/<command> dc <start|stop|status|global></aqua> <gray>-</gray> <white>Управление сбором данных."
   - "<aqua>/<command> punish reset <player></aqua> <gray>-</gray> <white>Сбросить все уровни нарушений игрока."
+  - "<aqua>/<command> reload</aqua> <gray>-</gray> <white>Перезагрузить конфигурацию."
   - "<aqua>/<command> help</aqua> <gray>-</gray> <white>Показать это справочное сообщение."
   - "<gray>==============================================="
 

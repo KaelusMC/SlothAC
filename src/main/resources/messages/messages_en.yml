@@ -39,12 +39,7 @@ prob:
   disabled: "<yellow>Probability display for <player> disabled."
   no-data: "<red>Could not get data for <player>."
   no-aicheck: "<red>AI-Check is not active for <player>."
-  format:
-    label-prob: "Prob"
-    label-buffer: "Buffer"
-    label-ping: "Ping"
-    separator: " | "
-    suffix-ping: "ms"
+  format: "<prob_color>Prob (<player>): <prob_value></prob_color> <dark_gray>|</dark_gray> <buffer_color>Buffer: <buffer_value></buffer_color> <dark_gray>|</dark_gray> <ping_color>Ping: <ping_value>ms</ping_color>"
 
 brand:
   alerts-enabled: "<prefix> <white>Brand notifications enabled."
@@ -118,12 +113,16 @@ help:
   - "<gray>================== <aqua>SlothAC Help</aqua> <gray>=================="
   - "<aqua>/<command> alerts</aqua> <gray>-</gray> <white>Toggle violation alerts."
   - "<aqua>/<command> brands</aqua> <gray>-</gray> <white>Toggle client brand notifications."
+  - "<aqua>/<command> suspicious alerts</aqua> <gray>-</gray> <white>Toggle suspicious player alerts."
+  - "<aqua>/<command> suspicious <list|top></aqua> <gray>-</gray> <white>View suspicious players."
   - "<aqua>/<command> profile <player></aqua> <gray>-</gray> <white>View a player's profile."
   - "<aqua>/<command> prob <player></aqua> <gray>-</gray> <white>Live view AI probabilities for a player."
-  - "<aqua>/<command> reload</aqua> <gray>-</gray> <white>Reload the configuration."
   - "<aqua>/<command> history <player> [page]</aqua> <gray>-</gray> <white>View a player's violation history."
-  - "<aqua>/<command> dc <start|stop|status></aqua> <gray>-</gray> <white>Manage data collection sessions."
+  - "<aqua>/<command> logs [page]</aqua> <gray>-</gray> <white>View recent violations."
+  - "<aqua>/<command> stats</aqua> <gray>-</gray> <white>View server statistics."
+  - "<aqua>/<command> dc <start|stop|status|global></aqua> <gray>-</gray> <white>Manage data collection sessions."
   - "<aqua>/<command> punish reset <player></aqua> <gray>-</gray> <white>Reset all of a player's violation levels."
+  - "<aqua>/<command> reload</aqua> <gray>-</gray> <white>Reload the configuration."
   - "<aqua>/<command> help</aqua> <gray>-</gray> <white>View this help message."
   - "<gray>==============================================="
 

@@ -65,11 +65,7 @@ public enum Message {
   PROB_DISABLED("prob.disabled"),
   PROB_NO_DATA("prob.no-data"),
   PROB_NO_AICHECK("prob.no-aicheck"),
-  PROB_FORMAT_LABEL_PROB("prob.format.label-prob"),
-  PROB_FORMAT_LABEL_BUFFER("prob.format.label-buffer"),
-  PROB_FORMAT_LABEL_PING("prob.format.label-ping"),
-  PROB_FORMAT_SEPARATOR("prob.format.separator"),
-  PROB_FORMAT_SUFFIX_PING("prob.format.suffix-ping"),
+  PROB_FORMAT("prob.format"),
 
   // Profile
   PROFILE_NO_DATA("profile.no-data"),

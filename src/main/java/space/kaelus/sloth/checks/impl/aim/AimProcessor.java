@@ -27,7 +27,6 @@ import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
 import space.kaelus.sloth.checks.type.RotationCheck;
 import space.kaelus.sloth.player.SlothPlayer;
-import space.kaelus.sloth.utils.data.Pair;
 import space.kaelus.sloth.utils.lists.RunningMode;
 import space.kaelus.sloth.utils.math.SlothMath;
 import space.kaelus.sloth.utils.update.RotationUpdate;
@@ -81,30 +80,35 @@ public class AimProcessor extends AbstractCheck implements RotationCheck {
     this.currentPitchAccel = deltaPitchAbs - Math.abs(this.lastDeltaPitch);
     this.lastDeltaYaw = deltaYaw;
     this.lastDeltaPitch = deltaPitch;
+
     this.divisorX = SlothMath.gcd(deltaYawAbs, lastXRot);
     if (deltaYawAbs > 0 && deltaYawAbs < 5 && divisorX > SlothMath.MINIMUM_DIVISOR) {
       this.xRotMode.add(divisorX);
       this.lastXRot = deltaYawAbs;
     }
+
     this.divisorY = SlothMath.gcd(deltaPitchAbs, lastYRot);
     if (deltaPitchAbs > 0 && deltaPitchAbs < 5 && divisorY > SlothMath.MINIMUM_DIVISOR) {
       this.yRotMode.add(divisorY);
       this.lastYRot = deltaPitchAbs;
     }
+
     if (this.xRotMode.size() > SIGNIFICANT_SAMPLES_THRESHOLD) {
-      Pair<Double, Integer> modeResult = this.xRotMode.getMode();
-      if (modeResult.second() > SIGNIFICANT_SAMPLES_THRESHOLD) {
-        this.modeX = modeResult.first();
+      this.xRotMode.updateMode();
+      if (this.xRotMode.getModeCount() > SIGNIFICANT_SAMPLES_THRESHOLD) {
+        this.modeX = this.xRotMode.getModeValue();
         this.sensitivityX = convertToSensitivity(this.modeX);
       }
     }
+
     if (this.yRotMode.size() > SIGNIFICANT_SAMPLES_THRESHOLD) {
-      Pair<Double, Integer> modeResult = this.yRotMode.getMode();
-      if (modeResult.second() > SIGNIFICANT_SAMPLES_THRESHOLD) {
-        this.modeY = modeResult.first();
+      this.yRotMode.updateMode();
+      if (this.yRotMode.getModeCount() > SIGNIFICANT_SAMPLES_THRESHOLD) {
+        this.modeY = this.yRotMode.getModeValue();
         this.sensitivityY = convertToSensitivity(this.modeY);
       }
     }
+
     if (modeX > 0) this.deltaDotsX = deltaYawAbs / modeX;
     if (modeY > 0) this.deltaDotsY = deltaPitchAbs / modeY;
   }

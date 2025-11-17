@@ -77,6 +77,13 @@ public class MessageUtil {
     return format(rawMessage, placeholders);
   }
 
+  public static Component getMessage(Message key, TagResolver resolver) {
+    String rawMessage = localeManager.getRawMessage(key);
+    String processedMessage =
+        rawMessage.replace("<prefix>", localeManager.getRawMessage(Message.PREFIX));
+    return miniMessage.deserialize(processedMessage, resolver);
+  }
+
   public static List<Component> getMessageList(Message key, String... placeholders) {
     return localeManager.getRawMessageList(key).stream()
         .map(line -> format(line, placeholders))

@@ -24,7 +24,6 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
-import org.incendo.cloud.parser.standard.DoubleParser;
 import space.kaelus.sloth.alert.AlertManager;
 import space.kaelus.sloth.alert.AlertType;
 import space.kaelus.sloth.checks.impl.ai.AICheck;
@@ -63,10 +62,7 @@ public class SuspiciousCommand implements SlothCommand {
             .handler(this::executeAlerts));
 
     manager.command(
-        base.literal("list")
-            .permission("sloth.suspicious.list")
-            .flag(manager.flagBuilder("buffer").withComponent(DoubleParser.doubleParser(0.0)))
-            .handler(this::executeList));
+        base.literal("list").permission("sloth.suspicious.list").handler(this::executeList));
 
     manager.command(
         base.literal("top").permission("sloth.suspicious.top").handler(this::executeTop));
@@ -80,8 +76,7 @@ public class SuspiciousCommand implements SlothCommand {
   private void executeList(CommandContext<Sender> context) {
     final Sender sender = context.sender();
 
-    final Double bufferFlag = context.flags().get("buffer");
-    final double bufferFilter = bufferFlag != null ? bufferFlag : 0.0;
+    final double bufferFilter = 0.0;
 
     List<SlothPlayer> suspiciousPlayers =
         playerDataManager.getPlayers().stream()
