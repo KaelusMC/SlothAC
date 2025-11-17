@@ -29,7 +29,7 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.11.6")
 
     // PacketEvents
-    implementation("com.github.retrooper:packetevents-spigot:2.9.1-SNAPSHOT")
+    implementation("com.github.retrooper:packetevents-spigot:2.10.1")
 
     // Cloud Command Framework
     implementation("org.incendo:cloud-paper:2.0.0-beta.10")
@@ -83,7 +83,7 @@ tasks.shadowJar {
     relocate("io.leangen.geantyref", "space.kaelus.sloth.libs.geantyref")
     relocate("it.unimi.dsi.fastutil", "space.kaelus.sloth.libs.fastutil")
     relocate("com.google.flatbuffers", "space.kaelus.sloth.libs.flatbuffers")
-    relocate("com.zaxxer.hikari", "space.kaelus.sloth.libs.hikari")
+    relocate("com.zaxxer", "space.kaelus.sloth.libs.hikari")
     relocate("org.slf4j", "space.kaelus.sloth.libs.slf4j")
     relocate("org.jetbrains", "space.kaelus.sloth.libs.jetbrains")
     relocate("org.intellij", "space.kaelus.sloth.libs.intellij")
