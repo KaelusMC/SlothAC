@@ -160,6 +160,43 @@ bukkit {
             description = "Automatically enables brand notifications on join"
             default = Permission.Default.OP
         }
+        register("sloth.history") {
+            description = "Allows viewing a player's violation history"
+            default = Permission.Default.OP
+        }
+        register("sloth.logs") {
+            description = "Allows viewing recent violations"
+            default = Permission.Default.OP
+        }
+        register("sloth.stats") {
+            description = "Allows viewing server statistics"
+            default = Permission.Default.OP
+        }
+        register("sloth.exempt.manage") {
+            description = "Allows managing punishment exemptions for players"
+            default = Permission.Default.OP
+        }
+        register("sloth.punish.manage") {
+            description = "Allows managing player punishments"
+            default = Permission.Default.OP
+        }
+        register("sloth.suspicious") {
+            description = "Permission for suspicious player commands"
+            default = Permission.Default.OP
+            children = listOf("sloth.suspicious.alerts", "sloth.suspicious.list", "sloth.suspicious.top")
+        }
+        register("sloth.suspicious.alerts") {
+            description = "Allows toggling suspicious player alerts"
+            default = Permission.Default.OP
+        }
+        register("sloth.suspicious.list") {
+            description = "Allows listing suspicious players"
+            default = Permission.Default.OP
+        }
+        register("sloth.suspicious.top") {
+            description = "Allows viewing the top suspicious player"
+            default = Permission.Default.OP
+        }
     }
 }
 
