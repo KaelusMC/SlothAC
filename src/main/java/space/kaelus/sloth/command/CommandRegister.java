@@ -39,6 +39,7 @@ import space.kaelus.sloth.command.handler.SlothCommandFailureHandler;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.config.LocaleManager;
 import space.kaelus.sloth.database.DatabaseManager;
+import space.kaelus.sloth.player.ExemptManager;
 import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.MessageUtil;
@@ -61,7 +62,8 @@ public class CommandRegister {
       DatabaseManager databaseManager,
       ConfigManager configManager,
       LocaleManager localeManager,
-      PlayerDataManager playerDataManager) {
+      PlayerDataManager playerDataManager,
+      ExemptManager exemptManager) {
 
     if (commandsRegistered) return;
 
@@ -78,6 +80,7 @@ public class CommandRegister {
     new BrandsCommand(alertManager).register(commandManager);
     new SuspiciousCommand(playerDataManager, alertManager).register(commandManager);
     new StatsCommand(plugin, databaseManager, playerDataManager).register(commandManager);
+    new ExemptCommand(exemptManager, localeManager).register(commandManager);
 
     final RequirementPostprocessor<Sender, SenderRequirement> senderRequirementPostprocessor =
         RequirementPostprocessor.of(REQUIREMENT_KEY, new SlothCommandFailureHandler());

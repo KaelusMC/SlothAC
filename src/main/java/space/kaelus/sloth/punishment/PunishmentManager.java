@@ -95,6 +95,10 @@ public class PunishmentManager {
   }
 
   public void handleFlag(ICheck check, String debug) {
+    if (slothPlayer.getExemptManager().isExempt(slothPlayer.getPlayer())) {
+      return;
+    }
+
     for (PunishGroup group : punishmentGroups.values()) {
       if (group.isCheckAssociated(check)) {
         Bukkit.getScheduler()

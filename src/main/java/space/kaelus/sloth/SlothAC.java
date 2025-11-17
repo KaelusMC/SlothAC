@@ -32,6 +32,7 @@ import space.kaelus.sloth.debug.DebugManager;
 import space.kaelus.sloth.event.DamageEvent;
 import space.kaelus.sloth.integration.WorldGuardManager;
 import space.kaelus.sloth.packet.PacketListener;
+import space.kaelus.sloth.player.ExemptManager;
 import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.server.AIServerProvider;
 import space.kaelus.sloth.utils.MessageUtil;
@@ -47,6 +48,7 @@ public final class SlothAC extends JavaPlugin {
   private DatabaseManager databaseManager;
   private DataCollectorManager dataCollectorManager;
   @Getter private DebugManager debugManager;
+  private ExemptManager exemptManager;
 
   @Getter private BukkitAudiences adventure;
 
@@ -64,6 +66,7 @@ public final class SlothAC extends JavaPlugin {
     this.configManager = new ConfigManager(this);
     this.localeManager = new LocaleManager(this, configManager);
     this.debugManager = new DebugManager(this, configManager);
+    this.exemptManager = new ExemptManager();
 
     MessageUtil.init(this.localeManager, this.adventure);
 
@@ -81,7 +84,8 @@ public final class SlothAC extends JavaPlugin {
             configManager,
             databaseManager,
             this.aiServerProvider,
-            worldGuardManager);
+            worldGuardManager,
+            exemptManager);
 
     PacketEvents.getAPI()
         .getEventManager()
@@ -96,7 +100,8 @@ public final class SlothAC extends JavaPlugin {
             databaseManager,
             configManager,
             localeManager,
-            playerDataManager);
+            playerDataManager,
+            exemptManager);
 
     getServer().getPluginManager().registerEvents(new DamageEvent(playerDataManager), this);
   }

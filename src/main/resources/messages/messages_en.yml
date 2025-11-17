@@ -83,6 +83,18 @@ logs:
 punish:
   reset-success: "<prefix> <green>All violation levels (VL) for player <player> have been reset."
 
+exempt:
+  invalid-duration: "<prefix> <red>Invalid duration format. Use: 10s, 5m, 1h, 1d, or perm."
+  success-perm: "<prefix> <green>Player <white><player></white> is now permanently exempt from punishments."
+  success-temp: "<prefix> <green>Player <white><player></white> is now exempt from punishments for <white><duration></white>."
+  remove-success: "<prefix> <yellow>Removed punishment exemption from <white><player></white>."
+  remove-fail: "<prefix> <red>Player <white><player></white> was not temporarily exempt."
+  status-perm-permission: "<prefix> <gold>Player <white><player></white> is permanently exempt via permission."
+  status-perm-command: "<prefix> <gold>Player <white><player></white> is permanently exempt via command."
+  status-not-exempt: "<prefix> <green>Player <white><player></white> is not exempt from punishments."
+  status-expired: "<prefix> <yellow>Player <white><player></white>'s exemption has expired."
+  status-temp: "<prefix> <aqua>Player <white><player></white> is exempt for another <white><duration></white>."
+
 suspicious:
   alerts-enabled: "<prefix> <green>Suspicious player alerts enabled."
   alerts-disabled: "<prefix> <yellow>Suspicious player alerts disabled."

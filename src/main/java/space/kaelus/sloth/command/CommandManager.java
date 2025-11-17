@@ -31,6 +31,7 @@ import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.config.LocaleManager;
 import space.kaelus.sloth.database.DatabaseManager;
+import space.kaelus.sloth.player.ExemptManager;
 import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.sender.SenderFactory;
@@ -44,7 +45,8 @@ public class CommandManager {
       DatabaseManager databaseManager,
       ConfigManager configManager,
       LocaleManager localeManager,
-      PlayerDataManager playerDataManager) {
+      PlayerDataManager playerDataManager,
+      ExemptManager exemptManager) {
 
     LegacyPaperCommandManager<Sender> cloudManager = setupCloud(plugin);
     if (cloudManager != null) {
@@ -56,7 +58,8 @@ public class CommandManager {
           databaseManager,
           configManager,
           localeManager,
-          playerDataManager);
+          playerDataManager,
+          exemptManager);
     }
   }
 

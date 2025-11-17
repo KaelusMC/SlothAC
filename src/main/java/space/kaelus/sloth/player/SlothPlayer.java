@@ -93,6 +93,7 @@ public class SlothPlayer {
   public final AtomicInteger lastTransactionReceived = new AtomicInteger(0);
   private final AtomicInteger transactionIDCounter = new AtomicInteger(0);
   private final SlothAC plugin;
+  private final ExemptManager exemptManager;
 
   public SlothPlayer(
       Player player,
@@ -102,12 +103,14 @@ public class SlothPlayer {
       AlertManager alertManager,
       DataCollectorManager dataCollectorManager,
       AIServerProvider aiServerProvider,
-      WorldGuardManager worldGuardManager) {
+      WorldGuardManager worldGuardManager,
+      ExemptManager exemptManager) {
     this.plugin = plugin;
     this.player = player;
     this.uuid = player.getUniqueId();
     this.user = PacketEvents.getAPI().getPlayerManager().getUser(player);
     this.joinTime = System.currentTimeMillis();
+    this.exemptManager = exemptManager;
 
     this.latencyUtils = new LatencyUtils(this, plugin);
     this.compensatedEntities = new CompensatedEntities(this);

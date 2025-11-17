@@ -48,7 +48,8 @@ public class PlayerDataManager implements Listener {
   private final ConfigManager configManager;
   private final DatabaseManager databaseManager;
   private final WorldGuardManager worldGuardManager;
-  private AIServerProvider aiServerProvider;
+  private final AIServerProvider aiServerProvider;
+  private final ExemptManager exemptManager;
 
   private final Map<UUID, SlothPlayer> players = new ConcurrentHashMap<>();
 
@@ -59,7 +60,8 @@ public class PlayerDataManager implements Listener {
       ConfigManager configManager,
       DatabaseManager databaseManager,
       AIServerProvider aiServerProvider,
-      WorldGuardManager worldGuardManager) {
+      WorldGuardManager worldGuardManager,
+      ExemptManager exemptManager) {
     this.plugin = plugin;
     this.alertManager = alertManager;
     this.dataCollectorManager = dataCollectorManager;
@@ -67,6 +69,7 @@ public class PlayerDataManager implements Listener {
     this.databaseManager = databaseManager;
     this.aiServerProvider = aiServerProvider;
     this.worldGuardManager = worldGuardManager;
+    this.exemptManager = exemptManager;
     plugin.getServer().getPluginManager().registerEvents(this, plugin);
   }
 
@@ -74,11 +77,7 @@ public class PlayerDataManager implements Listener {
   public void onJoin(PlayerJoinEvent event) {
     Player player = event.getPlayer();
 
-      if (player.hasPermission("sloth.exempt")) {
-          return;
-      }
-
-      players.put(
+    players.put(
         player.getUniqueId(),
         new SlothPlayer(
             player,
@@ -88,7 +87,8 @@ public class PlayerDataManager implements Listener {
             alertManager,
             dataCollectorManager,
             aiServerProvider,
-            worldGuardManager));
+            worldGuardManager,
+            exemptManager));
 
     if (player.hasPermission("sloth.alerts")
         && player.hasPermission("sloth.alerts.enable-on-join")) {

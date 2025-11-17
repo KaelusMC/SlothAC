@@ -90,6 +90,18 @@ public enum Message {
   // Punish
   PUNISH_RESET_SUCCESS("punish.reset-success"),
 
+  // Exempt
+  EXEMPT_INVALID_DURATION("exempt.invalid-duration"),
+  EXEMPT_SUCCESS_PERM("exempt.success-perm"),
+  EXEMPT_SUCCESS_TEMP("exempt.success-temp"),
+  EXEMPT_REMOVE_SUCCESS("exempt.remove-success"),
+  EXEMPT_REMOVE_FAIL("exempt.remove-fail"),
+  EXEMPT_STATUS_PERM_PERMISSION("exempt.status-perm-permission"),
+  EXEMPT_STATUS_PERM_COMMAND("exempt.status-perm-command"),
+  EXEMPT_STATUS_NOT_EXEMPT("exempt.status-not-exempt"),
+  EXEMPT_STATUS_EXPIRED("exempt.status-expired"),
+  EXEMPT_STATUS_TEMP("exempt.status-temp"),
+
   // Suspicious
   SUSPICIOUS_ALERTS_ENABLED("suspicious.alerts-enabled"),
   SUSPICIOUS_ALERTS_DISABLED("suspicious.alerts-disabled"),
