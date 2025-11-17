@@ -6,7 +6,7 @@ locale: "en"
 
 ai:
   # Enable AI check?
-  enabled: false
+  enabled: true
   # URL for the AI inference API.
   server: "https://url/v1/inference"
   # The API key for the AI server.
@@ -41,6 +41,13 @@ ai:
     # List of WorldGuard regions where the AI check is disabled.
     disabled-regions:
       - "spawn:spawn"
+  backoff:
+    # Initial wait time after server error.
+    initial-duration: 5
+    # Мaximum waiting time.
+    max-duration: 60
+    # Multiplier for the time to wait for each subsequent error.
+    multiplier: 2.0
 
 client-brand:
   # This means it won't broadcast their brand to operators if the brand matches the following regexes

@@ -22,6 +22,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -31,7 +32,6 @@ import space.kaelus.sloth.SlothAC;
 public final class AIServer {
   private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
-  private static volatile long waiting = 0;
 
   private static final HttpClient HTTP_CLIENT =
       HttpClient.newBuilder()
@@ -43,20 +43,53 @@ public final class AIServer {
   private final String apiKey;
   private final Executor bukkitExecutor;
   private final SlothAC plugin;
+  private final ApiCooldown apiCooldown;
 
-  public AIServer(SlothAC plugin, String url, String apiKey) {
+  public AIServer(SlothAC plugin, String url, String apiKey, ApiCooldown apiCooldown) {
     this.plugin = plugin;
     this.serverUri = URI.create(url);
     this.apiKey = apiKey;
+    this.apiCooldown = apiCooldown;
     this.bukkitExecutor = runnable -> plugin.getServer().getScheduler().runTask(plugin, runnable);
   }
 
-  public CompletableFuture<String> sendRequest(byte[] playerData) {
-    if (System.currentTimeMillis() < waiting) {
+  public CompletableFuture<String> sendRequest(ByteBuffer playerData) {
+    if (apiCooldown.isWaiting()) {
       return CompletableFuture.failedFuture(
-          new RequestException(ResponseCode.WAITING, "Waiting 15 sec"));
+          new RequestException(ResponseCode.WAITING, "Server is in backoff."));
     }
 
+    if (!playerData.hasArray()) {
+      byte[] data = new byte[playerData.remaining()];
+      playerData.get(data);
+      return sendRequest(data);
+    }
+
+    HttpRequest request =
+        HttpRequest.newBuilder(serverUri)
+            .header("Content-Type", "application/octet-stream")
+            .header("User-Agent", "SlothAC/" + plugin.getDescription().getVersion())
+            .header("X-API-Key", this.apiKey)
+            .header("Accept", "application/json")
+            .POST(
+                HttpRequest.BodyPublishers.ofByteArray(
+                    playerData.array(),
+                    playerData.arrayOffset() + playerData.position(),
+                    playerData.remaining()))
+            .timeout(REQUEST_TIMEOUT)
+            .build();
+
+    return HTTP_CLIENT
+        .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        .thenApplyAsync(this::catchResponse, bukkitExecutor)
+        .exceptionallyComposeAsync(this::catchException, bukkitExecutor);
+  }
+
+  private CompletableFuture<String> sendRequest(byte[] playerData) {
+    if (apiCooldown.isWaiting()) {
+      return CompletableFuture.failedFuture(
+          new RequestException(ResponseCode.WAITING, "Server is in backoff."));
+    }
     HttpRequest request =
         HttpRequest.newBuilder(serverUri)
             .header("Content-Type", "application/octet-stream")
@@ -75,14 +108,17 @@ public final class AIServer {
 
   private String catchResponse(HttpResponse<String> response) {
     final int statusCode = response.statusCode();
-    if (statusCode >= 500 || statusCode == 403) {
-      waiting = System.currentTimeMillis() + 15000;
-    }
     if (statusCode >= 300 || statusCode < 200) {
+      if (statusCode >= 500 || statusCode == 403) {
+        apiCooldown.recordFailure();
+      }
+
       throw new RequestException(
           ResponseCode.fromStatusCode(statusCode),
           "HTTP Status " + statusCode + ": " + response.body());
     }
+
+    apiCooldown.recordSuccess();
     return response.body();
   }
 
@@ -96,12 +132,12 @@ public final class AIServer {
       return CompletableFuture.failedFuture(cause);
     }
 
-    final boolean isTimeout = cause instanceof HttpTimeoutException;
-    if (!isTimeout) {
-      waiting = System.currentTimeMillis() + 15000;
+    if (!(cause instanceof HttpTimeoutException)) {
+      apiCooldown.recordFailure();
     }
 
-    final ResponseCode code = isTimeout ? ResponseCode.TIMEOUT : ResponseCode.NETWORK_ERROR;
+    final ResponseCode code =
+        cause instanceof HttpTimeoutException ? ResponseCode.TIMEOUT : ResponseCode.NETWORK_ERROR;
 
     return CompletableFuture.failedFuture(
         new RequestException(code, "Request failed: " + cause.getMessage(), cause));

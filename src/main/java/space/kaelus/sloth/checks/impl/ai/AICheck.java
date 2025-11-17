@@ -174,15 +174,18 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
   }
 
   private void sendData() {
+    if (ticks.isEmpty() || aiServer == null) {
+      return;
+    }
+
     final List<TickData> data = new ArrayList<>(ticks);
-    if (aiServer == null) return;
 
     Bukkit.getScheduler()
         .runTaskAsynchronously(
             plugin,
             () -> {
               try {
-                byte[] flatbuffer = serialize(data);
+                ByteBuffer flatbuffer = serialize(data);
                 aiServer
                     .sendRequest(flatbuffer)
                     .thenAccept(this::onResponse)
@@ -349,9 +352,8 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
     return null;
   }
 
-  private byte[] serialize(List<TickData> ticks) {
+  private ByteBuffer serialize(List<TickData> ticks) {
     final FlatBufferBuilder builder = BUILDER.get();
-
     builder.clear();
 
     int[] tickOffsets = new int[ticks.size()];
@@ -371,15 +373,12 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
     }
 
     int ticksVector = TickDataSequence.createTicksVector(builder, tickOffsets);
+
     TickDataSequence.startTickDataSequence(builder);
     TickDataSequence.addTicks(builder, ticksVector);
     int sequenceOffset = TickDataSequence.endTickDataSequence(builder);
     builder.finish(sequenceOffset);
 
-    ByteBuffer buf = builder.dataBuffer();
-
-    byte[] bytes = new byte[buf.remaining()];
-    buf.get(bytes);
-    return bytes;
+    return ByteBuffer.wrap(builder.sizedByteArray());
   }
 }
