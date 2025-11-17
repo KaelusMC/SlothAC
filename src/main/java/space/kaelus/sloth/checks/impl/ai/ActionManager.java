@@ -21,8 +21,12 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedFactory;
+import dagger.assisted.AssistedInject;
 import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
+import space.kaelus.sloth.checks.CheckFactory;
 import space.kaelus.sloth.checks.type.PacketCheck;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.entity.PacketEntity;
@@ -31,10 +35,17 @@ import space.kaelus.sloth.player.SlothPlayer;
 @CheckData(name = "ActionManager_Internal")
 public class ActionManager extends AbstractCheck implements PacketCheck {
 
-  public ActionManager(SlothPlayer player, ConfigManager configManager) {
+  @AssistedInject
+  public ActionManager(@Assisted SlothPlayer player, ConfigManager configManager) {
     super(player);
     int sequence = configManager.getAiSequence();
     player.ticksSinceAttack = sequence + 1;
+  }
+
+  @AssistedFactory
+  public interface Factory extends CheckFactory {
+    @Override
+    ActionManager create(SlothPlayer slothPlayer);
   }
 
   @Override

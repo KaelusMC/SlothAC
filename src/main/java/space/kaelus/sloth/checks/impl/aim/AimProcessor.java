@@ -22,9 +22,13 @@
  */
 package space.kaelus.sloth.checks.impl.aim;
 
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedFactory;
+import dagger.assisted.AssistedInject;
 import lombok.Getter;
 import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
+import space.kaelus.sloth.checks.CheckFactory;
 import space.kaelus.sloth.checks.type.RotationCheck;
 import space.kaelus.sloth.player.SlothPlayer;
 import space.kaelus.sloth.utils.lists.RunningMode;
@@ -58,8 +62,15 @@ public class AimProcessor extends AbstractCheck implements RotationCheck {
   private float currentYawAccel = 0.0f;
   private float currentPitchAccel = 0.0f;
 
-  public AimProcessor(SlothPlayer slothPlayer) {
+  @AssistedInject
+  public AimProcessor(@Assisted SlothPlayer slothPlayer) {
     super(slothPlayer);
+  }
+
+  @AssistedFactory
+  public interface Factory extends CheckFactory {
+    @Override
+    AimProcessor create(SlothPlayer slothPlayer);
   }
 
   public static double convertToSensitivity(double var13) {

@@ -24,8 +24,8 @@ package space.kaelus.sloth.database;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,7 +36,7 @@ public record Violation(
     String checkName,
     String verbose,
     int vl,
-    Date createdAt) {
+    Instant createdAt) {
   public static List<Violation> fromResultSet(ResultSet resultSet) throws SQLException {
     List<Violation> violations = new ArrayList<>();
     while (resultSet.next()) {
@@ -47,7 +47,7 @@ public record Violation(
       String checkName = resultSet.getString("check_name");
       String verbose = resultSet.getString("verbose");
       int vl = resultSet.getInt("vl");
-      Date createdAt = new Date(resultSet.getLong("created_at"));
+      Instant createdAt = Instant.ofEpochMilli(resultSet.getLong("created_at"));
       violations.add(new Violation(server, player, playerName, checkName, verbose, vl, createdAt));
     }
     return violations;

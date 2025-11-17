@@ -17,7 +17,8 @@
  */
 package space.kaelus.sloth.utils;
 
-import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import lombok.experimental.UtilityClass;
 import space.kaelus.sloth.config.LocaleManager;
@@ -52,9 +53,9 @@ public class TimeUtil {
     return sb.toString().trim();
   }
 
-  public String formatTimeAgo(Date date, LocaleManager lm) {
+  public String formatTimeAgo(Instant timestamp, LocaleManager lm) {
     String ago = lm.getRawMessage(Message.TIME_AGO);
-    long durationMillis = System.currentTimeMillis() - date.getTime();
+    long durationMillis = Duration.between(timestamp, Instant.now()).toMillis();
 
     long days = TimeUnit.MILLISECONDS.toDays(durationMillis);
     if (days > 0) return days + lm.getRawMessage(Message.TIME_DAYS) + ago;
@@ -79,18 +80,13 @@ public class TimeUtil {
     try {
       char unit = Character.toLowerCase(durationStr.charAt(durationStr.length() - 1));
       long value = Long.parseLong(durationStr.substring(0, durationStr.length() - 1));
-      switch (unit) {
-        case 's':
-          return TimeUnit.SECONDS.toMillis(value);
-        case 'm':
-          return TimeUnit.MINUTES.toMillis(value);
-        case 'h':
-          return TimeUnit.HOURS.toMillis(value);
-        case 'd':
-          return TimeUnit.DAYS.toMillis(value);
-        default:
-          return 0;
-      }
+      return switch (unit) {
+        case 's' -> TimeUnit.SECONDS.toMillis(value);
+        case 'm' -> TimeUnit.MINUTES.toMillis(value);
+        case 'h' -> TimeUnit.HOURS.toMillis(value);
+        case 'd' -> TimeUnit.DAYS.toMillis(value);
+        default -> 0;
+      };
     } catch (Exception e) {
       return 0;
     }

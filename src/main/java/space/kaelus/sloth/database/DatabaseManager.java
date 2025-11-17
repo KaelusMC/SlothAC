@@ -3,15 +3,19 @@ package space.kaelus.sloth.database;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.File;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import lombok.Getter;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.config.ConfigManager;
 
 @Getter
+@Singleton
 public class DatabaseManager {
   private final ViolationDatabase database;
   private final HikariDataSource dataSource;
 
+  @Inject
   public DatabaseManager(SlothAC plugin, ConfigManager configManager) {
     this.dataSource = createDataSource(plugin);
     this.database = new SQLiteViolationDatabase(this.dataSource, plugin, configManager);

@@ -22,49 +22,48 @@
  */
 package space.kaelus.sloth.command;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.incendo.cloud.bukkit.CloudBukkitCapabilities;
 import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.paper.LegacyPaperCommandManager;
 import space.kaelus.sloth.SlothAC;
-import space.kaelus.sloth.alert.AlertManager;
-import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
-import space.kaelus.sloth.config.ConfigManager;
-import space.kaelus.sloth.config.LocaleManager;
-import space.kaelus.sloth.database.DatabaseManager;
-import space.kaelus.sloth.player.ExemptManager;
-import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.sender.SenderFactory;
 
+@Singleton
 public class CommandManager {
+  private final SlothAC plugin;
+  private final CommandRegister commandRegister;
+  private final BukkitAudiences adventure;
 
+  private LegacyPaperCommandManager<Sender> cloudManager;
+
+  @Inject
   public CommandManager(
-      SlothAC plugin,
-      AlertManager alertManager,
-      DataCollectorManager dataCollectorManager,
-      DatabaseManager databaseManager,
-      ConfigManager configManager,
-      LocaleManager localeManager,
-      PlayerDataManager playerDataManager,
-      ExemptManager exemptManager) {
+      SlothAC plugin, CommandRegister commandRegister, BukkitAudiences adventure) {
+    this.plugin = plugin;
+    this.commandRegister = commandRegister;
+    this.adventure = adventure;
+  }
 
-    LegacyPaperCommandManager<Sender> cloudManager = setupCloud(plugin);
+  public void registerCommands() {
     if (cloudManager != null) {
-      CommandRegister.registerCommands(
-          cloudManager,
-          plugin,
-          alertManager,
-          dataCollectorManager,
-          databaseManager,
-          configManager,
-          localeManager,
-          playerDataManager,
-          exemptManager);
+      return;
     }
+
+    LegacyPaperCommandManager<Sender> manager = setupCloud(plugin);
+    if (manager == null) {
+      return;
+    }
+
+    commandRegister.registerCommands(manager);
+    this.cloudManager = manager;
   }
 
   private LegacyPaperCommandManager<Sender> setupCloud(SlothAC plugin) {
-    SenderFactory senderFactory = new SenderFactory(plugin);
+    SenderFactory senderFactory = new SenderFactory(adventure);
     LegacyPaperCommandManager<Sender> manager;
     try {
       manager =

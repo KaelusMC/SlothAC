@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
+import net.ltgt.gradle.errorprone.errorprone
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission
 
 plugins {
@@ -24,44 +25,50 @@ repositories {
 
 dependencies {
     // Bukkit APIs
-    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
-    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
+    compileOnly("io.papermc.paper:paper-api:1.21.9-R0.1-SNAPSHOT")
+    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.14")
     compileOnly("me.clip:placeholderapi:2.11.6")
 
     // PacketEvents
     implementation("com.github.retrooper:packetevents-spigot:2.10.1")
 
     // Cloud Command Framework
-    implementation("org.incendo:cloud-paper:2.0.0-beta.10")
+    implementation("org.incendo:cloud-paper:2.0.0-beta.13")
     implementation("org.incendo:cloud-processors-requirements:1.0.0-rc.1")
 
     // Adventure & MiniMessage
-    implementation("net.kyori:adventure-platform-bukkit:4.3.4")
-    implementation("net.kyori:adventure-text-minimessage:4.17.0")
+    implementation("net.kyori:adventure-platform-bukkit:4.4.0")
+    implementation("net.kyori:adventure-text-minimessage:4.23.0")
 
     // HikariCP
     implementation("com.zaxxer:HikariCP:7.0.2")
     implementation("org.slf4j:slf4j-jdk14:2.0.17")
 
     // Utilities
-    compileOnly("org.projectlombok:lombok:1.18.32")
-    annotationProcessor("org.projectlombok:lombok:1.18.32")
+    compileOnly("org.projectlombok:lombok:1.18.42")
+    annotationProcessor("org.projectlombok:lombok:1.18.42")
     implementation("it.unimi.dsi:fastutil:8.5.15")
     implementation("org.jetbrains:annotations:24.1.0")
     implementation("com.google.flatbuffers:flatbuffers-java:25.2.10")
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.code.gson:gson:2.11.0")
+
+    // Dagger
+    implementation("com.google.dagger:dagger:2.51")
+    annotationProcessor("com.google.dagger:dagger-compiler:2.51")
 
     // Error Prone
-    errorprone("com.google.errorprone:error_prone_core:2.41.0")
+    errorprone("com.google.errorprone:error_prone_core:2.44.0")
 }
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    disableAutoTargetJvm()
 }
 
 tasks.withType<JavaCompile> {
     options.release.set(17)
     options.encoding = "UTF-8"
+    options.errorprone.disableWarningsInGeneratedCode.set(true)
 }
 
 tasks.shadowJar {

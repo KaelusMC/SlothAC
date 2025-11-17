@@ -19,9 +19,13 @@ package space.kaelus.sloth.checks.impl.ai;
 
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedFactory;
+import dagger.assisted.AssistedInject;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
+import space.kaelus.sloth.checks.CheckFactory;
 import space.kaelus.sloth.checks.type.PacketCheck;
 import space.kaelus.sloth.data.DataSession;
 import space.kaelus.sloth.data.TickData;
@@ -32,11 +36,20 @@ public class DataCollectorCheck extends AbstractCheck implements PacketCheck {
   private final DataCollectorManager dataCollectorManager;
   private final SlothAC plugin;
 
+  @AssistedInject
   public DataCollectorCheck(
-      SlothPlayer slothPlayer, DataCollectorManager dataCollectorManager, SlothAC plugin) {
+      @Assisted SlothPlayer slothPlayer,
+      DataCollectorManager dataCollectorManager,
+      SlothAC plugin) {
     super(slothPlayer);
     this.dataCollectorManager = dataCollectorManager;
     this.plugin = plugin;
+  }
+
+  @AssistedFactory
+  public interface Factory extends CheckFactory {
+    @Override
+    DataCollectorCheck create(SlothPlayer slothPlayer);
   }
 
   @Override

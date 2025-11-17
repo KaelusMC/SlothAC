@@ -22,6 +22,8 @@
  */
 package space.kaelus.sloth.command.commands;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.CommandManager;
@@ -33,10 +35,12 @@ import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
+@Singleton
 public class AlertsCommand implements SlothCommand {
 
   private final AlertManager alertManager;
 
+  @Inject
   public AlertsCommand(AlertManager alertManager) {
     this.alertManager = alertManager;
   }

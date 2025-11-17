@@ -23,21 +23,18 @@
 package space.kaelus.sloth.checks;
 
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import java.util.*;
-import space.kaelus.sloth.SlothAC;
-import space.kaelus.sloth.alert.AlertManager;
-import space.kaelus.sloth.checks.impl.ai.AICheck;
-import space.kaelus.sloth.checks.impl.ai.ActionManager;
-import space.kaelus.sloth.checks.impl.ai.DataCollectorCheck;
-import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
-import space.kaelus.sloth.checks.impl.aim.AimProcessor;
-import space.kaelus.sloth.checks.impl.misc.ClientBrand;
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedFactory;
+import dagger.assisted.AssistedInject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import space.kaelus.sloth.checks.type.PacketCheck;
 import space.kaelus.sloth.checks.type.RotationCheck;
-import space.kaelus.sloth.config.ConfigManager;
-import space.kaelus.sloth.integration.WorldGuardManager;
 import space.kaelus.sloth.player.SlothPlayer;
-import space.kaelus.sloth.server.AIServerProvider;
 import space.kaelus.sloth.utils.update.RotationUpdate;
 
 public class CheckManager {
@@ -46,22 +43,11 @@ public class CheckManager {
 
   private final Map<Class<? extends ICheck>, ICheck> checks = new HashMap<>();
 
-  public CheckManager(
-      SlothPlayer player,
-      SlothAC plugin,
-      ConfigManager configManager,
-      DataCollectorManager dataCollectorManager,
-      AIServerProvider aiServerProvider,
-      WorldGuardManager worldGuardManager,
-      AlertManager alertManager) {
-
-    registerCheck(new AimProcessor(player));
-    registerCheck(new ActionManager(player, configManager));
-    registerCheck(
-        new AICheck(
-            player, plugin, aiServerProvider, configManager, worldGuardManager, alertManager));
-    registerCheck(new DataCollectorCheck(player, dataCollectorManager, plugin));
-    registerCheck(new ClientBrand(player, configManager, alertManager));
+  @AssistedInject
+  public CheckManager(@Assisted SlothPlayer player, Set<CheckFactory> checkFactories) {
+    for (CheckFactory factory : checkFactories) {
+      registerCheck(factory.create(player));
+    }
   }
 
   private void registerCheck(ICheck check) {
@@ -103,5 +89,10 @@ public class CheckManager {
 
   public Collection<ICheck> getAllChecks() {
     return checks.values();
+  }
+
+  @AssistedFactory
+  public interface Factory {
+    CheckManager create(SlothPlayer player);
   }
 }

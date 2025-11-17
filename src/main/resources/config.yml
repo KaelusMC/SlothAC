@@ -44,7 +44,7 @@ ai:
   backoff:
     # Initial wait time after server error.
     initial-duration: 5
-    # Мaximum waiting time.
+    # Maximum waiting time.
     max-duration: 60
     # Multiplier for the time to wait for each subsequent error.
     multiplier: 2.0

@@ -23,6 +23,8 @@
 package space.kaelus.sloth.command.commands;
 
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.incendo.cloud.CommandManager;
@@ -40,6 +42,7 @@ import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 import space.kaelus.sloth.utils.TimeUtil;
 
+@Singleton
 public class HistoryCommand implements SlothCommand {
 
   private final SlothAC plugin;
@@ -47,6 +50,7 @@ public class HistoryCommand implements SlothCommand {
   private final ConfigManager configManager;
   private final LocaleManager localeManager;
 
+  @Inject
   public HistoryCommand(
       SlothAC plugin,
       DatabaseManager databaseManager,

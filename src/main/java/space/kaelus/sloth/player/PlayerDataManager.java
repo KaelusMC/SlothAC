@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -34,42 +36,48 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.alert.AlertManager;
 import space.kaelus.sloth.alert.AlertType;
+import space.kaelus.sloth.checks.CheckManager;
 import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.data.DataSession;
-import space.kaelus.sloth.database.DatabaseManager;
 import space.kaelus.sloth.integration.WorldGuardManager;
+import space.kaelus.sloth.punishment.PunishmentManager;
 import space.kaelus.sloth.server.AIServerProvider;
 
+@Singleton
 public class PlayerDataManager implements Listener {
   private final SlothAC plugin;
   private final AlertManager alertManager;
   private final DataCollectorManager dataCollectorManager;
   private final ConfigManager configManager;
-  private final DatabaseManager databaseManager;
   private final WorldGuardManager worldGuardManager;
   private final AIServerProvider aiServerProvider;
   private final ExemptManager exemptManager;
+  private final CheckManager.Factory checkManagerFactory;
+  private final PunishmentManager.Factory punishmentManagerFactory;
 
   private final Map<UUID, SlothPlayer> players = new ConcurrentHashMap<>();
 
+  @Inject
   public PlayerDataManager(
       SlothAC plugin,
       AlertManager alertManager,
       DataCollectorManager dataCollectorManager,
       ConfigManager configManager,
-      DatabaseManager databaseManager,
       AIServerProvider aiServerProvider,
       WorldGuardManager worldGuardManager,
-      ExemptManager exemptManager) {
+      ExemptManager exemptManager,
+      CheckManager.Factory checkManagerFactory,
+      PunishmentManager.Factory punishmentManagerFactory) {
     this.plugin = plugin;
     this.alertManager = alertManager;
     this.dataCollectorManager = dataCollectorManager;
     this.configManager = configManager;
-    this.databaseManager = databaseManager;
     this.aiServerProvider = aiServerProvider;
     this.worldGuardManager = worldGuardManager;
     this.exemptManager = exemptManager;
+    this.checkManagerFactory = checkManagerFactory;
+    this.punishmentManagerFactory = punishmentManagerFactory;
     plugin.getServer().getPluginManager().registerEvents(this, plugin);
   }
 
@@ -83,12 +91,13 @@ public class PlayerDataManager implements Listener {
             player,
             plugin,
             configManager,
-            databaseManager,
             alertManager,
             dataCollectorManager,
             aiServerProvider,
             worldGuardManager,
-            exemptManager));
+            exemptManager,
+            checkManagerFactory,
+            punishmentManagerFactory));
 
     if (player.hasPermission("sloth.alerts")
         && player.hasPermission("sloth.alerts.enable-on-join")) {

@@ -19,17 +19,21 @@ package space.kaelus.sloth.config;
 
 import java.io.File;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.utils.Message;
 
+@Singleton
 public class LocaleManager {
 
   private final SlothAC plugin;
   private final ConfigManager configManager;
   private FileConfiguration messagesConfig;
 
+  @Inject
   public LocaleManager(SlothAC plugin, ConfigManager configManager) {
     this.plugin = plugin;
     this.configManager = configManager;

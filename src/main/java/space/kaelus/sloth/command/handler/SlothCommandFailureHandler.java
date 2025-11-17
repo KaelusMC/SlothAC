@@ -17,14 +17,21 @@
  */
 package space.kaelus.sloth.command.handler;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.processors.requirements.RequirementFailureHandler;
 import space.kaelus.sloth.command.SenderRequirement;
 import space.kaelus.sloth.sender.Sender;
 
+@Singleton
 public class SlothCommandFailureHandler
     implements RequirementFailureHandler<Sender, SenderRequirement> {
+
+  @Inject
+  public SlothCommandFailureHandler() {}
+
   @Override
   public void handleFailure(
       @NonNull CommandContext<Sender> context, @NonNull SenderRequirement requirement) {

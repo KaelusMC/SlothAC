@@ -18,26 +18,26 @@
 package space.kaelus.sloth.sender;
 
 import java.util.UUID;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.SenderMapper;
 import org.jetbrains.annotations.NotNull;
-import space.kaelus.sloth.SlothAC;
 
 public class SenderFactory implements SenderMapper<CommandSender, Sender> {
-  private final SlothAC plugin;
+  private final BukkitAudiences adventure;
 
-  public SenderFactory(SlothAC plugin) {
-    this.plugin = plugin;
+  public SenderFactory(BukkitAudiences adventure) {
+    this.adventure = adventure;
   }
 
   @Override
   public Sender map(@NotNull CommandSender base) {
-    if (base instanceof Player) {
-      return new PlayerSender((Player) base, plugin);
+    if (base instanceof Player player) {
+      return new PlayerSender(player, adventure);
     }
-    return new ConsoleSender(base, plugin);
+    return new ConsoleSender(base, adventure);
   }
 
   @Override
@@ -47,11 +47,11 @@ public class SenderFactory implements SenderMapper<CommandSender, Sender> {
 
   private static class PlayerSender implements Sender {
     private final Player player;
-    private final SlothAC plugin;
+    private final BukkitAudiences adventure;
 
-    PlayerSender(Player player, SlothAC plugin) {
+    PlayerSender(Player player, BukkitAudiences adventure) {
       this.player = player;
-      this.plugin = plugin;
+      this.adventure = adventure;
     }
 
     @Override
@@ -71,7 +71,7 @@ public class SenderFactory implements SenderMapper<CommandSender, Sender> {
 
     @Override
     public void sendMessage(Component message) {
-      plugin.getAdventure().player(player).sendMessage(message);
+      adventure.player(player).sendMessage(message);
     }
 
     @Override
@@ -102,11 +102,11 @@ public class SenderFactory implements SenderMapper<CommandSender, Sender> {
 
   private static class ConsoleSender implements Sender {
     private final CommandSender sender;
-    private final SlothAC plugin;
+    private final BukkitAudiences adventure;
 
-    ConsoleSender(CommandSender sender, SlothAC plugin) {
+    ConsoleSender(CommandSender sender, BukkitAudiences adventure) {
       this.sender = sender;
-      this.plugin = plugin;
+      this.adventure = adventure;
     }
 
     @Override
@@ -126,7 +126,7 @@ public class SenderFactory implements SenderMapper<CommandSender, Sender> {
 
     @Override
     public void sendMessage(Component message) {
-      plugin.getAdventure().sender(sender).sendMessage(message);
+      adventure.sender(sender).sendMessage(message);
     }
 
     @Override

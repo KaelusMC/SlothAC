@@ -1,5 +1,7 @@
 package space.kaelus.sloth.command.commands;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.bukkit.parser.PlayerParser;
@@ -13,11 +15,13 @@ import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 import space.kaelus.sloth.utils.TimeUtil;
 
+@Singleton
 public class ExemptCommand implements SlothCommand {
 
   private final ExemptManager exemptManager;
   private final LocaleManager localeManager;
 
+  @Inject
   public ExemptCommand(ExemptManager exemptManager, LocaleManager localeManager) {
     this.exemptManager = exemptManager;
     this.localeManager = localeManager;

@@ -26,7 +26,7 @@ import com.google.flatbuffers.Table;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "UnnecessaryParentheses"})
 public final class TickDataSequence extends Table {
   public static void ValidateVersion() {
     Constants.FLATBUFFERS_25_2_10();

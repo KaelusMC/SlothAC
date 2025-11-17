@@ -17,6 +17,8 @@
  */
 package space.kaelus.sloth.command.commands;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.OfflinePlayer;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.bukkit.parser.OfflinePlayerParser;
@@ -27,10 +29,12 @@ import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
+@Singleton
 public class PunishCommand implements SlothCommand {
 
   private final DatabaseManager databaseManager;
 
+  @Inject
   public PunishCommand(DatabaseManager databaseManager) {
     this.databaseManager = databaseManager;
   }

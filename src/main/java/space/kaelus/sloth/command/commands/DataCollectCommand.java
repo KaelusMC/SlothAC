@@ -17,12 +17,15 @@
  */
 package space.kaelus.sloth.command.commands;
 
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -39,10 +42,15 @@ import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
+@Singleton
 public class DataCollectCommand implements SlothCommand {
+
+  private static final DateTimeFormatter TIMESTAMP_FORMAT =
+      DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault());
 
   private final DataCollectorManager dataCollectorManager;
 
+  @Inject
   public DataCollectCommand(DataCollectorManager dataCollectorManager) {
     this.dataCollectorManager = dataCollectorManager;
   }
@@ -97,24 +105,13 @@ public class DataCollectCommand implements SlothCommand {
   private void start(CommandContext<Sender> context) {
     final CommandSender sender = context.sender().getNativeSender();
     final Player target = context.get("target");
-    final String type = ((String) context.get("type")).toUpperCase();
+    final String type = ((String) context.get("type")).toUpperCase(Locale.ROOT);
     final String details = context.getOrDefault("details", "");
 
-    String statusDetails;
-    switch (type) {
-      case "LEGIT", "CHEAT":
-        if (details == null || details.isEmpty()) {
-          MessageUtil.sendMessage(sender, Message.DATACOLLECT_DETAILS_REQUIRED);
-          return;
-        }
-        statusDetails = type + " " + details;
-        break;
-      case "UNLABELED":
-        statusDetails = "UNLABELED";
-        break;
-      default:
-        MessageUtil.sendMessage(sender, Message.DATACOLLECT_INVALID_TYPE);
-        return;
+    String statusDetails = resolveStatus(type, details, sender);
+
+    if (statusDetails == null) {
+      return;
     }
 
     if (dataCollectorManager.startCollecting(
@@ -150,7 +147,7 @@ public class DataCollectCommand implements SlothCommand {
     if (target != null) {
       DataSession session = dataCollectorManager.getSession(target.getUniqueId());
       if (session != null) {
-        long seconds = Duration.between(session.getStartTime(), Instant.now()).getSeconds();
+        long seconds = Duration.between(session.getStartTime(), Instant.now()).toSeconds();
         MessageUtil.sendMessage(
             sender,
             Message.DATACOLLECT_STATUS_PLAYER,
@@ -172,7 +169,7 @@ public class DataCollectCommand implements SlothCommand {
         MessageUtil.sendMessage(sender, Message.DATACOLLECT_STATUS_NONE);
       } else {
         for (DataSession session : dataCollectorManager.getActiveSessions().values()) {
-          long seconds = Duration.between(session.getStartTime(), Instant.now()).getSeconds();
+          long seconds = Duration.between(session.getStartTime(), Instant.now()).toSeconds();
           MessageUtil.sendMessage(
               sender,
               Message.DATACOLLECT_STATUS_PLAYER,
@@ -191,24 +188,13 @@ public class DataCollectCommand implements SlothCommand {
 
   private void onGlobalStart(CommandContext<Sender> context) {
     final CommandSender sender = context.sender().getNativeSender();
-    String type = ((String) context.get("type")).toUpperCase();
+    String type = ((String) context.get("type")).toUpperCase(Locale.ROOT);
     String details = context.getOrDefault("details", "");
 
-    String status;
-    switch (type) {
-      case "LEGIT", "CHEAT":
-        if (details == null || details.isEmpty()) {
-          MessageUtil.sendMessage(sender, Message.DATACOLLECT_DETAILS_REQUIRED);
-          return;
-        }
-        status = type + " " + details;
-        break;
-      case "UNLABELED":
-        status = "UNLABELED";
-        break;
-      default:
-        MessageUtil.sendMessage(sender, Message.DATACOLLECT_INVALID_TYPE);
-        return;
+    String status = resolveStatus(type, details, sender);
+
+    if (status == null) {
+      return;
     }
 
     String oldGlobalId = dataCollectorManager.getGlobalCollectionId();
@@ -220,8 +206,7 @@ public class DataCollectCommand implements SlothCommand {
 
     String newGlobalId =
         String.format(
-            "%s_GLOBAL_%s",
-            status.replace(' ', '#'), new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()));
+            "%s_GLOBAL_%s", status.replace(' ', '#'), TIMESTAMP_FORMAT.format(Instant.now()));
     dataCollectorManager.setGlobalCollectionId(newGlobalId);
     MessageUtil.sendMessage(
         sender, Message.DATACOLLECT_GLOBAL_START_SUCCESS, "id", newGlobalId.replace('#', ' '));
@@ -274,7 +259,7 @@ public class DataCollectCommand implements SlothCommand {
     int playerCount = 0;
     for (DataSession session : dataCollectorManager.getActiveSessions().values()) {
       if (globalId.equals(session.getStatus())) {
-        long seconds = Duration.between(session.getStartTime(), Instant.now()).getSeconds();
+        long seconds = Duration.between(session.getStartTime(), Instant.now()).toSeconds();
         MessageUtil.sendMessage(
             sender,
             Message.DATACOLLECT_GLOBAL_STATUS_PLAYER_ENTRY,
@@ -290,5 +275,22 @@ public class DataCollectCommand implements SlothCommand {
     if (playerCount == 0) {
       MessageUtil.sendMessage(sender, Message.DATACOLLECT_STATUS_NONE);
     }
+  }
+
+  private String resolveStatus(String type, String details, CommandSender sender) {
+    return switch (type) {
+      case "LEGIT", "CHEAT" -> {
+        if (details == null || details.isEmpty()) {
+          MessageUtil.sendMessage(sender, Message.DATACOLLECT_DETAILS_REQUIRED);
+          yield null;
+        }
+        yield type + " " + details;
+      }
+      case "UNLABELED" -> "UNLABELED";
+      default -> {
+        MessageUtil.sendMessage(sender, Message.DATACOLLECT_INVALID_TYPE);
+        yield null;
+      }
+    };
   }
 }

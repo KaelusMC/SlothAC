@@ -20,6 +20,8 @@ package space.kaelus.sloth.command.commands;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.CommandManager;
@@ -36,10 +38,12 @@ import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
+@Singleton
 public class SuspiciousCommand implements SlothCommand {
   private final PlayerDataManager playerDataManager;
   private final AlertManager alertManager;
 
+  @Inject
   public SuspiciousCommand(PlayerDataManager playerDataManager, AlertManager alertManager) {
     this.playerDataManager = playerDataManager;
     this.alertManager = alertManager;

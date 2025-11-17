@@ -19,12 +19,13 @@ package space.kaelus.sloth.data;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
@@ -32,6 +33,8 @@ import space.kaelus.sloth.SlothAC;
 
 @Getter
 public class DataSession {
+  private static final DateTimeFormatter TIMESTAMP_FORMAT =
+      DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault());
   private final UUID uuid;
   private final String player;
   private final String status;
@@ -51,11 +54,11 @@ public class DataSession {
   }
 
   public String generateFileName() {
-    String timestamp =
-        new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date(startTime.toEpochMilli()));
-    String statusForFilename = status.replace(' ', '#').replaceAll("[/\\\\?%*:|\"<>']", "-");
-    if (statusForFilename.contains("_GLOBAL_")) {
-      statusForFilename = statusForFilename.split("_GLOBAL_")[0];
+    String timestamp = TIMESTAMP_FORMAT.format(startTime);
+    String statusForFilename = status.replace(' ', '#').replaceAll("[/\\?%*:|\"<>']", "-");
+    int globalIndex = statusForFilename.indexOf("_GLOBAL_");
+    if (globalIndex >= 0) {
+      statusForFilename = statusForFilename.substring(0, globalIndex);
     }
     return String.format("%s_%s_%s.csv", statusForFilename, player, timestamp);
   }
@@ -89,7 +92,8 @@ public class DataSession {
       dataFolder.mkdirs();
     }
     File outputFile = new File(dataFolder, generateFileName());
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
+    try (BufferedWriter writer =
+        Files.newBufferedWriter(outputFile.toPath(), StandardCharsets.UTF_8)) {
       writer.write(csvContent);
     }
   }

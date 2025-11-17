@@ -33,15 +33,19 @@ import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.entity.Player;
 import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.player.SlothPlayer;
 import space.kaelus.sloth.utils.data.Pair;
 import space.kaelus.sloth.utils.update.RotationUpdate;
 
+@Singleton
 public class PacketListener extends PacketListenerAbstract {
   private final PlayerDataManager playerDataManager;
 
+  @Inject
   public PacketListener(PlayerDataManager playerDataManager) {
     this.playerDataManager = playerDataManager;
   }

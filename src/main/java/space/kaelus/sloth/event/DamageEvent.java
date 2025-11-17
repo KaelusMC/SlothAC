@@ -17,6 +17,8 @@
  */
 package space.kaelus.sloth.event;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -25,9 +27,11 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.player.SlothPlayer;
 
+@Singleton
 public class DamageEvent implements Listener {
   private final PlayerDataManager playerDataManager;
 
+  @Inject
   public DamageEvent(PlayerDataManager playerDataManager) {
     this.playerDataManager = playerDataManager;
   }

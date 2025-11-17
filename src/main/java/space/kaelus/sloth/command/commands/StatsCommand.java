@@ -1,6 +1,8 @@
 package space.kaelus.sloth.command.commands;
 
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.Bukkit;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
@@ -14,12 +16,14 @@ import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
+@Singleton
 public class StatsCommand implements SlothCommand {
 
   private final SlothAC plugin;
   private final DatabaseManager databaseManager;
   private final PlayerDataManager playerDataManager;
 
+  @Inject
   public StatsCommand(
       SlothAC plugin, DatabaseManager databaseManager, PlayerDataManager playerDataManager) {
     this.plugin = plugin;

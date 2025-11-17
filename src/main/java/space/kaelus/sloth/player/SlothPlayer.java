@@ -46,7 +46,6 @@ import space.kaelus.sloth.alert.AlertManager;
 import space.kaelus.sloth.checks.CheckManager;
 import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
 import space.kaelus.sloth.config.ConfigManager;
-import space.kaelus.sloth.database.DatabaseManager;
 import space.kaelus.sloth.entity.CompensatedEntities;
 import space.kaelus.sloth.integration.WorldGuardManager;
 import space.kaelus.sloth.punishment.PunishmentManager;
@@ -99,12 +98,13 @@ public class SlothPlayer {
       Player player,
       SlothAC plugin,
       ConfigManager configManager,
-      DatabaseManager databaseManager,
       AlertManager alertManager,
       DataCollectorManager dataCollectorManager,
       AIServerProvider aiServerProvider,
       WorldGuardManager worldGuardManager,
-      ExemptManager exemptManager) {
+      ExemptManager exemptManager,
+      CheckManager.Factory checkManagerFactory,
+      PunishmentManager.Factory punishmentManagerFactory) {
     this.plugin = plugin;
     this.player = player;
     this.uuid = player.getUniqueId();
@@ -115,19 +115,9 @@ public class SlothPlayer {
     this.latencyUtils = new LatencyUtils(this, plugin);
     this.compensatedEntities = new CompensatedEntities(this);
 
-    this.checkManager =
-        new CheckManager(
-            this,
-            plugin,
-            configManager,
-            dataCollectorManager,
-            aiServerProvider,
-            worldGuardManager,
-            alertManager);
+    this.checkManager = checkManagerFactory.create(this);
 
-    this.punishmentManager =
-        new PunishmentManager(
-            this, plugin, configManager, databaseManager.getDatabase(), alertManager);
+    this.punishmentManager = punishmentManagerFactory.create(this);
 
     int sequence = configManager.getAiSequence();
     this.ticksSinceAttack = sequence + 1;
@@ -170,18 +160,15 @@ public class SlothPlayer {
   }
 
   public void disconnect(Component reason) {
-    String textReason =
-        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
-            .serialize(reason);
     user.sendPacket(
         new com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect(
             reason));
     user.closeConnection();
 
     if (Bukkit.isPrimaryThread()) {
-      player.kickPlayer(textReason);
+      player.kick(reason);
     } else {
-      Bukkit.getScheduler().runTask(plugin, () -> player.kickPlayer(textReason));
+      Bukkit.getScheduler().runTask(plugin, () -> player.kick(reason));
     }
   }
 

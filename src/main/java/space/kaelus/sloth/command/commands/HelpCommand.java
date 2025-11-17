@@ -1,5 +1,7 @@
 package space.kaelus.sloth.command.commands;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import space.kaelus.sloth.command.SlothCommand;
@@ -7,7 +9,11 @@ import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
+@Singleton
 public class HelpCommand implements SlothCommand {
+
+  @Inject
+  public HelpCommand() {}
 
   @Override
   public void register(CommandManager<Sender> manager) {

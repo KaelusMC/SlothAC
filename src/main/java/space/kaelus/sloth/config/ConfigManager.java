@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -36,6 +38,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import space.kaelus.sloth.SlothAC;
 
 @Getter
+@Singleton
 public class ConfigManager {
   private final SlothAC plugin;
   private FileConfiguration config;
@@ -64,6 +67,7 @@ public class ConfigManager {
 
   private List<String> enabledDebugCategories;
 
+  @Inject
   public ConfigManager(SlothAC plugin) {
     this.plugin = plugin;
     loadConfigs();

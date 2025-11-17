@@ -3,10 +3,16 @@ package space.kaelus.sloth.player;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.entity.Player;
 
+@Singleton
 public class ExemptManager {
   private final Map<UUID, Long> temporaryExemptions = new ConcurrentHashMap<>();
+
+  @Inject
+  public ExemptManager() {}
 
   public boolean isExempt(Player player) {
     if (player == null) {

@@ -26,26 +26,30 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Logger;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.config.ConfigManager;
 
+@Singleton
 public class WorldGuardManager {
-  private final SlothAC plugin;
   private final ConfigManager configManager;
   private final boolean worldGuardLoaded;
   private WorldGuard worldGuardInstance;
+  private final Logger logger;
 
-  public WorldGuardManager(SlothAC plugin, ConfigManager configManager) {
-    this.plugin = plugin;
+  @Inject
+  public WorldGuardManager(Logger logger, ConfigManager configManager) {
     this.configManager = configManager;
+    this.logger = logger;
     this.worldGuardLoaded = Bukkit.getPluginManager().isPluginEnabled("WorldGuard");
     if (this.worldGuardLoaded) {
       this.worldGuardInstance = WorldGuard.getInstance();
-      plugin.getLogger().info("WorldGuard hook enabled.");
+      this.logger.info("WorldGuard hook enabled.");
     } else {
-      plugin.getLogger().info("WorldGuard not found, hook disabled.");
+      this.logger.info("WorldGuard not found, hook disabled.");
     }
   }
 

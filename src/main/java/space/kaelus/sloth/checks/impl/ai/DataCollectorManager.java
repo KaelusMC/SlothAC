@@ -12,16 +12,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import lombok.Getter;
 import lombok.Setter;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.data.DataSession;
 
+@Singleton
 public class DataCollectorManager {
   private final SlothAC plugin;
   @Getter private final Map<UUID, DataSession> activeSessions = new ConcurrentHashMap<>();
   @Setter @Getter private String globalCollectionId = null;
 
+  @Inject
   public DataCollectorManager(SlothAC plugin) {
     this.plugin = plugin;
   }

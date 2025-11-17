@@ -19,6 +19,8 @@ package space.kaelus.sloth.command.commands;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.parser.standard.IntegerParser;
@@ -33,12 +35,14 @@ import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 import space.kaelus.sloth.utils.TimeUtil;
 
+@Singleton
 public class LogsCommand implements SlothCommand {
   private final SlothAC plugin;
   private final DatabaseManager databaseManager;
   private final ConfigManager configManager;
   private final LocaleManager localeManager;
 
+  @Inject
   public LogsCommand(
       SlothAC plugin,
       DatabaseManager databaseManager,
@@ -131,19 +135,15 @@ public class LogsCommand implements SlothCommand {
       if (timeArg.length() < 2) return -1L;
       long value = Long.parseLong(timeArg.substring(0, timeArg.length() - 1));
       char unit = Character.toLowerCase(timeArg.charAt(timeArg.length() - 1));
-      long multiplier;
-      switch (unit) {
-        case 'm':
-          multiplier = TimeUnit.MINUTES.toMillis(1);
-          break;
-        case 'h':
-          multiplier = TimeUnit.HOURS.toMillis(1);
-          break;
-        case 'd':
-          multiplier = TimeUnit.DAYS.toMillis(1);
-          break;
-        default:
-          return -1L;
+      Long multiplier =
+          switch (unit) {
+            case 'm' -> TimeUnit.MINUTES.toMillis(1);
+            case 'h' -> TimeUnit.HOURS.toMillis(1);
+            case 'd' -> TimeUnit.DAYS.toMillis(1);
+            default -> null;
+          };
+      if (multiplier == null) {
+        return -1L;
       }
       return System.currentTimeMillis() - (value * multiplier);
     } catch (NumberFormatException e) {

@@ -17,6 +17,8 @@
  */
 package space.kaelus.sloth.command.commands;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
 import space.kaelus.sloth.SlothAC;
@@ -25,10 +27,12 @@ import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
+@Singleton
 public class ReloadCommand implements SlothCommand {
 
   private final SlothAC plugin;
 
+  @Inject
   public ReloadCommand(SlothAC plugin) {
     this.plugin = plugin;
   }
@@ -45,7 +49,7 @@ public class ReloadCommand implements SlothCommand {
 
   private void execute(CommandContext<Sender> context) {
     MessageUtil.sendMessage(context.sender().getNativeSender(), Message.RELOAD_START);
-    plugin.reloadPlugin();
+    plugin.onReload();
     MessageUtil.sendMessage(context.sender().getNativeSender(), Message.RELOAD_SUCCESS);
   }
 }

@@ -23,7 +23,10 @@
 package space.kaelus.sloth.command;
 
 import io.leangen.geantyref.TypeToken;
+import java.util.Set;
 import java.util.function.Function;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.exception.InvalidSyntaxException;
@@ -31,19 +34,11 @@ import org.incendo.cloud.key.CloudKey;
 import org.incendo.cloud.processors.requirements.RequirementApplicable;
 import org.incendo.cloud.processors.requirements.RequirementPostprocessor;
 import org.incendo.cloud.processors.requirements.Requirements;
-import space.kaelus.sloth.SlothAC;
-import space.kaelus.sloth.alert.AlertManager;
-import space.kaelus.sloth.checks.impl.ai.DataCollectorManager;
-import space.kaelus.sloth.command.commands.*;
 import space.kaelus.sloth.command.handler.SlothCommandFailureHandler;
-import space.kaelus.sloth.config.ConfigManager;
-import space.kaelus.sloth.config.LocaleManager;
-import space.kaelus.sloth.database.DatabaseManager;
-import space.kaelus.sloth.player.ExemptManager;
-import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.MessageUtil;
 
+@Singleton
 public class CommandRegister {
 
   public static final CloudKey<Requirements<Sender, SenderRequirement>> REQUIREMENT_KEY =
@@ -52,38 +47,27 @@ public class CommandRegister {
   public static final RequirementApplicable.RequirementApplicableFactory<Sender, SenderRequirement>
       REQUIREMENT_FACTORY = RequirementApplicable.factory(REQUIREMENT_KEY);
 
-  private static boolean commandsRegistered = false;
+  private final Set<SlothCommand> commands;
+  private final SlothCommandFailureHandler failureHandler;
+  private boolean commandsRegistered = false;
 
-  public static void registerCommands(
-      org.incendo.cloud.CommandManager<Sender> commandManager,
-      SlothAC plugin,
-      AlertManager alertManager,
-      DataCollectorManager dataCollectorManager,
-      DatabaseManager databaseManager,
-      ConfigManager configManager,
-      LocaleManager localeManager,
-      PlayerDataManager playerDataManager,
-      ExemptManager exemptManager) {
+  @Inject
+  public CommandRegister(Set<SlothCommand> commands, SlothCommandFailureHandler failureHandler) {
+    this.commands = commands;
+    this.failureHandler = failureHandler;
+  }
 
-    if (commandsRegistered) return;
+  public void registerCommands(org.incendo.cloud.CommandManager<Sender> commandManager) {
+    if (commandsRegistered) {
+      return;
+    }
 
-    new HelpCommand().register(commandManager);
-    new AlertsCommand(alertManager).register(commandManager);
-    new ReloadCommand(plugin).register(commandManager);
-    new ProbCommand(playerDataManager, localeManager, plugin).register(commandManager);
-    new DataCollectCommand(dataCollectorManager).register(commandManager);
-    new ProfileCommand(playerDataManager, localeManager).register(commandManager);
-    new HistoryCommand(plugin, databaseManager, configManager, localeManager)
-        .register(commandManager);
-    new LogsCommand(plugin, databaseManager, configManager, localeManager).register(commandManager);
-    new PunishCommand(databaseManager).register(commandManager);
-    new BrandsCommand(alertManager).register(commandManager);
-    new SuspiciousCommand(playerDataManager, alertManager).register(commandManager);
-    new StatsCommand(plugin, databaseManager, playerDataManager).register(commandManager);
-    new ExemptCommand(exemptManager, localeManager).register(commandManager);
+    for (SlothCommand command : commands) {
+      command.register(commandManager);
+    }
 
     final RequirementPostprocessor<Sender, SenderRequirement> senderRequirementPostprocessor =
-        RequirementPostprocessor.of(REQUIREMENT_KEY, new SlothCommandFailureHandler());
+        RequirementPostprocessor.of(REQUIREMENT_KEY, failureHandler);
     commandManager.registerCommandPostProcessor(senderRequirementPostprocessor);
 
     registerExceptionHandler(
@@ -92,7 +76,7 @@ public class CommandRegister {
     commandsRegistered = true;
   }
 
-  private static <E extends Exception> void registerExceptionHandler(
+  private <E extends Exception> void registerExceptionHandler(
       org.incendo.cloud.CommandManager<Sender> commandManager,
       Class<E> ex,
       Function<E, ComponentLike> toComponent) {

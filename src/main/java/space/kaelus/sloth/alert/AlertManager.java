@@ -24,6 +24,8 @@ package space.kaelus.sloth.alert;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import lombok.Getter;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
@@ -31,15 +33,14 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.config.LocaleManager;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
+@Singleton
 public class AlertManager {
 
-  private final SlothAC plugin;
   private final ConfigManager configManager;
   private final LocaleManager localeManager;
   private final BukkitAudiences adventure;
@@ -53,12 +54,9 @@ public class AlertManager {
   @Getter private String alertFormat;
   @Getter private String brandAlertFormat;
 
+  @Inject
   public AlertManager(
-      SlothAC plugin,
-      ConfigManager configManager,
-      LocaleManager localeManager,
-      BukkitAudiences adventure) {
-    this.plugin = plugin;
+      ConfigManager configManager, LocaleManager localeManager, BukkitAudiences adventure) {
     this.configManager = configManager;
     this.localeManager = localeManager;
     this.adventure = adventure;

@@ -18,9 +18,12 @@
 package space.kaelus.sloth.server;
 
 import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.config.ConfigManager;
 
+@Singleton
 public class AIServerProvider implements Supplier<AIServer> {
 
   private final SlothAC plugin;
@@ -28,6 +31,7 @@ public class AIServerProvider implements Supplier<AIServer> {
   private AIServer currentInstance;
   private ApiCooldown apiCooldown;
 
+  @Inject
   public AIServerProvider(SlothAC plugin, ConfigManager configManager) {
     this.plugin = plugin;
     this.configManager = configManager;

@@ -24,12 +24,17 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedFactory;
+import dagger.assisted.AssistedInject;
+import java.nio.charset.StandardCharsets;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import space.kaelus.sloth.alert.AlertManager;
 import space.kaelus.sloth.alert.AlertType;
 import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
+import space.kaelus.sloth.checks.CheckFactory;
 import space.kaelus.sloth.checks.type.PacketCheck;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.player.SlothPlayer;
@@ -54,10 +59,18 @@ public class ClientBrand extends AbstractCheck implements PacketCheck {
   @Getter private String brand = "vanilla";
   private boolean hasBrand = false;
 
-  public ClientBrand(SlothPlayer player, ConfigManager configManager, AlertManager alertManager) {
+  @AssistedInject
+  public ClientBrand(
+      @Assisted SlothPlayer player, ConfigManager configManager, AlertManager alertManager) {
     super(player);
     this.configManager = configManager;
     this.alertManager = alertManager;
+  }
+
+  @AssistedFactory
+  public interface Factory extends CheckFactory {
+    @Override
+    ClientBrand create(SlothPlayer slothPlayer);
   }
 
   @Override
@@ -84,7 +97,7 @@ public class ClientBrand extends AbstractCheck implements PacketCheck {
       byte[] brandBytes = new byte[data.length - 1];
       System.arraycopy(data, 1, brandBytes, 0, brandBytes.length);
 
-      brand = new String(brandBytes).replace(" (Velocity)", "");
+      brand = new String(brandBytes, StandardCharsets.UTF_8).replace(" (Velocity)", "");
       brand = ChatUtil.stripColor(brand);
     }
 

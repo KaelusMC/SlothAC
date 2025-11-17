@@ -22,7 +22,11 @@
  */
 package space.kaelus.sloth.punishment;
 
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedFactory;
+import dagger.assisted.AssistedInject;
 import java.util.*;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
@@ -31,6 +35,7 @@ import space.kaelus.sloth.alert.AlertManager;
 import space.kaelus.sloth.alert.AlertType;
 import space.kaelus.sloth.checks.ICheck;
 import space.kaelus.sloth.config.ConfigManager;
+import space.kaelus.sloth.database.DatabaseManager;
 import space.kaelus.sloth.database.ViolationDatabase;
 import space.kaelus.sloth.player.SlothPlayer;
 import space.kaelus.sloth.utils.Message;
@@ -43,19 +48,28 @@ public class PunishmentManager {
   private final Map<String, PunishGroup> punishmentGroups = new HashMap<>();
   private final AlertManager alertManager;
   private final ViolationDatabase database;
+  private final BukkitAudiences adventure;
 
+  @AssistedInject
   public PunishmentManager(
-      SlothPlayer slothPlayer,
+      @Assisted SlothPlayer slothPlayer,
       SlothAC plugin,
       ConfigManager configManager,
-      ViolationDatabase database,
-      AlertManager alertManager) {
+      DatabaseManager databaseManager,
+      AlertManager alertManager,
+      BukkitAudiences adventure) {
     this.slothPlayer = slothPlayer;
     this.plugin = plugin;
     this.configManager = configManager;
     this.alertManager = alertManager;
-    this.database = database;
+    this.database = databaseManager.getDatabase();
+    this.adventure = adventure;
     reload();
+  }
+
+  @AssistedFactory
+  public interface Factory {
+    PunishmentManager create(SlothPlayer slothPlayer);
   }
 
   public void reload() {
@@ -146,7 +160,7 @@ public class PunishmentManager {
             .runTask(
                 plugin,
                 () -> {
-                  plugin.getAdventure().players().sendMessage(component);
+                  adventure.players().sendMessage(component);
                 });
       } else {
         String formattedCmd =

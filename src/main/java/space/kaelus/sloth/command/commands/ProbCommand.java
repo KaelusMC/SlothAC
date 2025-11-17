@@ -21,8 +21,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import lombok.Getter;
 import lombok.Setter;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -43,23 +46,26 @@ import space.kaelus.sloth.checks.impl.ai.AICheck;
 import space.kaelus.sloth.command.CommandRegister;
 import space.kaelus.sloth.command.SlothCommand;
 import space.kaelus.sloth.command.requirements.PlayerSenderRequirement;
-import space.kaelus.sloth.config.LocaleManager;
 import space.kaelus.sloth.player.PlayerDataManager;
 import space.kaelus.sloth.player.SlothPlayer;
 import space.kaelus.sloth.sender.Sender;
 import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 
+@Singleton
 public class ProbCommand implements SlothCommand, Listener {
   private final Map<UUID, ProbSession> activeSessions = new ConcurrentHashMap<>();
 
   private final PlayerDataManager playerDataManager;
   private final SlothAC plugin;
+  private final BukkitAudiences adventure;
 
+  @Inject
   public ProbCommand(
-      PlayerDataManager playerDataManager, LocaleManager localeManager, SlothAC plugin) {
+      PlayerDataManager playerDataManager, SlothAC plugin, BukkitAudiences adventure) {
     this.playerDataManager = playerDataManager;
     this.plugin = plugin;
+    this.adventure = adventure;
     plugin.getServer().getPluginManager().registerEvents(this, plugin);
   }
 
@@ -184,8 +190,7 @@ public class ProbCommand implements SlothCommand, Listener {
     }
   }
 
-  private void sendActionBar(
-      Player viewer, Player target, AICheck aiCheck, ProbSession session) {
+  private void sendActionBar(Player viewer, Player target, AICheck aiCheck, ProbSession session) {
     final double probability = aiCheck.getLastProbability();
     final double buffer = aiCheck.getBuffer();
     final int ping = target.getPing();
@@ -235,7 +240,7 @@ public class ProbCommand implements SlothCommand, Listener {
 
   private void sendActionBar(Player player, Component message) {
     if (player == null || !player.isOnline()) return;
-    plugin.getAdventure().player(player).sendActionBar(message);
+    adventure.player(player).sendActionBar(message);
   }
 
   private TextColor getProbColor(double probability) {
@@ -267,7 +272,7 @@ public class ProbCommand implements SlothCommand, Listener {
     private double lastBuffer = -1.0;
     private int lastPing = -1;
 
-    public ProbSession(UUID targetUuid) {
+    ProbSession(UUID targetUuid) {
       this.targetUuid = targetUuid;
     }
   }

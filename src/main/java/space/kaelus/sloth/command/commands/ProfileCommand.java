@@ -22,6 +22,9 @@
  */
 package space.kaelus.sloth.command.commands;
 
+import java.util.logging.Logger;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bukkit.Statistic;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -39,13 +42,18 @@ import space.kaelus.sloth.utils.Message;
 import space.kaelus.sloth.utils.MessageUtil;
 import space.kaelus.sloth.utils.TimeUtil;
 
+@Singleton
 public class ProfileCommand implements SlothCommand {
   private final PlayerDataManager playerDataManager;
   private final LocaleManager localeManager;
+  private final Logger logger;
 
-  public ProfileCommand(PlayerDataManager playerDataManager, LocaleManager localeManager) {
+  @Inject
+  public ProfileCommand(
+      PlayerDataManager playerDataManager, LocaleManager localeManager, Logger logger) {
     this.playerDataManager = playerDataManager;
     this.localeManager = localeManager;
+    this.logger = logger;
   }
 
   @Override
@@ -76,7 +84,8 @@ public class ProfileCommand implements SlothCommand {
     long totalPlayTicks = 0;
     try {
       totalPlayTicks = target.getStatistic(Statistic.PLAY_ONE_MINUTE);
-    } catch (IllegalArgumentException ignored) {
+    } catch (IllegalArgumentException ex) {
+      logger.fine("Failed to fetch PLAY_ONE_MINUTE for " + target.getName());
     }
 
     long totalPlayMillis = totalPlayTicks * 50;

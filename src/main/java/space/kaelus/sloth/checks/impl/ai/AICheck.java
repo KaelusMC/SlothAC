@@ -23,6 +23,9 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedFactory;
+import dagger.assisted.AssistedInject;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -36,11 +39,13 @@ import space.kaelus.sloth.alert.AlertManager;
 import space.kaelus.sloth.alert.AlertType;
 import space.kaelus.sloth.checks.AbstractCheck;
 import space.kaelus.sloth.checks.CheckData;
+import space.kaelus.sloth.checks.CheckFactory;
 import space.kaelus.sloth.checks.Reloadable;
 import space.kaelus.sloth.checks.type.PacketCheck;
 import space.kaelus.sloth.config.ConfigManager;
 import space.kaelus.sloth.data.TickData;
 import space.kaelus.sloth.debug.DebugCategory;
+import space.kaelus.sloth.debug.DebugManager;
 import space.kaelus.sloth.flatbuffers.TickDataSequence;
 import space.kaelus.sloth.integration.WorldGuardManager;
 import space.kaelus.sloth.player.SlothPlayer;
@@ -57,6 +62,7 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
   private final ConfigManager configManager;
   private final WorldGuardManager worldGuardManager;
   private final AlertManager alertManager;
+  private final DebugManager debugManager;
 
   private int step;
   private AIServer aiServer;
@@ -83,20 +89,29 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
   private static final ThreadLocal<FlatBufferBuilder> BUILDER =
       ThreadLocal.withInitial(() -> new FlatBufferBuilder(4096));
 
+  @AssistedInject
   public AICheck(
-      SlothPlayer slothPlayer,
+      @Assisted SlothPlayer slothPlayer,
       SlothAC plugin,
       AIServerProvider aiServerProvider,
       ConfigManager configManager,
       WorldGuardManager worldGuardManager,
-      AlertManager alertManager) {
+      AlertManager alertManager,
+      DebugManager debugManager) {
     super(slothPlayer);
     this.plugin = plugin;
     this.aiServerProvider = aiServerProvider;
     this.configManager = configManager;
     this.worldGuardManager = worldGuardManager;
     this.alertManager = alertManager;
+    this.debugManager = debugManager;
     reload();
+  }
+
+  @AssistedFactory
+  public interface Factory extends CheckFactory {
+    @Override
+    AICheck create(SlothPlayer slothPlayer);
   }
 
   @Override
@@ -127,11 +142,9 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
     int sequence = configManager.getAiSequence();
 
     if (slothPlayer.packetStateData.lastPacketWasOnePointSeventeenDuplicate) {
-      plugin
-          .getDebugManager()
-          .log(
-              DebugCategory.PACKET_DUPLICATION,
-              "Mojang failed IQ Test for: " + slothPlayer.getPlayer().getName() + ".");
+      debugManager.log(
+          DebugCategory.PACKET_DUPLICATION,
+          "Mojang failed IQ Test for: " + slothPlayer.getPlayer().getName() + ".");
       return;
     }
 
@@ -158,13 +171,11 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
     if (ticks.size() == sequence && ticksStep >= step) {
       if (configManager.isAiWorldGuardEnabled()
           && worldGuardManager.isPlayerInDisabledRegion(slothPlayer.getPlayer())) {
-        plugin
-            .getDebugManager()
-            .log(
-                DebugCategory.WORLDGUARD,
-                "Player "
-                    + slothPlayer.getPlayer().getName()
-                    + " is in a disabled region. Skipping AI check.");
+        debugManager.log(
+            DebugCategory.WORLDGUARD,
+            "Player "
+                + slothPlayer.getPlayer().getName()
+                + " is in a disabled region. Skipping AI check.");
         ticksStep = 0;
         return;
       }
@@ -251,17 +262,15 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
             AlertType.SUSPICIOUS);
       }
 
-      plugin
-          .getDebugManager()
-          .log(
-              DebugCategory.AI_PROBABILITY,
-              String.format(
-                  "[%s] Prob: %.4f | Buffer: %.2f -> %.2f | Damage Multiplier: %.2f",
-                  this.slothPlayer.getPlayer().getName(),
-                  probability,
-                  oldBuffer,
-                  this.buffer,
-                  slothPlayer.getDmgMultiplier()));
+      debugManager.log(
+          DebugCategory.AI_PROBABILITY,
+          String.format(
+              "[%s] Prob: %.4f | Buffer: %.2f -> %.2f | Damage Multiplier: %.2f",
+              this.slothPlayer.getPlayer().getName(),
+              probability,
+              oldBuffer,
+              this.buffer,
+              slothPlayer.getDmgMultiplier()));
 
       if (this.buffer > this.flag) {
         flag(
@@ -336,7 +345,7 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
               + e.getMessage();
 
       if (e.getCode() == AIServer.ResponseCode.TIMEOUT) {
-        plugin.getDebugManager().log(DebugCategory.AI_TIMEOUT, logMessage);
+        debugManager.log(DebugCategory.AI_TIMEOUT, logMessage);
       } else {
         plugin.getLogger().warning(logMessage);
       }

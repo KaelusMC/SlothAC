@@ -19,15 +19,20 @@ package space.kaelus.sloth.debug;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import space.kaelus.sloth.SlothAC;
 import space.kaelus.sloth.config.ConfigManager;
 
+@Singleton
 public class DebugManager {
   private final SlothAC plugin;
   private final ConfigManager configManager;
   private final Set<DebugCategory> enabledCategories = EnumSet.noneOf(DebugCategory.class);
 
+  @Inject
   public DebugManager(SlothAC plugin, ConfigManager configManager) {
     this.plugin = plugin;
     this.configManager = configManager;
@@ -39,7 +44,7 @@ public class DebugManager {
     List<String> enabledKeys = configManager.getEnabledDebugCategories();
     for (String key : enabledKeys) {
       try {
-        enabledCategories.add(DebugCategory.valueOf(key.toUpperCase()));
+        enabledCategories.add(DebugCategory.valueOf(key.toUpperCase(Locale.ROOT)));
       } catch (IllegalArgumentException e) {
         plugin.getLogger().warning("Invalid debug category in config: " + key);
       }

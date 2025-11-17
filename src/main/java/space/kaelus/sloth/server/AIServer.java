@@ -68,7 +68,7 @@ public final class AIServer {
     HttpRequest request =
         HttpRequest.newBuilder(serverUri)
             .header("Content-Type", "application/octet-stream")
-            .header("User-Agent", "SlothAC/" + plugin.getDescription().getVersion())
+            .header("User-Agent", "SlothAC/" + plugin.getPluginMeta().getVersion())
             .header("X-API-Key", this.apiKey)
             .header("Accept", "application/json")
             .POST(
@@ -93,7 +93,7 @@ public final class AIServer {
     HttpRequest request =
         HttpRequest.newBuilder(serverUri)
             .header("Content-Type", "application/octet-stream")
-            .header("User-Agent", "SlothAC/" + plugin.getDescription().getVersion())
+            .header("User-Agent", "SlothAC/" + plugin.getPluginMeta().getVersion())
             .header("X-API-Key", this.apiKey)
             .header("Accept", "application/json")
             .POST(HttpRequest.BodyPublishers.ofByteArray(playerData))
