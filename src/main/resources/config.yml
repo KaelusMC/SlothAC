@@ -28,7 +28,7 @@ ai:
   damage-reduction:
     # Enable damage reduction?
     enabled: true
-    # The violation level (VL) which damage reduction will begin.
+    # The violation level (VL) at which damage reduction will begin.
     vl: 20.0
     # Damage reduction
     # 2.0: Damage will be cut by 50%.

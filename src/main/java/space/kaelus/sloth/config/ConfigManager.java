@@ -101,7 +101,7 @@ public class ConfigManager {
 
     aiDamageReductionEnabled = config.getBoolean("ai.damage-reduction.enabled", true);
     aiDamageReductionVl = config.getDouble("ai.damage-reduction.vl", 20.0);
-    aiDamageReductionDivider = config.getDouble("ai.damage-reduction.divider", 1.0);
+    aiDamageReductionDivider = config.getDouble("ai.damage-reduction.divider", 2.0);
 
     aiWorldGuardEnabled = config.getBoolean("ai.worldguard.enabled", true);
     aiDisabledRegions =
