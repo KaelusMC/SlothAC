@@ -51,8 +51,8 @@ public class ConfigManager {
   private double aiBufferMultiplier;
   private double aiBufferDecrease;
   private boolean aiDamageReductionEnabled;
-  private double aiDamageReductionProb;
-  private double aiDamageReductionMultiplier;
+  private double aiDamageReductionVl;
+  private double aiDamageReductionDivider;
 
   private boolean aiWorldGuardEnabled;
   private List<String> aiDisabledRegions;
@@ -100,8 +100,8 @@ public class ConfigManager {
     aiBufferDecrease = config.getDouble("ai.buffer.decrease", 0.25);
 
     aiDamageReductionEnabled = config.getBoolean("ai.damage-reduction.enabled", true);
-    aiDamageReductionProb = config.getDouble("ai.damage-reduction.prob", 0.9);
-    aiDamageReductionMultiplier = config.getDouble("ai.damage-reduction.multiplier", 1.0);
+    aiDamageReductionVl = config.getDouble("ai.damage-reduction.vl", 20.0);
+    aiDamageReductionDivider = config.getDouble("ai.damage-reduction.divider", 1.0);
 
     aiWorldGuardEnabled = config.getBoolean("ai.worldguard.enabled", true);
     aiDisabledRegions =

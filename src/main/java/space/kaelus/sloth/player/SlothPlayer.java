@@ -83,7 +83,7 @@ public class SlothPlayer {
   private final Queue<TeleportData> pendingTeleports = new ConcurrentLinkedQueue<>();
   private final Queue<RotationData> pendingRotations = new ConcurrentLinkedQueue<>();
 
-  @Setter private double dmgMultiplier = 1.0;
+  @Setter private double dmgDivider = 1.0;
   public int ticksSinceAttack;
 
   public final Queue<Pair<Short, Long>> transactionsSent = new ConcurrentLinkedQueue<>();

@@ -41,9 +41,10 @@ public class DamageEvent implements Listener {
     if (slothPlayer == null) {
       return;
     }
-    double multiplier = slothPlayer.getDmgMultiplier();
-    if (multiplier < 1.0) {
-      event.setDamage(event.getDamage() * multiplier);
-    }
+    double divider = slothPlayer.getDmgDivider();
+
+    if (divider < 1.D) divider = 1.D;
+
+    event.setDamage(event.getDamage() / divider);
   }
 }

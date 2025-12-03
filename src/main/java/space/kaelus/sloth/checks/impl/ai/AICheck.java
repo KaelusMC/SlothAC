@@ -68,8 +68,8 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
 
   @Getter @Setter private int prob90 = 0;
   private boolean aiDamageReductionEnabled;
-  private double aiDamageReductionProb;
-  private double aiDamageReductionMultiplier;
+  private double aiDamageReductionVl;
+  private double aiDamageReductionDivider;
 
   private double flag;
   private double bufferResetOnFlag;
@@ -109,8 +109,8 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
 
     this.step = configManager.getAiStep();
     this.aiDamageReductionEnabled = configManager.isAiDamageReductionEnabled();
-    this.aiDamageReductionProb = configManager.getAiDamageReductionProb();
-    this.aiDamageReductionMultiplier = configManager.getAiDamageReductionMultiplier();
+    this.aiDamageReductionVl = configManager.getAiDamageReductionVl();
+    this.aiDamageReductionDivider = configManager.getAiDamageReductionDivider();
 
     this.flag = configManager.getAiFlag();
     this.bufferResetOnFlag = configManager.getAiResetOnFlag();
@@ -208,22 +208,12 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
             .getLogger()
             .warning("[AICheck] API response is missing probability. Response: " + response);
         this.lastProbability = 0.0;
-        slothPlayer.setDmgMultiplier(1.0);
+        slothPlayer.setDmgDivider(1.0);
         return;
       }
 
       double probability = apiResponse.probability();
       this.lastProbability = probability;
-
-      if (aiDamageReductionEnabled) {
-        if (probability >= aiDamageReductionProb) {
-          double ratio = (probability - aiDamageReductionProb) / (1.0 - aiDamageReductionProb);
-          double reduction = Math.min(1.0, ratio * aiDamageReductionMultiplier);
-          slothPlayer.setDmgMultiplier(1.0 - reduction);
-        } else {
-          slothPlayer.setDmgMultiplier(1.0);
-        }
-      }
 
       if (probability > 0.9) {
         prob90++;
@@ -235,6 +225,14 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
         this.buffer += (probability - CHEAT_PROBABILITY) * this.bufferMultiplier;
       } else if (probability < LEGIT_PROBABILITY) {
         this.buffer = Math.max(0, this.buffer - this.bufferDecrease);
+      }
+
+      if (aiDamageReductionEnabled) {
+        if (this.buffer >= aiDamageReductionVl) {
+          slothPlayer.setDmgDivider(aiDamageReductionDivider);
+        } else {
+          slothPlayer.setDmgDivider(1.0);
+        }
       }
 
       if (this.buffer > suspiciousAlertBuffer && oldBuffer <= suspiciousAlertBuffer) {
@@ -253,12 +251,12 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
           .log(
               DebugCategory.AI_PROBABILITY,
               String.format(
-                  "[%s] Prob: %.4f | Buffer: %.2f -> %.2f | Damage Multiplier: %.2f",
+                  "[%s] Prob: %.4f | Buffer: %.2f -> %.2f | Damage Divider: %.2f",
                   this.slothPlayer.getPlayer().getName(),
                   probability,
                   oldBuffer,
                   this.buffer,
-                  slothPlayer.getDmgMultiplier()));
+                  slothPlayer.getDmgDivider()));
 
       if (this.buffer > this.flag) {
         flag(
@@ -278,20 +276,20 @@ public class AICheck extends AbstractCheck implements PacketCheck, Reloadable {
                   + ". Response Body: "
                   + response);
       this.lastProbability = 0.0;
-      slothPlayer.setDmgMultiplier(1.0);
+      slothPlayer.setDmgDivider(1.0);
     } catch (Exception e) {
       plugin
           .getLogger()
           .warning("[AICheck] Unexpected error processing API response: " + e.getMessage());
       e.printStackTrace();
       this.lastProbability = 0.0;
-      slothPlayer.setDmgMultiplier(1.0);
+      slothPlayer.setDmgDivider(1.0);
     }
   }
 
   private Void onError(Throwable error) {
     this.lastProbability = 0.0;
-    slothPlayer.setDmgMultiplier(1.0);
+    slothPlayer.setDmgDivider(1.0);
 
     Throwable cause =
         (error instanceof java.util.concurrent.CompletionException && error.getCause() != null)

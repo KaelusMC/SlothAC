@@ -29,7 +29,7 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.11.6")
 
     // PacketEvents
-    implementation("com.github.retrooper:packetevents-spigot:2.10.0")
+    implementation("com.github.retrooper:packetevents-spigot:2.10.2-SNAPSHOT")
 
     // Cloud Command Framework
     implementation("org.incendo:cloud-paper:2.0.0-beta.10")

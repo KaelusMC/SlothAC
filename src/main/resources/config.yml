@@ -28,13 +28,11 @@ ai:
   damage-reduction:
     # Enable damage reduction?
     enabled: true
-    # The probability at which damage reduction will begin.
-    prob: 0.9
-    # Damage multiplier
-    # 0.1: at 100% (1.0) probability, damage will be cut by 10%.
-    # 1.0: at 100% (1.0) probability, damage will be cut by 100%.
-    # 2.0: at 95% (0.95) probability, damage will be cut by 100%.
-    multiplier: 1.0
+    # The violation level (VL) which damage reduction will begin.
+    vl: 20.0
+    # Damage reduction
+    # 2.0: Damage will be cut by 50%.
+    divider: 2.0
   worldguard:
     # Enable WorldGuard region checking?
     enabled: true
