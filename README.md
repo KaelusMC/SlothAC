@@ -10,8 +10,8 @@
  </p>
 
  <div>
-  <a href="https://github.com/KaelusMC/SlothAC/actions/workflows/gradle.yml">
-   <img alt="Java CI" src="https://github.com/KaelusMC/SlothAC/actions/workflows/gradle.yml/badge.svg">
+  <a href="https://github.com/KaelusMC/SlothAC/actions/workflows/ci.yml">
+   <img alt="CI" src="https://github.com/KaelusMC/SlothAC/actions/workflows/ci.yml/badge.svg">
   </a>
 
   <a href="https://www.codefactor.io/repository/github/kaelusmc/slothac">
