@@ -41,6 +41,14 @@ prob:
   no-aicheck: "<red>AI-Чек неактивен для <player>."
   format: "<prob_color>Вер-ть (<player>): <prob_value></prob_color> <dark_gray>|</dark_gray> <buffer_color>Буфер: <buffer_value></buffer_color> <dark_gray>|</dark_gray> <ping_color>Пинг: <ping_value>мс</ping_color>"
 
+monitor:
+  enabled: "<green>Мониторинг включен для <player>."
+  disabled: "<yellow>Мониторинг выключен для <player>."
+  no-data: "<red>Не удалось получить данные для <player>."
+  no-aicheck: "<red>AI-Чек неактивен для <player>."
+  setting-updated: "<green>Монитор <setting> установлен: <value>."
+  invalid-setting: "<red>Неверный <setting>. Используй: <options>."
+
 brand:
   alerts-enabled: "<prefix> <white>Оповещения о клиентах включены."
   alerts-disabled: "<prefix> <white>Оповещения о клиентах выключены."
@@ -116,7 +124,7 @@ help:
   - "<aqua>/<command> suspicious alerts</aqua> <gray>-</gray> <white>Включить/выключить оповещения о подозрительных игроках."
   - "<aqua>/<command> suspicious <list|top></aqua> <gray>-</gray> <white>Просмотр подозрительных игроков."
   - "<aqua>/<command> profile <player></aqua> <gray>-</gray> <white>Просмотреть профиль игрока."
-  - "<aqua>/<command> prob <player></aqua> <gray>-</gray> <white>Просмотр вероятностей ИИ для игрока в реальном времени."
+  - "<aqua>/<command> monitor <player></aqua> <gray>-</gray> <white>Мониторинг ИИ для игрока в реальном времени."
   - "<aqua>/<command> history <player> [page]</aqua> <gray>-</gray> <white>Просмотреть историю нарушений игрока."
   - "<aqua>/<command> logs [page]</aqua> <gray>-</gray> <white>Просмотр недавних нарушений."
   - "<aqua>/<command> stats</aqua> <gray>-</gray> <white>Просмотр статистики сервера."

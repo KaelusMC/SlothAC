@@ -41,6 +41,14 @@ prob:
   no-aicheck: "<red>AI-Check is not active for <player>."
   format: "<prob_color>Prob (<player>): <prob_value></prob_color> <dark_gray>|</dark_gray> <buffer_color>Buffer: <buffer_value></buffer_color> <dark_gray>|</dark_gray> <ping_color>Ping: <ping_value>ms</ping_color>"
 
+monitor:
+  enabled: "<green>Monitor enabled for <player>."
+  disabled: "<yellow>Monitor disabled for <player>."
+  no-data: "<red>Could not get data for <player>."
+  no-aicheck: "<red>AI-Check is not active for <player>."
+  setting-updated: "<green>Monitor <setting> set to <value>."
+  invalid-setting: "<red>Invalid <setting>. Use: <options>."
+
 brand:
   alerts-enabled: "<prefix> <white>Brand notifications enabled."
   alerts-disabled: "<prefix> <white>Brand notifications disabled."
@@ -116,7 +124,7 @@ help:
   - "<aqua>/<command> suspicious alerts</aqua> <gray>-</gray> <white>Toggle suspicious player alerts."
   - "<aqua>/<command> suspicious <list|top></aqua> <gray>-</gray> <white>View suspicious players."
   - "<aqua>/<command> profile <player></aqua> <gray>-</gray> <white>View a player's profile."
-  - "<aqua>/<command> prob <player></aqua> <gray>-</gray> <white>Live view AI probabilities for a player."
+  - "<aqua>/<command> monitor <player></aqua> <gray>-</gray> <white>Live AI monitor for a player."
   - "<aqua>/<command> history <player> [page]</aqua> <gray>-</gray> <white>View a player's violation history."
   - "<aqua>/<command> logs [page]</aqua> <gray>-</gray> <white>View recent violations."
   - "<aqua>/<command> stats</aqua> <gray>-</gray> <white>View server statistics."
