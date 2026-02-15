@@ -5,6 +5,7 @@
 # [alert] - special command to alert
 # [broadcast] message - special command to broadcast message to all players on the server
 # [reset] - special command to reset the check violations in check group
+# [wait] <time> - wait a duration (e.g. 10s, 40t)
 
 Punishments:
   AI:
