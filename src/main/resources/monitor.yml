@@ -1,0 +1,60 @@
+update: 2
+storage:
+  per-player: true
+defaults:
+  mode: compact           # compact | full
+  theme: calm             # calm | vivid | minimal
+  show-ping: true
+  show-dmg: true
+  show-trend: true
+  show-name: auto         # auto | always | never
+behavior:
+  keep-length: true
+  show-neutral-when-hidden: true
+  neutral:
+    ping: "<gray>Ping --</gray>"
+    dmg: "<gray>Dmg 1.00x</gray>"
+  name:
+    max-length: 12
+    truncate-suffix: "…"
+format:
+  prob:
+    decimals: 0
+  trend:
+    decimals: 2
+    threshold: 0.0   # 0 = auto (based on decimals)
+  buffer:
+    decimals: 2
+  ping:
+    min-width: 2
+  dmg:
+    decimals: 2
+    hide-when-default: false
+modes:
+  compact: [name, prob, trend, buffer]
+  full: [name, prob, trend, buffer, ping, dmg]
+theme:
+  calm:
+    name: "<gray>@{name}</gray>"
+    prob: "<bold><white>{prob}%</white></bold>"
+    trend: "<color:#86EFAC>{trend}</color>"
+    buffer: "<color:#FBBF24>◆ {buffer}</color>"
+    ping: "<color:#BFDBFE>Ping {ping}ms</color>"
+    dmg: "<color:#FECACA>Dmg {dmg}x</color>"
+    sep: "<dark_gray> • </dark_gray>"
+  vivid:
+    name: "<gray>@{name}</gray>"
+    prob: "<bold><white>{prob}%</white></bold>"
+    trend: "<green>{trend}</green>"
+    buffer: "<yellow>◆ {buffer}</yellow>"
+    ping: "<aqua>Ping {ping}ms</aqua>"
+    dmg: "<red>Dmg {dmg}x</red>"
+    sep: "<dark_gray> • </dark_gray>"
+  minimal:
+    name: "<gray>@{name}</gray>"
+    prob: "<white>{prob}%</white>"
+    trend: "<gray>{trend}</gray>"
+    buffer: "<yellow>◆ {buffer}</yellow>"
+    ping: "<gray>{ping}ms</gray>"
+    dmg: "<gray>{dmg}x</gray>"
+    sep: "<dark_gray> • </dark_gray>"

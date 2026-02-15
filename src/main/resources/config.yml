@@ -1,5 +1,5 @@
 # SlothAC main configuration
-# Copyright 2025 KaelusMC, DefineOutside and contributors, Licensed under GPLv3.
+# Copyright 2026 KaelusMC, DefineOutside and contributors, Licensed under GPLv3.
 
 # Locale: en, ru
 locale: "en"
@@ -67,10 +67,31 @@ alerts:
 history:
   enabled: true
 
+database:
+  # sqlite or mysql
+  type: sqlite
+  sqlite:
+    file: "violations.db"
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "slothac"
+    username: "root"
+    password: "password"
+    use-ssl: false
+    allow-public-key-retrieval: false
+
 suspicious:
   alerts:
     buffer: 25.0
 
 debug:
-  # AI_PROBABILITY, AI_TIMEOUT, WORLDGUARD, PACKET_DUPLICATION
-  enabled-categories: []
+  # Switch for all debug output
+  enabled: false
+  # Category toggles
+  categories:
+    probability: false    # AI probability values per check
+    timeout: false        # API timeouts and retries
+    rate-limit: false     # Rate limiting events
+    worldguard: false     # WorldGuard region checks
+    packet-duplication: false  # Mojang packet duplication bugs
