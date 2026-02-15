@@ -62,6 +62,11 @@ dependencies {
   implementation("io.insert-koin:koin-core:4.1.1")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
   implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
+
+  // Testing
+  testImplementation(kotlin("test"))
+  testImplementation("org.junit.jupiter:junit-jupiter:6.0.2")
+  testImplementation("io.mockk:mockk:1.14.9")
 }
 
 java {
@@ -114,6 +119,17 @@ tasks.shadowJar {
   relocate("org.yaml.snakeyaml", "space.kaelus.sloth.libs.snakeyaml")
   relocate("org.joml", "space.kaelus.sloth.libs.joml")
   relocate("org.koin", "space.kaelus.sloth.libs.koin")
+}
+
+tasks.test {
+  useJUnitPlatform()
+  jvmArgs(
+    "-XX:+EnableDynamicAgentLoading",
+    "--add-opens",
+    "java.base/java.lang.reflect=ALL-UNNAMED",
+    "--add-opens",
+    "java.base/java.lang=ALL-UNNAMED",
+  )
 }
 
 tasks.build { dependsOn(tasks.shadowJar) }
