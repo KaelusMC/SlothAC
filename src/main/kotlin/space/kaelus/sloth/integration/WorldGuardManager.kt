@@ -46,7 +46,7 @@ class WorldGuardManager(private val logger: Logger, private val configManager: C
       return false
     }
     val disabledRegions = configManager.aiDisabledRegions
-    if (disabledRegions.isNullOrEmpty()) {
+    if (disabledRegions.isEmpty()) {
       return false
     }
     val worldGuard = worldGuardInstance ?: return false
@@ -64,30 +64,12 @@ class WorldGuardManager(private val logger: Logger, private val configManager: C
     }
 
     val worldName = player.world.name.lowercase(Locale.ROOT)
+    val globalRegions = disabledRegions["*"].orEmpty()
+    val worldRegions = disabledRegions[worldName].orEmpty()
 
     return playerRegions.all { region ->
       val regionId = region.id.lowercase(Locale.ROOT)
-      matchesDisabledRegion(regionId, worldName, disabledRegions)
+      regionId in globalRegions || regionId in worldRegions
     }
-  }
-
-  private fun matchesDisabledRegion(
-    regionId: String,
-    worldName: String,
-    disabledRegions: List<String>,
-  ): Boolean {
-    for (entry in disabledRegions) {
-      if (entry.contains(":")) {
-        val parts = entry.split(":", limit = 2)
-        val disabledRegionName = parts[0]
-        val disabledWorldName = parts[1]
-        if (regionId == disabledRegionName && worldName == disabledWorldName) {
-          return true
-        }
-      } else if (regionId == entry) {
-        return true
-      }
-    }
-    return false
   }
 }

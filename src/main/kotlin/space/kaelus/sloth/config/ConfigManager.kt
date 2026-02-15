@@ -26,7 +26,6 @@ import java.io.File
 import java.util.EnumSet
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
-import java.util.stream.Collectors
 import org.spongepowered.configurate.CommentedConfigurationNode
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import space.kaelus.sloth.SlothAC
@@ -73,7 +72,7 @@ class ConfigManager(private val plugin: SlothAC) {
     private set
 
   private var aiWorldGuardEnabled = false
-  var aiDisabledRegions: List<String> = emptyList()
+  var aiDisabledRegions: Map<String, List<String>> = emptyMap()
     private set
 
   private var ignoredClientPatterns: List<Pattern> = emptyList()
@@ -148,12 +147,7 @@ class ConfigManager(private val plugin: SlothAC) {
     aiDamageReductionMultiplier = config.getDouble("ai.damage-reduction.multiplier", 1.0)
 
     aiWorldGuardEnabled = config.getBoolean("ai.worldguard.enabled", true)
-    aiDisabledRegions =
-      config
-        .getStringList("ai.worldguard.disabled-regions")
-        .stream()
-        .map(String::lowercase)
-        .collect(Collectors.toList())
+    aiDisabledRegions = loadDisabledRegions()
 
     val ignoredPatterns = ArrayList<Pattern>()
     for (pattern in config.getStringList("client-brand.ignored-clients")) {
@@ -178,6 +172,40 @@ class ConfigManager(private val plugin: SlothAC) {
       }
     }
     enabledDebugCategories = enabledCategories
+  }
+
+  private fun loadDisabledRegions(): Map<String, List<String>> {
+    val mapRegions = config.getStringListMap("ai.worldguard.disabled-regions")
+    if (mapRegions.isNotEmpty()) {
+      return mapRegions
+        .mapKeys { it.key.lowercase() }
+        .mapValues { entry -> entry.value.map { it.lowercase() } }
+    }
+
+    return parseLegacyDisabledRegions()
+  }
+
+  private fun parseLegacyDisabledRegions(): Map<String, List<String>> {
+    val legacyList = config.getStringList("ai.worldguard.disabled-regions")
+    if (legacyList.isEmpty()) return emptyMap()
+
+    plugin.logger.warning(
+      "[Config] ai.worldguard.disabled-regions uses deprecated " +
+        "region:world format. Please migrate to the new map format."
+    )
+    val result = mutableMapOf<String, MutableList<String>>()
+    for (entry in legacyList) {
+      val lower = entry.lowercase()
+      if (lower.contains(":")) {
+        val parts = lower.split(":", limit = 2)
+        val regionName = parts[0]
+        val worldName = parts[1]
+        result.getOrPut(worldName) { mutableListOf() }.add(regionName)
+      } else {
+        result.getOrPut("*") { mutableListOf() }.add(lower)
+      }
+    }
+    return result
   }
 
   fun isClientIgnored(brand: String): Boolean {

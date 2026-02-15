@@ -43,4 +43,21 @@ class ConfigView(private val rootNode: CommentedConfigurationNode) {
       emptyList()
     }
   }
+
+  fun getStringListMap(path: String): Map<String, List<String>> {
+    val sectionNode = node(path)
+    if (sectionNode.virtual() || !sectionNode.isMap) return emptyMap()
+    val result = mutableMapOf<String, List<String>>()
+    for ((key, child) in sectionNode.childrenMap()) {
+      val keyStr = key.toString()
+      val list =
+        try {
+          child.getList(String::class.java) ?: emptyList()
+        } catch (ex: SerializationException) {
+          emptyList()
+        }
+      result[keyStr] = list
+    }
+    return result
+  }
 }

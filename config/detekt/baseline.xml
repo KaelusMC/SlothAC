@@ -170,7 +170,6 @@
     <ID>ReturnCount:TimeUtil.kt$TimeUtil$@JvmStatic fun formatTimeAgo(timestamp: Instant, lm: LocaleManager): String</ID>
     <ID>ReturnCount:TimeUtil.kt$TimeUtil$@JvmStatic fun parseDuration(durationStr: String?): Long</ID>
     <ID>ReturnCount:WorldGuardManager.kt$WorldGuardManager$override fun isPlayerInDisabledRegion(player: Player): Boolean</ID>
-    <ID>ReturnCount:WorldGuardManager.kt$WorldGuardManager$private fun matchesDisabledRegion( regionId: String, worldName: String, disabledRegions: List&lt;String>, ): Boolean</ID>
     <ID>SpreadOperator:ConfigView.kt$ConfigView$(*path.split('.').toTypedArray())</ID>
     <ID>SwallowedException:ConfigManager.kt$ConfigManager$e: PatternSyntaxException</ID>
     <ID>SwallowedException:ConfigView.kt$ConfigView$ex: SerializationException</ID>
@@ -189,6 +188,7 @@
     <ID>TooGenericExceptionCaught:SlothAC.kt$SlothAC$e: Exception</ID>
     <ID>TooGenericExceptionCaught:SlothCore.kt$SlothCore$e: Exception</ID>
     <ID>TooGenericExceptionCaught:TimeUtil.kt$TimeUtil$ex: Exception</ID>
+    <ID>TooManyFunctions:ConfigManager.kt$ConfigManager</ID>
     <ID>TooManyFunctions:MessageUtil.kt$MessageUtil</ID>
     <ID>TooManyFunctions:MonitorCommand.kt$MonitorCommand : SlothCommandListener</ID>
     <ID>TooManyFunctions:PacketListener.kt$PacketListener : PacketListenerAbstract</ID>

@@ -38,9 +38,19 @@ ai:
   worldguard:
     # Enable WorldGuard region checking?
     enabled: true
-    # List of WorldGuard regions where the AI check is disabled.
+    # Regions where the AI check is disabled, grouped by world name.
+    # Use "*" to disable a region in all worlds.
+    # Example:
+    #   disabled-regions:
+    #     "*":
+    #       - "spawn"
+    #     world:
+    #       - "arena"
+    #     world_nether:
+    #       - "nether_hub"
     disabled-regions:
-      - "spawn:spawn"
+      world:
+        - "spawn"
   backoff:
     # Initial wait time after server error.
     initial-duration: 5
