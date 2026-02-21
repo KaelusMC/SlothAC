@@ -384,10 +384,12 @@ class MonitorCommand(
         AUTO_TREND_THRESHOLD_SCALE * 10.0.pow(-trendDecimals.toDouble())
       }
 
-    var trend = 0.0
+    var trend = session.lastTrend
     if (session.lastProbability >= 0) {
       val delta = probability - session.lastProbability
-      trend = if (kotlin.math.abs(delta) < trendThreshold) 0.0 else delta
+      if (kotlin.math.abs(delta) > 0.0001) {
+        trend = if (kotlin.math.abs(delta) < trendThreshold) 0.0 else delta
+      }
     }
 
     val settingsHash = settings.hashCode()
