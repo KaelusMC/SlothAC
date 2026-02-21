@@ -67,10 +67,7 @@ constructor(
 
     val session: DataSession? = dataCollectorManager.getSession(uuid)
     if (session != null) {
-      val globalId = dataCollectorManager.globalCollectionId
-      if (globalId == null || session.status != globalId) {
-        dataCollectorManager.stopCollecting(uuid)
-      }
+      dataCollectorManager.stopCollecting(uuid)
     }
 
     alertManager.handlePlayerQuit(player)
@@ -134,11 +131,6 @@ constructor(
           if (!alertManager.hasAlertsEnabled(player, AlertType.BRAND)) {
             alertManager.toggle(player, AlertType.BRAND, true)
           }
-        }
-
-        val globalId = dataCollectorManager.globalCollectionId
-        if (globalId != null) {
-          dataCollectorManager.startCollecting(player.uniqueId, player.name, globalId)
         }
       },
     )

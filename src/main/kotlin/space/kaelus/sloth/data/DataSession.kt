@@ -39,11 +39,7 @@ class DataSession(val uuid: UUID, val player: String, val status: String) {
 
   fun generateFileName(): String {
     val timestamp = TIMESTAMP_FORMAT.format(startTime)
-    var statusForFilename = status.replace(' ', '#').replace(Regex("[/\\\\?%*:|\"<>']"), "-")
-    val globalIndex = statusForFilename.indexOf("_GLOBAL_")
-    if (globalIndex >= 0) {
-      statusForFilename = statusForFilename.substring(0, globalIndex)
-    }
+    val statusForFilename = status.replace(' ', '#').replace(Regex("[/\\\\?%*:|\"<>']"), "-")
     return String.format("%s_%s_%s.csv", statusForFilename, player, timestamp)
   }
 
@@ -55,8 +51,7 @@ class DataSession(val uuid: UUID, val player: String, val status: String) {
     val cheatingStatus =
       when {
         status.startsWith("CHEAT") -> "CHEAT"
-        status.startsWith("LEGIT") -> "LEGIT"
-        else -> "UNLABELED"
+        else -> "LEGIT"
       }
     for (tick in recordedTicks) {
       tick.appendCsv(writer, cheatingStatus)

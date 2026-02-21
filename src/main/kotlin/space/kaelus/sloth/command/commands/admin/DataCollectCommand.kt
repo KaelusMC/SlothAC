@@ -19,10 +19,7 @@ package space.kaelus.sloth.command.commands.admin
 
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
-import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.incendo.cloud.CommandManager
@@ -43,7 +40,7 @@ import space.kaelus.sloth.utils.MessageUtil
 
 class DataCollectCommand(private val dataCollectorManager: DataCollectorManager) : SlothCommand {
   override fun register(manager: CommandManager<Sender>) {
-    val typeSuggestions = listOf("LEGIT", "CHEAT", "UNLABELED").map { Suggestion.suggestion(it) }
+    val typeSuggestions = listOf("LEGIT", "CHEAT").map { Suggestion.suggestion(it) }
 
     val typeProvider = SuggestionProvider.suggesting<Sender>(typeSuggestions)
 
@@ -71,32 +68,6 @@ class DataCollectCommand(private val dataCollectorManager: DataCollectorManager)
         .literal("status")
         .optional("target", PlayerParser.playerParser())
         .handler(this@DataCollectCommand::status)
-    }
-
-    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
-      literal("datacollect", Description.empty(), "dc")
-        .permission("sloth.datacollect")
-        .literal("global")
-        .literal("start")
-        .required("type", StringParser.stringParser()) { suggestionProvider = typeProvider }
-        .optional("details", StringParser.greedyStringParser())
-        .handler(this@DataCollectCommand::onGlobalStart)
-    }
-
-    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
-      literal("datacollect", Description.empty(), "dc")
-        .permission("sloth.datacollect")
-        .literal("global")
-        .literal("stop")
-        .handler(this@DataCollectCommand::onGlobalStop)
-    }
-
-    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
-      literal("datacollect", Description.empty(), "dc")
-        .permission("sloth.datacollect")
-        .literal("global")
-        .literal("status")
-        .handler(this@DataCollectCommand::onGlobalStatus)
     }
   }
 
@@ -187,119 +158,6 @@ class DataCollectCommand(private val dataCollectorManager: DataCollectorManager)
     }
   }
 
-  private fun onGlobalStart(context: CommandContext<Sender>) {
-    val sender: CommandSender = context.sender().nativeSender
-    val type = context.get<String>("type").uppercase(Locale.ROOT)
-    val details: String = context.getOrDefault("details", "")
-
-    val status = resolveStatus(type, details, sender) ?: return
-
-    val oldGlobalId = dataCollectorManager.globalCollectionId
-    if (oldGlobalId != null) {
-      MessageUtil.sendMessage(
-        sender,
-        Message.DATACOLLECT_GLOBAL_STOP_PREVIOUS,
-        "id",
-        oldGlobalId.replace('#', ' '),
-      )
-      dataCollectorManager.stopGlobalCollection()
-    }
-
-    val newGlobalId =
-      String.format(
-        "%s_GLOBAL_%s",
-        status.replace(' ', '#'),
-        TIMESTAMP_FORMAT.format(Instant.now()),
-      )
-    dataCollectorManager.globalCollectionId = newGlobalId
-    MessageUtil.sendMessage(
-      sender,
-      Message.DATACOLLECT_GLOBAL_START_SUCCESS,
-      "id",
-      newGlobalId.replace('#', ' '),
-    )
-
-    var startedCount = 0
-    for (onlinePlayer in Bukkit.getOnlinePlayers()) {
-      if (
-        dataCollectorManager.startCollecting(onlinePlayer.uniqueId, onlinePlayer.name, newGlobalId)
-      ) {
-        startedCount++
-      }
-    }
-    if (startedCount > 0) {
-      MessageUtil.sendMessage(
-        sender,
-        Message.DATACOLLECT_GLOBAL_STARTED_FOR_PLAYERS,
-        "count",
-        startedCount.toString(),
-      )
-    }
-  }
-
-  private fun onGlobalStop(context: CommandContext<Sender>) {
-    val sender: CommandSender = context.sender().nativeSender
-    val oldGlobalId = dataCollectorManager.globalCollectionId
-    if (oldGlobalId == null) {
-      MessageUtil.sendMessage(sender, Message.DATACOLLECT_GLOBAL_STOP_FAIL)
-      return
-    }
-    val stoppedCount = dataCollectorManager.stopGlobalCollection()
-    MessageUtil.sendMessage(
-      sender,
-      Message.DATACOLLECT_GLOBAL_STOP_SUCCESS,
-      "id",
-      oldGlobalId.replace('#', ' '),
-    )
-    if (stoppedCount > 0) {
-      MessageUtil.sendMessage(
-        sender,
-        Message.DATACOLLECT_GLOBAL_STOP_ARCHIVED,
-        "count",
-        stoppedCount.toString(),
-      )
-    }
-  }
-
-  private fun onGlobalStatus(context: CommandContext<Sender>) {
-    val sender: CommandSender = context.sender().nativeSender
-    val globalId = dataCollectorManager.globalCollectionId
-    if (globalId == null) {
-      MessageUtil.sendMessage(sender, Message.DATACOLLECT_GLOBAL_STATUS_FAIL)
-      return
-    }
-    MessageUtil.sendMessage(sender, Message.DATACOLLECT_GLOBAL_STATUS_HEADER)
-    MessageUtil.sendMessage(sender, Message.DATACOLLECT_GLOBAL_STATUS_ACTIVE)
-    MessageUtil.sendMessage(
-      sender,
-      Message.DATACOLLECT_GLOBAL_STATUS_SESSION_ID,
-      "id",
-      globalId.replace('#', ' '),
-    )
-    MessageUtil.sendMessage(sender, Message.DATACOLLECT_GLOBAL_STATUS_PLAYERS_HEADER)
-
-    var playerCount = 0
-    for (session in dataCollectorManager.activeSessions.values) {
-      if (globalId == session.status) {
-        val seconds = Duration.between(session.startTime, Instant.now()).toSeconds()
-        MessageUtil.sendMessage(
-          sender,
-          Message.DATACOLLECT_GLOBAL_STATUS_PLAYER_ENTRY,
-          "player",
-          session.player,
-          "time",
-          seconds.toString(),
-          "ticks",
-          session.recordedTicks.size.toString(),
-        )
-        playerCount++
-      }
-    }
-    if (playerCount == 0) {
-      MessageUtil.sendMessage(sender, Message.DATACOLLECT_STATUS_NONE)
-    }
-  }
-
   private fun resolveStatus(type: String, details: String, sender: CommandSender): String? {
     return when (type) {
       "LEGIT",
@@ -311,16 +169,10 @@ class DataCollectCommand(private val dataCollectorManager: DataCollectorManager)
           "$type $details"
         }
       }
-      "UNLABELED" -> "UNLABELED"
       else -> {
         MessageUtil.sendMessage(sender, Message.DATACOLLECT_INVALID_TYPE)
         null
       }
     }
-  }
-
-  private companion object {
-    private val TIMESTAMP_FORMAT =
-      DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault())
   }
 }
