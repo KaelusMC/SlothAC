@@ -11,6 +11,7 @@ defaults:
 behavior:
   keep-length: true
   show-neutral-when-hidden: true
+  keepalive-ticks: 20    # resend unchanged action bar every N ticks (20 ticks = 1 second)
   neutral:
     ping: "<gray>Ping --</gray>"
     dmg: "<gray>Dmg 1.00x</gray>"

@@ -307,7 +307,15 @@ class MonitorCommand(
     val viewerId = viewer.uniqueId
     val targetId = target.uniqueId
 
-    val newSession = MonitorSession(targetId)
+    val updatePeriodTicks = configManager.monitorConfig.getLong("update", 2L).coerceAtLeast(1L)
+    val keepAliveTicks =
+      configManager.monitorConfig
+        .getLong("behavior.keepalive-ticks", DEFAULT_KEEP_ALIVE_TICKS)
+        .coerceAtLeast(1L)
+    val keepAliveCycles =
+      ((keepAliveTicks + updatePeriodTicks - 1L) / updatePeriodTicks).coerceAtLeast(1L).toInt()
+
+    val newSession = MonitorSession(targetId, keepAliveCycles)
     activeSessions[viewerId] = newSession
 
     val task =
@@ -348,7 +356,7 @@ class MonitorCommand(
           sendActionBar(onlineViewer, onlineTarget, slothTarget, aiCheck, newSession)
         },
         0L,
-        configManager.monitorConfig.getLong("update", 2L),
+        updatePeriodTicks,
       )
 
     newSession.task = task
@@ -404,7 +412,12 @@ class MonitorCommand(
         session.lastSentComponent != null
     ) {
       session.lastTrend = trend
+      session.cyclesSinceLastSend++
+      if (session.cyclesSinceLastSend < session.keepAliveCycles) {
+        return
+      }
       sendActionBar(viewer, session.lastSentComponent!!)
+      session.cyclesSinceLastSend = 0
       return
     }
 
@@ -418,6 +431,7 @@ class MonitorCommand(
     session.lastTrend = trend
     session.lastSettingsHash = settingsHash
     session.lastSentComponent = newComponent
+    session.cyclesSinceLastSend = 0
 
     sendActionBar(viewer, newComponent)
   }
@@ -587,7 +601,7 @@ class MonitorCommand(
     TREND("trend"),
   }
 
-  private class MonitorSession(val targetUuid: UUID) {
+  private class MonitorSession(val targetUuid: UUID, val keepAliveCycles: Int) {
     var task: TaskHandle? = null
     var lastSentComponent: Component? = null
     var lastProbability: Double = -1.0
@@ -596,10 +610,12 @@ class MonitorCommand(
     var lastDmgMultiplier: Double = -1.0
     var lastTrend: Double = 0.0
     var lastSettingsHash: Int = 0
+    var cyclesSinceLastSend: Int = 0
   }
 
   private companion object {
     const val DEFAULT_DMG_MULTIPLIER = 1.0
     const val AUTO_TREND_THRESHOLD_SCALE = 0.5
+    const val DEFAULT_KEEP_ALIVE_TICKS = 20L
   }
 }
