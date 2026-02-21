@@ -83,7 +83,7 @@ object MessageUtil {
         while (i < placeholders.size) {
           val key = placeholders[i]
           val value = placeholders[i + 1]
-          resolverBuilder.resolver(Placeholder.component(key, Component.text(value)))
+          resolverBuilder.resolver(Placeholder.parsed(key, miniMessage.escapeTags(value)))
           i += 2
         }
       }

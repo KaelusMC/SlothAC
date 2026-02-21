@@ -44,25 +44,6 @@ enum class Message(val path: String) {
   DATACOLLECT_STATUS_PLAYER("datacollect.status-player"),
   DATACOLLECT_STATUS_NONE("datacollect.status-none"),
   DATACOLLECT_STATUS_NO_SESSION("datacollect.status-no-session"),
-  DATACOLLECT_GLOBAL_STOP_PREVIOUS("datacollect.global-stop-previous"),
-  DATACOLLECT_GLOBAL_START_SUCCESS("datacollect.global-start-success"),
-  DATACOLLECT_GLOBAL_STARTED_FOR_PLAYERS("datacollect.global-started-for-players"),
-  DATACOLLECT_GLOBAL_STOP_FAIL("datacollect.global-stop-fail"),
-  DATACOLLECT_GLOBAL_STOP_SUCCESS("datacollect.global-stop-success"),
-  DATACOLLECT_GLOBAL_STOP_ARCHIVED("datacollect.global-stop-archived"),
-  DATACOLLECT_GLOBAL_STATUS_FAIL("datacollect.global-status-fail"),
-  DATACOLLECT_GLOBAL_STATUS_HEADER("datacollect.global-status-header"),
-  DATACOLLECT_GLOBAL_STATUS_ACTIVE("datacollect.global-status-active"),
-  DATACOLLECT_GLOBAL_STATUS_SESSION_ID("datacollect.global-status-session-id"),
-  DATACOLLECT_GLOBAL_STATUS_PLAYERS_HEADER("datacollect.global-status-players-header"),
-  DATACOLLECT_GLOBAL_STATUS_PLAYER_ENTRY("datacollect.global-status-player-entry"),
-
-  // Prob
-  PROB_ENABLED("prob.enabled"),
-  PROB_DISABLED("prob.disabled"),
-  PROB_NO_DATA("prob.no-data"),
-  PROB_NO_AICHECK("prob.no-aicheck"),
-  PROB_FORMAT("prob.format"),
 
   // Monitor
   MONITOR_ENABLED("monitor.enabled"),
@@ -86,7 +67,6 @@ enum class Message(val path: String) {
   LOGS_HEADER("logs.header"),
   LOGS_ENTRY("logs.entry"),
   LOGS_NO_VIOLATIONS("logs.no-violations"),
-  LOGS_INVALID_TIME("logs.invalid-time"),
 
   // Punish
   PUNISH_RESET_SUCCESS("punish.reset-success"),
