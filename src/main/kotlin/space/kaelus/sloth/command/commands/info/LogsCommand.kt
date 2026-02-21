@@ -17,7 +17,6 @@
  */
 package space.kaelus.sloth.command.commands.info
 
-import java.util.concurrent.TimeUnit
 import org.incendo.cloud.CommandManager
 import org.incendo.cloud.context.CommandContext
 import org.incendo.cloud.kotlin.extension.buildAndRegister
@@ -51,24 +50,17 @@ class LogsCommand(
   private fun handleLogs(context: CommandContext<Sender>) {
     val sender = context.sender()
     val page: Int = context.getOrDefault("page", 1)
-    val timeArg: String? = null
 
     if (!configManager.config.getBoolean("history.enabled", false)) {
       MessageUtil.sendMessage(sender.nativeSender, Message.HISTORY_DISABLED)
       return
     }
 
-    val since = parseTime(timeArg)
-    if (since == -1L) {
-      MessageUtil.sendMessage(sender.nativeSender, Message.LOGS_INVALID_TIME)
-      return
-    }
-
     scheduler.runAsync {
       val entriesPerPage = 10
       val violations: List<Violation> =
-        databaseManager.database.getViolations(page, entriesPerPage, since)
-      val totalLogs = databaseManager.database.getLogCount(since)
+        databaseManager.database.getViolations(page, entriesPerPage, 0L)
+      val totalLogs = databaseManager.database.getLogCount(0L)
       val maxPages =
         kotlin.math.max(1, kotlin.math.ceil(totalLogs.toDouble() / entriesPerPage).toInt())
 
@@ -112,27 +104,6 @@ class LogsCommand(
           sender.sendMessage(entry)
         }
       }
-    }
-  }
-
-  private fun parseTime(timeArg: String?): Long {
-    if (timeArg == null) {
-      return 0L
-    }
-    return try {
-      if (timeArg.length < 2) return -1L
-      val value = timeArg.substring(0, timeArg.length - 1).toLong()
-      val unit = timeArg.last().lowercaseChar()
-      val multiplier =
-        when (unit) {
-          'm' -> TimeUnit.MINUTES.toMillis(1)
-          'h' -> TimeUnit.HOURS.toMillis(1)
-          'd' -> TimeUnit.DAYS.toMillis(1)
-          else -> null
-        } ?: return -1L
-      System.currentTimeMillis() - (value * multiplier)
-    } catch (_: NumberFormatException) {
-      -1L
     }
   }
 }
