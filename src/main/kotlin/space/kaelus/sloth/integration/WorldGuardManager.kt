@@ -67,7 +67,7 @@ class WorldGuardManager(private val logger: Logger, private val configManager: C
     val globalRegions = disabledRegions["*"].orEmpty()
     val worldRegions = disabledRegions[worldName].orEmpty()
 
-    return playerRegions.all { region ->
+    return playerRegions.any { region ->
       val regionId = region.id.lowercase(Locale.ROOT)
       regionId in globalRegions || regionId in worldRegions
     }
