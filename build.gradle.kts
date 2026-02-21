@@ -34,7 +34,7 @@ dependencies {
   implementation("com.github.retrooper:packetevents-spigot:2.11.2")
 
   // Cloud Command Framework
-  implementation("org.incendo:cloud-paper:2.0.0-beta.11")
+  implementation("org.incendo:cloud-paper:2.0.0-beta.14")
   implementation("org.incendo:cloud-processors-requirements:1.0.0-rc.1")
   implementation("org.incendo:cloud-kotlin-extensions:2.0.0")
   implementation("org.incendo:cloud-kotlin-coroutines:2.0.0")
