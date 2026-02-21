@@ -78,10 +78,11 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
     }
 
     val movement = player.movement
-    while (true) {
+    while (player.pendingTeleports.isNotEmpty()) {
       val teleport = player.pendingTeleports.peek() ?: break
-      if (player.transactions.lastTransactionReceived.get() < teleport.transactionId) {
-        break
+      val lastTransaction = player.transactions.lastTransactionReceived.get()
+      if (lastTransaction < teleport.transactionId) {
+        return false
       }
 
       val flyingLocation = flying.location
@@ -116,11 +117,11 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
         return true
       }
 
-      if (player.transactions.lastTransactionReceived.get() > teleport.transactionId) {
+      if (lastTransaction > teleport.transactionId) {
         player.pendingTeleports.poll()
         continue
       }
-      break
+      return false
     }
     return false
   }
@@ -137,10 +138,11 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
       return false
     }
 
-    while (true) {
+    while (player.pendingRotations.isNotEmpty()) {
       val rotation = player.pendingRotations.peek() ?: break
-      if (player.transactions.lastTransactionReceived.get() < rotation.transactionId) {
-        break
+      val lastTransaction = player.transactions.lastTransactionReceived.get()
+      if (lastTransaction < rotation.transactionId) {
+        return false
       }
 
       if (flying.location.yaw == rotation.yaw && flying.location.pitch == rotation.pitch) {
@@ -148,11 +150,11 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
         return true
       }
 
-      if (player.transactions.lastTransactionReceived.get() > rotation.transactionId) {
+      if (lastTransaction > rotation.transactionId) {
         player.pendingRotations.poll()
         continue
       }
-      break
+      return false
     }
     return false
   }
@@ -492,16 +494,18 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
     val movement = player.movement
     val threshold = player.getMovementThreshold()
     val inVehicle = player.compensatedEntities.self.riding != null
-
-    if (
+    val hasMovementAndRotation = flying.hasPositionChanged() && flying.hasRotationChanged()
+    val sameGroundAndCloseClaim =
+      flying.isOnGround == player.packetStateData.packetPlayerOnGround &&
+        player.user.clientVersion.isNewerThanOrEquals(ClientVersion.V_1_17) &&
+        player.packetStateData.lastClaimedPosition.distanceSquared(location.position) <
+          threshold * threshold
+    val shouldProcessDuplicate =
       !player.packetStateData.lastPacketWasTeleport &&
-        flying.hasPositionChanged() &&
-        flying.hasRotationChanged() &&
-        ((flying.isOnGround == player.packetStateData.packetPlayerOnGround &&
-          (player.user.clientVersion.isNewerThanOrEquals(ClientVersion.V_1_17) &&
-            player.packetStateData.lastClaimedPosition.distanceSquared(location.position) <
-              threshold * threshold)) || inVehicle)
-    ) {
+        hasMovementAndRotation &&
+        (sameGroundAndCloseClaim || inVehicle)
+
+    if (shouldProcessDuplicate) {
       if (player.isCancelDuplicatePacket()) {
         event.isCancelled = true
       }

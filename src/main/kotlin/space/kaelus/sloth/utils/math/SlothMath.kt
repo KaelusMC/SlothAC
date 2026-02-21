@@ -21,7 +21,7 @@ import kotlin.math.floor
 import kotlin.math.pow
 
 object SlothMath {
-  private val MINIMUM_DIVISOR: Double = ((0.2f.pow(3) * 8) * 0.15) - 1e-3
+  private val MINIMUM_DIVISOR: Double = 0.2f.pow(3) * 8 * 0.15 - 1e-3
 
   @JvmStatic fun getMinimumDivisor(): Double = MINIMUM_DIVISOR
 
