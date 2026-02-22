@@ -21,6 +21,9 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import java.io.File
 import java.util.Locale
+import java.util.logging.Level
+import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.FlywayException
 import org.jetbrains.exposed.v1.jdbc.Database
 import space.kaelus.sloth.SlothAC
 import space.kaelus.sloth.config.ConfigManager
@@ -40,8 +43,31 @@ class DatabaseManager(plugin: SlothAC, configManager: ConfigManager) {
     }
 
     dataSource = createDataSource(plugin, configManager, databaseType)
+    runFlywayMigrations(plugin, dataSource, databaseType)
     exposedDb = Database.connect(dataSource)
     database = SqlViolationDatabase(plugin, configManager, exposedDb)
+  }
+
+  private fun runFlywayMigrations(
+    plugin: SlothAC,
+    dataSource: HikariDataSource,
+    databaseType: DatabaseType,
+  ) {
+    try {
+      Flyway.configure(plugin.javaClass.classLoader)
+        .dataSource(dataSource)
+        .locations(
+          "classpath:db/migration/common",
+          "classpath:db/migration/${databaseType.flywayLocation}",
+        )
+        .baselineOnMigrate(true)
+        .baselineVersion("0")
+        .load()
+        .migrate()
+    } catch (e: FlywayException) {
+      plugin.logger.log(Level.SEVERE, "Failed to run database migrations", e)
+      throw IllegalStateException("Database migrations failed", e)
+    }
   }
 
   private fun createDataSource(

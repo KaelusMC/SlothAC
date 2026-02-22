@@ -27,21 +27,14 @@ import java.time.Instant
 import java.util.UUID
 import java.util.logging.Level
 import org.jetbrains.exposed.v1.core.*
-import org.jetbrains.exposed.v1.core.Transaction
-import org.jetbrains.exposed.v1.core.vendors.MariaDBDialect
-import org.jetbrains.exposed.v1.core.vendors.MysqlDialect
-import org.jetbrains.exposed.v1.core.vendors.SQLiteDialect
-import org.jetbrains.exposed.v1.core.vendors.currentDialect
 import org.jetbrains.exposed.v1.javatime.JavaInstantColumnType
 import org.jetbrains.exposed.v1.jdbc.Database
-import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.upsert
-import org.jetbrains.exposed.v1.migration.jdbc.MigrationUtils
 import space.kaelus.sloth.SlothAC
 import space.kaelus.sloth.config.ConfigManager
 import space.kaelus.sloth.monitor.MonitorMode
@@ -55,21 +48,6 @@ class SqlViolationDatabase(
   private val configManager: ConfigManager,
   private val database: Database,
 ) : ViolationDatabase {
-  init {
-    try {
-      transaction(database) {
-        MigrationUtils.statementsRequiredForDatabaseMigration(
-            Violations,
-            Punishments,
-            MonitorSettingsTable,
-          )
-          .forEach { statement -> exec(statement) }
-        migrateViolationTimestamps()
-      }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to initialize database tables", e)
-    }
-  }
 
   override fun logAlert(player: SlothPlayer, verbose: String, checkName: String, vls: Int) {
     try {
@@ -333,35 +311,6 @@ class SqlViolationDatabase(
       index(isUnique = false, uuid, createdAtInstant)
       index(isUnique = false, createdAtInstant)
     }
-  }
-
-  private fun Transaction.migrateViolationTimestamps() {
-    val needsMigration =
-      Violations.selectAll().where { Violations.createdAtInstant eq Instant.EPOCH }.limit(1).any()
-    if (!needsMigration) {
-      return
-    }
-
-    val updateSql =
-      when (currentDialect) {
-        is SQLiteDialect ->
-          "UPDATE violations SET created_at_instant = " +
-            "strftime('%Y-%m-%d %H:%M:%f', created_at / 1000.0, 'unixepoch')"
-        is MysqlDialect,
-        is MariaDBDialect ->
-          "UPDATE violations SET created_at_instant = FROM_UNIXTIME(created_at / 1000.0)"
-        else -> null
-      }
-
-    val jdbcTransaction = this as? JdbcTransaction
-    if (updateSql != null && jdbcTransaction != null) {
-      jdbcTransaction.exec(updateSql)
-      return
-    }
-
-    plugin.logger.warning(
-      "Skipping created_at migration: unsupported database dialect ${currentDialect::class.simpleName}"
-    )
   }
 
   private object Punishments : Table("sloth_punishments") {

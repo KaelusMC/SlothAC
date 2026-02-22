@@ -2,9 +2,9 @@ package space.kaelus.sloth.database
 
 import java.util.Locale
 
-enum class DatabaseType {
-  SQLITE,
-  MYSQL;
+enum class DatabaseType(val flywayLocation: String) {
+  SQLITE("sqlite"),
+  MYSQL("mysql");
 
   companion object {
     fun fromConfig(raw: String?): DatabaseType {
