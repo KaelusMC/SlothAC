@@ -58,17 +58,34 @@ class SqlViolationDatabase(
   init {
     try {
       transaction(database) {
+        initializeSchema()
+      }
+    } catch (e: Exception) {
+      plugin.logger.log(Level.SEVERE, "Failed to initialize database tables", e)
+    }
+  }
+
+  private fun Transaction.initializeSchema() {
+    runCatching {
         MigrationUtils.statementsRequiredForDatabaseMigration(
             Violations,
             Punishments,
             MonitorSettingsTable,
           )
           .forEach { statement -> exec(statement) }
-        migrateViolationTimestamps()
       }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to initialize database tables", e)
-    }
+      .onFailure { migrationError ->
+        if (!runLegacySqliteMigration()) {
+          throw migrationError
+        }
+        plugin.logger.log(
+          Level.WARNING,
+          "Fell back to legacy SQLite schema initialization due to migration metadata error",
+          migrationError,
+        )
+      }
+
+    migrateViolationTimestamps()
   }
 
   override fun logAlert(player: SlothPlayer, verbose: String, checkName: String, vls: Int) {
@@ -362,6 +379,82 @@ class SqlViolationDatabase(
     plugin.logger.warning(
       "Skipping created_at migration: unsupported database dialect ${currentDialect::class.simpleName}"
     )
+  }
+
+  private fun Transaction.runLegacySqliteMigration(): Boolean {
+    if (currentDialect !is SQLiteDialect) {
+      return false
+    }
+
+    val jdbcTransaction = this as? JdbcTransaction ?: return false
+    jdbcTransaction.exec(
+      """
+      CREATE TABLE IF NOT EXISTS violations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server VARCHAR(255) NOT NULL,
+        uuid VARCHAR(36) NOT NULL,
+        player_name VARCHAR(64) NOT NULL,
+        check_name VARCHAR(255) NOT NULL,
+        verbose TEXT NOT NULL,
+        vl INTEGER NOT NULL,
+        created_at BIGINT NOT NULL
+      )
+      """
+        .trimIndent()
+    )
+    jdbcTransaction.exec(
+      """
+      CREATE TABLE IF NOT EXISTS sloth_punishments (
+        uuid VARCHAR(36) NOT NULL,
+        punish_group VARCHAR(255) NOT NULL,
+        vl INTEGER NOT NULL,
+        PRIMARY KEY(uuid, punish_group)
+      )
+      """
+        .trimIndent()
+    )
+    jdbcTransaction.exec(
+      """
+      CREATE TABLE IF NOT EXISTS monitor_settings (
+        uuid VARCHAR(36) NOT NULL PRIMARY KEY,
+        mode VARCHAR(16) NOT NULL,
+        theme VARCHAR(16) NOT NULL,
+        show_ping BOOLEAN NOT NULL,
+        show_dmg BOOLEAN NOT NULL,
+        show_trend BOOLEAN NOT NULL,
+        show_name VARCHAR(16) NOT NULL
+      )
+      """
+        .trimIndent()
+    )
+
+    val hasInstantColumn =
+      jdbcTransaction.connection.prepareStatement("PRAGMA table_info(violations)").use { stmt ->
+        stmt.executeQuery().use { rs ->
+          generateSequence { if (rs.next()) rs else null }.any { row ->
+            row.getString("name").equals("created_at_instant", ignoreCase = true)
+          }
+        }
+      }
+    if (!hasInstantColumn) {
+      jdbcTransaction.exec(
+        "ALTER TABLE violations ADD COLUMN created_at_instant TEXT NOT NULL DEFAULT '1970-01-01 00:00:00.000'"
+      )
+    }
+
+    jdbcTransaction.exec(
+      "CREATE INDEX IF NOT EXISTS idx_violations_uuid_created_at ON violations (uuid, created_at)"
+    )
+    jdbcTransaction.exec(
+      "CREATE INDEX IF NOT EXISTS idx_violations_created_at ON violations (created_at)"
+    )
+    jdbcTransaction.exec(
+      "CREATE INDEX IF NOT EXISTS idx_violations_uuid_created_at_instant ON violations (uuid, created_at_instant)"
+    )
+    jdbcTransaction.exec(
+      "CREATE INDEX IF NOT EXISTS idx_violations_created_at_instant ON violations (created_at_instant)"
+    )
+    return true
   }
 
   private object Punishments : Table("sloth_punishments") {
