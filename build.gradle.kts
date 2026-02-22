@@ -27,8 +27,8 @@ repositories {
 dependencies {
   // Bukkit APIs
   compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
-  compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.14")
-  compileOnly("me.clip:placeholderapi:2.11.7")
+  compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.15")
+  compileOnly("me.clip:placeholderapi:2.12.2")
 
   // PacketEvents
   implementation("com.github.retrooper:packetevents-spigot:2.11.2")
@@ -56,7 +56,7 @@ dependencies {
   // Utilities
   implementation(kotlin("stdlib"))
   implementation("it.unimi.dsi:fastutil:8.5.15")
-  implementation("org.jetbrains:annotations:26.0.2-1")
+  implementation("org.jetbrains:annotations:26.1.0")
   implementation("com.google.flatbuffers:flatbuffers-java:25.2.10")
   implementation("org.spongepowered:configurate-yaml:4.2.0")
   implementation("io.insert-koin:koin-core:4.1.1")
@@ -92,7 +92,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 tasks.shadowJar {
   archiveBaseName.set(rootProject.name)
   archiveClassifier.set("")
-  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
   eachFile {
     if (path == "META-INF/services/org.flywaydb.core.extensibility.Plugin") {
