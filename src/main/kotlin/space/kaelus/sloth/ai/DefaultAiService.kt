@@ -17,7 +17,7 @@
  */
 package space.kaelus.sloth.ai
 
-import com.google.gson.JsonParser
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import space.kaelus.sloth.data.TickData
@@ -70,10 +70,22 @@ class DefaultAiService(
 
   internal fun parseSequence(body: String?): Int? {
     if (body.isNullOrBlank()) return null
-    return try {
-      JsonParser.parseString(body).asJsonObject.getAsJsonObject("details")?.get("sequence")?.asInt
-    } catch (_: Exception) {
-      null
-    }
+    return runCatching { OBJECT_MAPPER.readTree(body) }
+      .getOrNull()
+      ?.get("details")
+      ?.takeIf { it.isObject }
+      ?.get("sequence")
+      ?.let { sequence ->
+        when {
+          sequence.isInt -> sequence.intValue()
+          sequence.isLong -> sequence.longValue().toInt()
+          sequence.isTextual -> sequence.textValue().toIntOrNull()
+          else -> null
+        }
+      }
+  }
+
+  companion object {
+    private val OBJECT_MAPPER = ObjectMapper()
   }
 }

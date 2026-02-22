@@ -17,6 +17,4 @@
  */
 package space.kaelus.sloth.server
 
-import com.google.gson.annotations.SerializedName
-
-data class AIResponse(@SerializedName("probability") val probability: Double)
+data class AIResponse(val probability: Double)

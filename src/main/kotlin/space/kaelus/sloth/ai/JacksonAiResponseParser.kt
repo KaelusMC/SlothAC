@@ -17,15 +17,23 @@
  */
 package space.kaelus.sloth.ai
 
-import com.google.gson.Gson
+import com.fasterxml.jackson.databind.ObjectMapper
 import space.kaelus.sloth.server.AIResponse
 
-class GsonAiResponseParser : AiResponseParser {
+class JacksonAiResponseParser : AiResponseParser {
   override fun parse(response: String): AIResponse {
-    return GSON.fromJson(response, AIResponse::class.java)
+    val node = OBJECT_MAPPER.readTree(response).get("probability")
+    val probability =
+      when {
+        node == null || node.isNull -> null
+        node.isNumber -> node.doubleValue()
+        node.isTextual -> node.textValue().toDoubleOrNull()
+        else -> null
+      } ?: throw IllegalArgumentException("AI response does not contain a valid probability")
+    return AIResponse(probability)
   }
 
   companion object {
-    private val GSON = Gson()
+    private val OBJECT_MAPPER = ObjectMapper()
   }
 }

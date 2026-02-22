@@ -32,7 +32,7 @@ import space.kaelus.sloth.ai.AiSerializer
 import space.kaelus.sloth.ai.AiService
 import space.kaelus.sloth.ai.DefaultAiService
 import space.kaelus.sloth.ai.FlatBuffersAiSerializer
-import space.kaelus.sloth.ai.GsonAiResponseParser
+import space.kaelus.sloth.ai.JacksonAiResponseParser
 import space.kaelus.sloth.alert.AlertManager
 import space.kaelus.sloth.api.SlothApi
 import space.kaelus.sloth.api.event.SlothEventBus
@@ -131,7 +131,7 @@ private fun coreModule(plugin: SlothAC) = module {
 
 private fun aiModule() = module {
   singleOf(::FlatBuffersAiSerializer).bind<AiSerializer>()
-  singleOf(::GsonAiResponseParser).bind<AiResponseParser>()
+  singleOf(::JacksonAiResponseParser).bind<AiResponseParser>()
   singleOf(::DefaultAiService).bind<AiService>()
 }
 
