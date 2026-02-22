@@ -1,5 +1,5 @@
-import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission
+import org.gradle.api.file.DuplicatesStrategy
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -50,14 +50,14 @@ dependencies {
   implementation("org.jetbrains.exposed:exposed-core:1.0.0")
   implementation("org.jetbrains.exposed:exposed-java-time:1.0.0")
   implementation("org.jetbrains.exposed:exposed-jdbc:1.0.0")
-  implementation("org.jetbrains.exposed:exposed-migration-jdbc:1.0.0")
+  implementation("org.flywaydb:flyway-core:12.0.2")
+  implementation("org.flywaydb:flyway-mysql:12.0.2")
 
   // Utilities
   implementation(kotlin("stdlib"))
   implementation("it.unimi.dsi:fastutil:8.5.15")
   implementation("org.jetbrains:annotations:26.0.2-1")
   implementation("com.google.flatbuffers:flatbuffers-java:25.2.10")
-  implementation("com.google.code.gson:gson:2.11.0")
   implementation("org.spongepowered:configurate-yaml:4.2.0")
   implementation("io.insert-koin:koin-core:4.1.1")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
@@ -67,6 +67,7 @@ dependencies {
   testImplementation(kotlin("test"))
   testImplementation("org.junit.jupiter:junit-jupiter:6.0.2")
   testImplementation("io.mockk:mockk:1.14.9")
+  testRuntimeOnly("org.xerial:sqlite-jdbc:3.51.2.0")
 }
 
 java {
@@ -91,6 +92,13 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 tasks.shadowJar {
   archiveBaseName.set(rootProject.name)
   archiveClassifier.set("")
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+  eachFile {
+    if (path == "META-INF/services/org.flywaydb.core.extensibility.Plugin") {
+      duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
+  }
 
   minimize {
     exclude(dependency("org.slf4j:slf4j-api"))
@@ -98,27 +106,27 @@ tasks.shadowJar {
     exclude(dependency("org.jetbrains.exposed:exposed-core"))
     exclude(dependency("org.jetbrains.exposed:exposed-jdbc"))
     exclude(dependency("org.jetbrains.exposed:exposed-java-time"))
-    exclude(dependency("org.jetbrains.exposed:exposed-migration-jdbc"))
+    exclude(dependency("org.flywaydb:flyway-core"))
+    exclude(dependency("org.flywaydb:flyway-mysql"))
   }
 
-  transformers.add(ServiceFileTransformer())
+  mergeServiceFiles()
 
   relocate("com.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents.api")
   relocate("io.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents.impl")
   relocate("net.kyori", "space.kaelus.sloth.libs.kyori")
-  relocate("com.google.gson", "space.kaelus.sloth.libs.gson")
   relocate("org.incendo", "space.kaelus.sloth.libs.incendo")
   relocate("io.leangen.geantyref", "space.kaelus.sloth.libs.geantyref")
   relocate("it.unimi.dsi.fastutil", "space.kaelus.sloth.libs.fastutil")
   relocate("com.google.flatbuffers", "space.kaelus.sloth.libs.flatbuffers")
   relocate("com.zaxxer", "space.kaelus.sloth.libs.hikari")
   relocate("org.slf4j", "space.kaelus.sloth.libs.slf4j")
-  relocate("org.jetbrains", "space.kaelus.sloth.libs.jetbrains")
-  relocate("org.intellij", "space.kaelus.sloth.libs.intellij")
+  relocate("org.jetbrains.exposed", "space.kaelus.sloth.libs.jetbrains.exposed")
   relocate("org.spongepowered.configurate", "space.kaelus.sloth.libs.configurate")
   relocate("org.yaml.snakeyaml", "space.kaelus.sloth.libs.snakeyaml")
   relocate("org.joml", "space.kaelus.sloth.libs.joml")
   relocate("org.koin", "space.kaelus.sloth.libs.koin")
+  relocate("org.flywaydb", "space.kaelus.sloth.libs.flyway")
 }
 
 tasks.test {
