@@ -118,7 +118,6 @@ class DatabaseManager(plugin: SlothAC, configManager: ConfigManager) {
     } else {
       val fileName = configManager.config.getString("database.sqlite.file", "violations.db")
       val dbFile = File(plugin.dataFolder, fileName)
-      config.driverClassName = "org.sqlite.JDBC"
       config.jdbcUrl = "jdbc:sqlite:${dbFile.absolutePath}"
       config.addDataSourceProperty("journal_mode", "WAL")
       config.addDataSourceProperty("synchronous", "NORMAL")
