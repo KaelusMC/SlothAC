@@ -17,6 +17,7 @@
  */
 package space.kaelus.sloth.ai
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
@@ -74,15 +75,17 @@ class DefaultAiService(
       .getOrNull()
       ?.get("details")
       ?.takeIf { it.isObject }
-      ?.get("sequence")
-      ?.let { sequence ->
-        when {
-          sequence.isInt -> sequence.intValue()
-          sequence.isLong -> sequence.longValue().toInt()
-          sequence.isTextual -> sequence.textValue().toIntOrNull()
-          else -> null
-        }
-      }
+      ?.let { details -> parseSequenceNode(details.get("expected_sequence")) }
+  }
+
+  private fun parseSequenceNode(sequence: JsonNode?): Int? {
+    if (sequence == null) return null
+    return when {
+      sequence.isInt -> sequence.intValue()
+      sequence.isLong -> sequence.longValue().toInt()
+      sequence.isTextual -> sequence.textValue().toIntOrNull()
+      else -> null
+    }
   }
 
   companion object {

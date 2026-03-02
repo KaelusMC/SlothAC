@@ -17,13 +17,14 @@ class DefaultAiServiceParseSequenceTest {
 
   @Test
   fun `parses sequence from valid JSON body`() {
-    val body = """{"details":{"sequence":42}}"""
+    val body = """{"details":{"expected_sequence":42}}"""
     assertEquals(42, service.parseSequence(body))
   }
 
   @Test
   fun `parses sequence with extra fields`() {
-    val body = """{"details":{"sequence":7,"other":"value"},"status":"error"}"""
+    val body =
+      """{"details":{"expected_sequence":7,"received_sequence":40,"other":"value"},"status":"error"}"""
     assertEquals(7, service.parseSequence(body))
   }
 
@@ -51,6 +52,26 @@ class DefaultAiServiceParseSequenceTest {
   }
 
   @Test
+  fun `parses expected_sequence from new protocol`() {
+    val body =
+      """{"code":"INVALID_SEQUENCE","details":{"expected_sequence":40,"received_sequence":50}}"""
+    assertEquals(40, service.parseSequence(body))
+  }
+
+  @Test
+  fun `returns null when expected_sequence is missing`() {
+    val body = """{"details":{"sequence":50}}"""
+    assertNull(service.parseSequence(body))
+  }
+
+  @Test
+  fun `returns null when only error text is present`() {
+    val body =
+      """{"error":"Invalid sequence length for model sloth_1_preview. Expected 40, got 50"}"""
+    assertNull(service.parseSequence(body))
+  }
+
+  @Test
   fun `returns null for invalid JSON`() {
     assertNull(service.parseSequence("not json at all"))
   }
@@ -63,19 +84,19 @@ class DefaultAiServiceParseSequenceTest {
 
   @Test
   fun `parses zero sequence`() {
-    val body = """{"details":{"sequence":0}}"""
+    val body = """{"details":{"expected_sequence":0}}"""
     assertEquals(0, service.parseSequence(body))
   }
 
   @Test
   fun `parses negative sequence`() {
-    val body = """{"details":{"sequence":-1}}"""
+    val body = """{"details":{"expected_sequence":-1}}"""
     assertEquals(-1, service.parseSequence(body))
   }
 
   @Test
   fun `parses large sequence number`() {
-    val body = """{"details":{"sequence":999999}}"""
+    val body = """{"details":{"expected_sequence":999999}}"""
     assertEquals(999999, service.parseSequence(body))
   }
 }

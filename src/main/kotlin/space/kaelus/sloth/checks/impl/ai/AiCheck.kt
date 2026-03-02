@@ -291,8 +291,18 @@ class AiCheck(
 
     val newSequence = (cause as? AiServiceException)?.newSequence
     if (newSequence != null) {
+      if (newSequence < MIN_SEQUENCE) {
+        plugin.logger.warning(
+          "[AiCheck] Ignored invalid sequence length $newSequence (allowed: >= $MIN_SEQUENCE)"
+        )
+        return null
+      }
+
       if (configManager.aiSequence != newSequence) {
-        plugin.logger.info("[AiCheck] Received new sequence length $newSequence")
+        val oldSequence = configManager.aiSequence
+        plugin.logger.info(
+          "[AiCheck] Received new sequence length $newSequence (old: $oldSequence)"
+        )
         configManager.aiSequence = newSequence
         ticks = ArrayDeque(newSequence)
       }
@@ -336,5 +346,6 @@ class AiCheck(
   companion object {
     private const val CHEAT_PROBABILITY = 0.90
     private const val LEGIT_PROBABILITY = 0.10
+    private const val MIN_SEQUENCE = 1
   }
 }
