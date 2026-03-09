@@ -22,11 +22,13 @@
  */
 package space.kaelus.sloth.packet
 
+import com.github.retrooper.packetevents.PacketEvents
 import com.github.retrooper.packetevents.event.PacketListenerAbstract
 import com.github.retrooper.packetevents.event.PacketReceiveEvent
 import com.github.retrooper.packetevents.event.PacketSendEvent
 import com.github.retrooper.packetevents.event.UserDisconnectEvent
 import com.github.retrooper.packetevents.event.UserLoginEvent
+import com.github.retrooper.packetevents.manager.server.ServerVersion
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes
 import com.github.retrooper.packetevents.protocol.packettype.PacketType
 import com.github.retrooper.packetevents.protocol.player.ClientVersion
@@ -230,14 +232,16 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
   private fun processRotation(slothPlayer: SlothPlayer, packet: WrapperPlayClientPlayerFlying) {
     val ignoreRotation =
       slothPlayer.packetStateData.lastPacketWasOnePointSeventeenDuplicate &&
-        slothPlayer.packetStateData.ignoreDuplicatePacketRotation
+        slothPlayer.isIgnoreDuplicatePacketRotation()
     val movement = slothPlayer.movement
 
     if (packet.hasPositionChanged()) {
       movement.x = packet.location.x
       movement.y = packet.location.y
       movement.z = packet.location.z
-      slothPlayer.packetStateData.lastClaimedPosition = packet.location.position
+      if (!slothPlayer.packetStateData.lastPacketWasOnePointSeventeenDuplicate) {
+        slothPlayer.packetStateData.duplicatePacketFilterPosition = packet.location.position
+      }
     }
 
     if (packet.hasRotationChanged() && !ignoreRotation) {
@@ -487,41 +491,70 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
     flying: WrapperPlayClientPlayerFlying,
     event: PacketReceiveEvent,
   ) {
-    if (player.packetStateData.lastPacketWasTeleport) return
-    if (player.user.clientVersion.isNewerThanOrEquals(ClientVersion.V_1_21)) return
+    if (
+      player.packetStateData.lastPacketWasTeleport ||
+        player.user.clientVersion.isNewerThanOrEquals(ClientVersion.V_1_21)
+    ) {
+      return
+    }
 
     val location: Location = flying.location
-    val movement = player.movement
+    if (shouldProcessDuplicate(player, flying, location)) {
+      handleDuplicatePacketAction(player, flying, location, event)
+      player.packetStateData.lastPacketWasOnePointSeventeenDuplicate = true
+      applyDuplicateRotation(player, location)
+    }
+  }
+
+  private fun shouldProcessDuplicate(
+    player: SlothPlayer,
+    flying: WrapperPlayClientPlayerFlying,
+    location: Location,
+  ): Boolean {
     val threshold = player.getMovementThreshold()
     val inVehicle = player.compensatedEntities.self.riding != null
     val hasMovementAndRotation = flying.hasPositionChanged() && flying.hasRotationChanged()
     val sameGroundAndCloseClaim =
       flying.isOnGround == player.packetStateData.packetPlayerOnGround &&
         player.user.clientVersion.isNewerThanOrEquals(ClientVersion.V_1_17) &&
-        player.packetStateData.lastClaimedPosition.distanceSquared(location.position) <
+        player.packetStateData.duplicatePacketFilterPosition.distanceSquared(location.position) <
           threshold * threshold
-    val shouldProcessDuplicate =
-      !player.packetStateData.lastPacketWasTeleport &&
-        hasMovementAndRotation &&
-        (sameGroundAndCloseClaim || inVehicle)
+    return hasMovementAndRotation && (sameGroundAndCloseClaim || inVehicle)
+  }
 
-    if (shouldProcessDuplicate) {
+  private fun handleDuplicatePacketAction(
+    player: SlothPlayer,
+    flying: WrapperPlayClientPlayerFlying,
+    location: Location,
+    event: PacketReceiveEvent,
+  ) {
+    val serverVersion = PacketEvents.getAPI().serverManager.version
+    if (player.isForceCancelDuplicatePacket()) {
+      event.isCancelled = true
+      return
+    }
+
+    if (serverVersion.isOlderThanOrEquals(ServerVersion.V_1_9)) {
       if (player.isCancelDuplicatePacket()) {
         event.isCancelled = true
       }
-
-      player.packetStateData.lastPacketWasOnePointSeventeenDuplicate = true
-
-      if (!player.packetStateData.ignoreDuplicatePacketRotation) {
-        if (movement.yaw != location.yaw || movement.pitch != location.pitch) {
-          movement.lastYaw = movement.yaw
-          movement.lastPitch = movement.pitch
-        }
-        movement.yaw = location.yaw
-        movement.pitch = location.pitch
-      }
-
-      player.packetStateData.lastClaimedPosition = location.position
+      return
     }
+
+    flying.location =
+      Location(player.packetStateData.duplicatePacketFilterPosition, location.yaw, location.pitch)
+    event.markForReEncode(true)
+  }
+
+  private fun applyDuplicateRotation(player: SlothPlayer, location: Location) {
+    if (player.isIgnoreDuplicatePacketRotation()) return
+
+    val movement = player.movement
+    if (movement.yaw != location.yaw || movement.pitch != location.pitch) {
+      movement.lastYaw = movement.yaw
+      movement.lastPitch = movement.pitch
+    }
+    movement.yaw = location.yaw
+    movement.pitch = location.pitch
   }
 }

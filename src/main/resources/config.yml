@@ -95,6 +95,20 @@ suspicious:
   alerts:
     buffer: 25.0
 
+# Should the duplicate movement packet be cancelled?
+# Mojang fixed this in 1.21. This packet was introduced as part of the bucket desync workaround.
+# See MC-12363. This only matters on very old server versions.
+cancel-duplicate-packet: true
+
+# If true, Sloth will always cancel duplicate movement packets even on modern servers.
+# This is more aggressive and can throw away duplicate packet rotation/use-item context.
+force-cancel-duplicate-packet: false
+
+# Whether rotation from duplicate packets should still be processed.
+# When true, Sloth ignores yaw/pitch from duplicate movement packets.
+# Set this to false if you want duplicate packets to keep updating rotation.
+ignore-duplicate-packet-rotation: true
+
 debug:
   # Switch for all debug output
   enabled: false

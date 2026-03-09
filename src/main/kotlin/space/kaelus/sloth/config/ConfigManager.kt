@@ -81,6 +81,15 @@ class ConfigManager(private val plugin: SlothAC) {
   var suspiciousAlertsBuffer: Double = 0.0
     private set
 
+  var cancelDuplicatePacket: Boolean = true
+    private set
+
+  var forceCancelDuplicatePacket: Boolean = false
+    private set
+
+  var ignoreDuplicatePacketRotation: Boolean = true
+    private set
+
   private var debugEnabled = false
   var enabledDebugCategories: Set<DebugCategory> = emptySet()
     private set
@@ -163,6 +172,9 @@ class ConfigManager(private val plugin: SlothAC) {
       config.getBoolean("client-brand.disconnect-blacklisted-forge-versions", true)
 
     suspiciousAlertsBuffer = config.getDouble("suspicious.alerts.buffer", 25.0)
+    cancelDuplicatePacket = config.getBoolean("cancel-duplicate-packet", true)
+    forceCancelDuplicatePacket = config.getBoolean("force-cancel-duplicate-packet", false)
+    ignoreDuplicatePacketRotation = config.getBoolean("ignore-duplicate-packet-rotation", true)
 
     debugEnabled = config.getBoolean("debug.enabled", false)
     val enabledCategories = EnumSet.noneOf(DebugCategory::class.java)

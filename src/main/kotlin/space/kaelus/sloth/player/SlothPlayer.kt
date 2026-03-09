@@ -37,6 +37,7 @@ import space.kaelus.sloth.alert.AlertManager
 import space.kaelus.sloth.api.event.SlothEventBus
 import space.kaelus.sloth.checks.CheckManager
 import space.kaelus.sloth.checks.impl.ai.DataCollectorManager
+import space.kaelus.sloth.config.ConfigManager
 import space.kaelus.sloth.entity.CompensatedEntities
 import space.kaelus.sloth.player.state.CombatState
 import space.kaelus.sloth.player.state.MovementState
@@ -56,6 +57,7 @@ constructor(
   val player: Player,
   val user: User,
   private val plugin: SlothAC,
+  private val configManager: ConfigManager,
   aiSequence: Int,
   alertManager: AlertManager,
   dataCollectorManager: DataCollectorManager,
@@ -87,11 +89,23 @@ constructor(
   val checkManager: CheckManager = checkManagerFactory.create(this)
   val punishmentManager: PunishmentManager = punishmentManagerFactory.create(this)
 
+  private var cancelDuplicatePacket = true
+  private var forceCancelDuplicatePacket = false
+  private var ignoreDuplicatePacketRotation = true
+
+  init {
+    refreshDuplicatePacketSettings()
+  }
+
   fun isPointThree(): Boolean = user.clientVersion.isOlderThan(ClientVersion.V_1_18_2)
 
   fun getMovementThreshold(): Double = if (isPointThree()) 0.03 else 0.0002
 
-  fun isCancelDuplicatePacket(): Boolean = true
+  fun isCancelDuplicatePacket(): Boolean = cancelDuplicatePacket
+
+  fun isForceCancelDuplicatePacket(): Boolean = forceCancelDuplicatePacket
+
+  fun isIgnoreDuplicatePacketRotation(): Boolean = ignoreDuplicatePacketRotation
 
   fun sendTransaction() {
     transactions.sendTransaction(user)
@@ -107,8 +121,15 @@ constructor(
   }
 
   fun reload() {
+    refreshDuplicatePacketSettings()
     punishmentManager.reload()
     checkManager.reloadChecks()
+  }
+
+  private fun refreshDuplicatePacketSettings() {
+    cancelDuplicatePacket = configManager.cancelDuplicatePacket
+    forceCancelDuplicatePacket = configManager.forceCancelDuplicatePacket
+    ignoreDuplicatePacketRotation = configManager.ignoreDuplicatePacketRotation
   }
 
   class TeleportData(val location: Vector3d, val flags: RelativeFlag, val transactionId: Int) {

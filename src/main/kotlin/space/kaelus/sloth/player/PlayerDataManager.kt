@@ -105,6 +105,7 @@ constructor(
             player = player,
             user = user,
             plugin = plugin,
+            configManager = configManager,
             aiSequence = configManager.aiSequence,
             alertManager = alertManager,
             dataCollectorManager = dataCollectorManager,

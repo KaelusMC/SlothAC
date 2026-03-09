@@ -68,6 +68,8 @@ dependencies {
   testImplementation(kotlin("test"))
   testImplementation("org.junit.jupiter:junit-jupiter:6.0.2")
   testImplementation("io.mockk:mockk:1.14.9")
+  testCompileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+  testRuntimeOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
   testRuntimeOnly("org.xerial:sqlite-jdbc:3.51.2.0")
 }
 

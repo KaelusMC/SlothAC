@@ -29,6 +29,5 @@ class PacketStateData {
   var lastPacketWasTeleport: Boolean = false
   var lastPacketWasServerRotation: Boolean = false
   var lastPacketWasOnePointSeventeenDuplicate: Boolean = false
-  var ignoreDuplicatePacketRotation: Boolean = true
-  var lastClaimedPosition: Vector3d = Vector3d(0.0, 0.0, 0.0)
+  var duplicatePacketFilterPosition: Vector3d = Vector3d(0.0, 0.0, 0.0)
 }
