@@ -4,7 +4,7 @@ import java.util.Locale
 
 enum class DatabaseType(val flywayLocation: String) {
   SQLITE("sqlite"),
-  MYSQL("mysql");
+  MARIADB("mysql");
 
   companion object {
     fun fromConfig(raw: String?): DatabaseType {
@@ -12,7 +12,8 @@ enum class DatabaseType(val flywayLocation: String) {
         return SQLITE
       }
       return when (raw.trim().lowercase(Locale.ROOT)) {
-        "mysql" -> MYSQL
+        "mysql" -> MARIADB
+        "mariadb" -> MARIADB
         "sqlite" -> SQLITE
         else -> SQLITE
       }

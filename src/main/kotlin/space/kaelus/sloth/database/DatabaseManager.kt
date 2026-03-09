@@ -36,10 +36,10 @@ class DatabaseManager(plugin: SlothAC, configManager: ConfigManager) {
   init {
     val rawType = configManager.config.getString("database.type", "sqlite")
     val databaseType = DatabaseType.fromConfig(rawType)
-    if (
-      !"sqlite".equals(rawType, ignoreCase = true) && !"mysql".equals(rawType, ignoreCase = true)
-    ) {
-      plugin.logger.warning("Unknown database type '$rawType', defaulting to sqlite.")
+    if (SUPPORTED_DATABASE_TYPES.none { it.equals(rawType, ignoreCase = true) }) {
+      plugin.logger.warning(
+        "Unknown database type $rawType, defaulting to sqlite. Supported types: sqlite, mysql, mariadb."
+      )
     }
 
     dataSource = createDataSource(plugin, configManager, databaseType)
@@ -53,21 +53,64 @@ class DatabaseManager(plugin: SlothAC, configManager: ConfigManager) {
     dataSource: HikariDataSource,
     databaseType: DatabaseType,
   ) {
+    val defaultLocations = defaultFlywayLocations(databaseType)
+    val defaultFlyway = buildFlyway(plugin, dataSource, defaultLocations)
+    val migrationFlyway =
+      if (
+        databaseType == DatabaseType.SQLITE &&
+          hasAppliedMigrationVersion(defaultFlyway, LEGACY_SQLITE_COMPAT_VERSION)
+      ) {
+        plugin.logger.info(LEGACY_SQLITE_COMPAT_LOG)
+        buildFlyway(plugin, dataSource, defaultLocations + LEGACY_SQLITE_COMPAT_LOCATION)
+      } else {
+        defaultFlyway
+      }
+
     try {
+      migrationFlyway.migrate()
+    } catch (exception: FlywayException) {
+      failMigrations(plugin, exception)
+    }
+  }
+
+  private fun defaultFlywayLocations(databaseType: DatabaseType): List<String> {
+    return listOf(
+      COMMON_MIGRATION_LOCATION,
+      "classpath:db/migration/${databaseType.flywayLocation}",
+    )
+  }
+
+  private fun buildFlyway(
+    plugin: SlothAC,
+    dataSource: HikariDataSource,
+    locations: List<String>,
+  ): Flyway {
+    require(locations.size == DEFAULT_LOCATIONS_COUNT || locations.size == COMPAT_LOCATIONS_COUNT) {
+      "Unexpected Flyway locations count: ${locations.size}"
+    }
+    val configuration =
       Flyway.configure(plugin.javaClass.classLoader)
         .dataSource(dataSource)
-        .locations(
-          "classpath:db/migration/common",
-          "classpath:db/migration/${databaseType.flywayLocation}",
-        )
         .baselineOnMigrate(true)
         .baselineVersion("0")
-        .load()
-        .migrate()
-    } catch (e: FlywayException) {
-      plugin.logger.log(Level.SEVERE, "Failed to run database migrations", e)
-      throw IllegalStateException("Database migrations failed", e)
+    if (locations.size == DEFAULT_LOCATIONS_COUNT) {
+      configuration.locations(locations[0], locations[1])
+    } else {
+      configuration.locations(locations[0], locations[1], locations[2])
     }
+    return configuration.load()
+  }
+
+  private fun hasAppliedMigrationVersion(flyway: Flyway, version: String): Boolean {
+    return flyway.info().all().any { migration ->
+      val migrationVersion = migration.version?.version
+      migrationVersion == version && migration.installedRank != null
+    }
+  }
+
+  private fun failMigrations(plugin: SlothAC, exception: FlywayException): Nothing {
+    plugin.logger.log(Level.SEVERE, "Failed to run database migrations", exception)
+    throw IllegalStateException("Database migrations failed", exception)
   }
 
   private fun createDataSource(
@@ -82,46 +125,26 @@ class DatabaseManager(plugin: SlothAC, configManager: ConfigManager) {
     val poolSize = configManager.config.getInt("database.pool-size", defaultPoolSize)
     config.maximumPoolSize = maxOf(2, poolSize)
 
-    if (databaseType == DatabaseType.MYSQL) {
-      val host = configManager.config.getString("database.mysql.host", "localhost")
-      val port = configManager.config.getInt("database.mysql.port", 3306)
-      val database = configManager.config.getString("database.mysql.database", "slothac")
-      val username = configManager.config.getString("database.mysql.username", "root")
-      val password = configManager.config.getString("database.mysql.password", "")
-      val useSsl = configManager.config.getBoolean("database.mysql.use-ssl", false)
-      val allowPublicKeyRetrieval =
-        configManager.config.getBoolean("database.mysql.allow-public-key-retrieval", false)
-
-      val jdbcUrl =
-        StringBuilder()
-          .append("jdbc:mysql://")
-          .append(host)
-          .append(":")
-          .append(port)
-          .append("/")
-          .append(database)
-          .append("?useSSL=")
-          .append(useSsl.toString().lowercase(Locale.ROOT))
-          .append("&useUnicode=true&characterEncoding=utf8&serverTimezone=UTC")
-      if (allowPublicKeyRetrieval) {
-        jdbcUrl.append("&allowPublicKeyRetrieval=true")
-      }
-
-      config.driverClassName = "com.mysql.cj.jdbc.Driver"
-      config.jdbcUrl = jdbcUrl.toString()
-      config.username = username
-      config.password = password
-
-      config.addDataSourceProperty("cachePrepStmts", "true")
-      config.addDataSourceProperty("prepStmtCacheSize", "250")
-      config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048")
-    } else {
+    if (databaseType == DatabaseType.SQLITE) {
       val fileName = configManager.config.getString("database.sqlite.file", "violations.db")
       val dbFile = File(plugin.dataFolder, fileName)
       config.jdbcUrl = "jdbc:sqlite:${dbFile.absolutePath}"
       config.addDataSourceProperty("journal_mode", "WAL")
       config.addDataSourceProperty("synchronous", "NORMAL")
       config.addDataSourceProperty("busy_timeout", "5000")
+    } else {
+      val host = configManager.config.getString("database.mysql.host", "localhost")
+      val port = configManager.config.getInt("database.mysql.port", 3306)
+      val database = configManager.config.getString("database.mysql.database", "slothac")
+      val username = configManager.config.getString("database.mysql.username", "root")
+      val password = configManager.config.getString("database.mysql.password", "")
+      val useSsl = configManager.config.getBoolean("database.mysql.use-ssl", false)
+
+      config.driverClassName = MARIADB_DRIVER_CLASS
+      config.jdbcUrl =
+        buildMariaDbJdbcUrl(host = host, port = port, database = database, useSsl = useSsl)
+      config.username = username
+      config.password = password
     }
 
     config.connectionTimeout = 30000
@@ -131,9 +154,40 @@ class DatabaseManager(plugin: SlothAC, configManager: ConfigManager) {
     return HikariDataSource(config)
   }
 
+  private fun buildMariaDbJdbcUrl(
+    host: String,
+    port: Int,
+    database: String,
+    useSsl: Boolean,
+  ): String {
+    return StringBuilder()
+      .append(MARIADB_JDBC_SCHEME)
+      .append(host)
+      .append(":")
+      .append(port)
+      .append("/")
+      .append(database)
+      .append("?useSsl=")
+      .append(useSsl.toString().lowercase(Locale.ROOT))
+      .toString()
+  }
+
   fun shutdown() {
     if (!dataSource.isClosed) {
       dataSource.close()
     }
+  }
+
+  private companion object {
+    val SUPPORTED_DATABASE_TYPES = setOf("sqlite", "mysql", "mariadb")
+    const val COMMON_MIGRATION_LOCATION = "classpath:db/migration/common"
+    const val DEFAULT_LOCATIONS_COUNT = 2
+    const val COMPAT_LOCATIONS_COUNT = 3
+    const val LEGACY_SQLITE_COMPAT_VERSION = "0.1"
+    const val LEGACY_SQLITE_COMPAT_LOCATION = "classpath:db/migration/sqlitecompat"
+    const val MARIADB_DRIVER_CLASS = "org.mariadb.jdbc.Driver"
+    const val MARIADB_JDBC_SCHEME = "jdbc:mariadb://"
+    const val LEGACY_SQLITE_COMPAT_LOG =
+      "Detected legacy Flyway migration 0.1 in schema history. Enabling compatibility location for validation."
   }
 }

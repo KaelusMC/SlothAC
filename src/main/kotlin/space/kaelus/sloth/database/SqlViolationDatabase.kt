@@ -156,11 +156,7 @@ class SqlViolationDatabase(
   override fun incrementViolationLevel(playerUUID: UUID, punishGroupName: String): Int {
     return try {
       transaction(database) {
-        Punishments.upsert(
-          Punishments.uuid,
-          Punishments.punishGroup,
-          onUpdate = { it[Punishments.vl] = Punishments.vl + 1 },
-        ) {
+        Punishments.upsert(onUpdate = { it[Punishments.vl] = Punishments.vl + 1 }) {
           it[uuid] = playerUUID.toString()
           it[punishGroup] = punishGroupName
           it[vl] = 1
@@ -249,7 +245,6 @@ class SqlViolationDatabase(
     try {
       transaction(database) {
         MonitorSettingsTable.upsert(
-          MonitorSettingsTable.uuid,
           onUpdate = {
             it[MonitorSettingsTable.mode] = insertValue(MonitorSettingsTable.mode)
             it[MonitorSettingsTable.theme] = insertValue(MonitorSettingsTable.theme)
@@ -257,7 +252,7 @@ class SqlViolationDatabase(
             it[MonitorSettingsTable.showDmg] = insertValue(MonitorSettingsTable.showDmg)
             it[MonitorSettingsTable.showTrend] = insertValue(MonitorSettingsTable.showTrend)
             it[MonitorSettingsTable.showName] = insertValue(MonitorSettingsTable.showName)
-          },
+          }
         ) {
           it[uuid] = playerUUID.toString()
           it[mode] = settings.mode.name

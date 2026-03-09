@@ -52,6 +52,7 @@ dependencies {
   implementation("org.jetbrains.exposed:exposed-jdbc:1.0.0")
   implementation("org.flywaydb:flyway-core:12.0.2")
   implementation("org.flywaydb:flyway-mysql:12.0.2")
+  implementation("org.mariadb.jdbc:mariadb-java-client:3.5.6")
 
   // Utilities
   implementation(kotlin("stdlib"))
@@ -107,6 +108,7 @@ tasks.shadowJar {
     exclude(dependency("org.jetbrains.exposed:exposed-java-time"))
     exclude(dependency("org.flywaydb:flyway-core"))
     exclude(dependency("org.flywaydb:flyway-mysql"))
+    exclude(dependency("org.mariadb.jdbc:mariadb-java-client"))
   }
 
   mergeServiceFiles()

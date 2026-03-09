@@ -1,6 +1,6 @@
 @file:Suppress("ClassName")
 
-package db.migration.sqlite
+package db.migration.sqlitecompat
 
 import java.sql.Connection
 import org.flywaydb.core.api.migration.BaseJavaMigration

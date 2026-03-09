@@ -78,10 +78,11 @@ history:
   enabled: true
 
 database:
-  # sqlite or mysql
+  # sqlite, mysql or mariadb
   type: sqlite
   sqlite:
     file: "violations.db"
+  # Legacy section name; used for the MariaDB Connector/J network database mode.
   mysql:
     host: "localhost"
     port: 3306
@@ -89,7 +90,6 @@ database:
     username: "root"
     password: "password"
     use-ssl: false
-    allow-public-key-retrieval: false
 
 suspicious:
   alerts:

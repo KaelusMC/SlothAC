@@ -32,6 +32,7 @@ class FlywaySqliteMigrationsTest {
       val versions = appliedVersions(connection)
       assertTrue(versions.contains("1"))
       assertTrue(versions.contains("2"))
+      assertTrue(versions.contains("3"))
     }
   }
 
