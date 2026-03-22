@@ -230,8 +230,22 @@ bukkit {
       default = Permission.Default.FALSE
     }
     register("sloth.datacollect") {
-      description = "Allows usage of the data collection commands"
+      description = "Parent permission for data collection commands"
       default = Permission.Default.OP
+      children =
+        listOf("sloth.datacollect.start", "sloth.datacollect.stop", "sloth.datacollect.status")
+    }
+    register("sloth.datacollect.start") {
+      description = "Allows starting a data collection session"
+      default = Permission.Default.FALSE
+    }
+    register("sloth.datacollect.stop") {
+      description = "Allows stopping a data collection session"
+      default = Permission.Default.FALSE
+    }
+    register("sloth.datacollect.status") {
+      description = "Allows viewing data collection session status"
+      default = Permission.Default.FALSE
     }
     register("sloth.prob") {
       description = "Allows usage of the probability display command"

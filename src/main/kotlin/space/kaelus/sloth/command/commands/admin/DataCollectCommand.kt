@@ -46,8 +46,8 @@ class DataCollectCommand(private val dataCollectorManager: DataCollectorManager)
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("datacollect", Description.empty(), "dc")
-        .permission("sloth.datacollect")
         .literal("start")
+        .permission("sloth.datacollect.start")
         .required("target", PlayerParser.playerParser())
         .required("type", StringParser.stringParser()) { suggestionProvider = typeProvider }
         .optional("details", StringParser.greedyStringParser())
@@ -56,16 +56,16 @@ class DataCollectCommand(private val dataCollectorManager: DataCollectorManager)
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("datacollect", Description.empty(), "dc")
-        .permission("sloth.datacollect")
         .literal("stop")
+        .permission("sloth.datacollect.stop")
         .required("target", PlayerParser.playerParser())
         .handler(this@DataCollectCommand::stop)
     }
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("datacollect", Description.empty(), "dc")
-        .permission("sloth.datacollect")
         .literal("status")
+        .permission("sloth.datacollect.status")
         .optional("target", PlayerParser.playerParser())
         .handler(this@DataCollectCommand::status)
     }
