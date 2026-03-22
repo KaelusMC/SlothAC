@@ -41,6 +41,7 @@ dependencies {
   } else {
     compileOnly(packetEventsSpigot)
   }
+  implementation("org.bstats:bstats-bukkit:3.2.1")
 
   // Cloud Command Framework
   implementation("org.incendo:cloud-paper:2.0.0-beta.14")
@@ -133,6 +134,7 @@ tasks.shadowJar {
     relocate("io.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents.impl")
     relocate("net.kyori", "space.kaelus.sloth.libs.kyori")
   }
+  relocate("org.bstats", "space.kaelus.sloth.libs.bstats")
   relocate("org.incendo", "space.kaelus.sloth.libs.incendo")
   relocate("io.leangen.geantyref", "space.kaelus.sloth.libs.geantyref")
   relocate("it.unimi.dsi.fastutil", "space.kaelus.sloth.libs.fastutil")

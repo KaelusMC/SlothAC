@@ -19,6 +19,7 @@ package space.kaelus.sloth
 
 import com.github.retrooper.packetevents.PacketEvents
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
+import org.bstats.bukkit.Metrics
 import org.bukkit.plugin.java.JavaPlugin
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -48,6 +49,7 @@ class SlothAC : JavaPlugin() {
     val koinApp = startKoin { modules(slothModules(this@SlothAC)) }
     core = koinApp.koin.get()
     core?.enable()
+    Metrics(this, BSTATS_PLUGIN_ID)
   }
 
   override fun onDisable() {
@@ -57,5 +59,9 @@ class SlothAC : JavaPlugin() {
 
   fun onReload() {
     core?.reload()
+  }
+
+  private companion object {
+    const val BSTATS_PLUGIN_ID = 30367
   }
 }
