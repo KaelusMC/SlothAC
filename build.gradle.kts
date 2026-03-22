@@ -4,10 +4,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
   id("java")
-  id("org.jetbrains.kotlin.jvm") version "2.3.20-Beta2"
-  id("com.gradleup.shadow") version "9.3.1"
+  id("org.jetbrains.kotlin.jvm") version "2.3.20"
+  id("com.gradleup.shadow") version "9.4.0"
   id("net.minecrell.plugin-yml.bukkit") version "0.6.0"
-  id("com.diffplug.spotless") version "8.2.1"
+  id("com.diffplug.spotless") version "8.4.0"
   id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
 
@@ -47,12 +47,13 @@ dependencies {
   // HikariCP
   implementation("com.zaxxer:HikariCP:7.0.2")
   implementation("org.slf4j:slf4j-jdk14:2.0.17")
-  implementation("org.jetbrains.exposed:exposed-core:1.0.0")
-  implementation("org.jetbrains.exposed:exposed-java-time:1.0.0")
-  implementation("org.jetbrains.exposed:exposed-jdbc:1.0.0")
-  implementation("org.flywaydb:flyway-core:12.0.2")
-  implementation("org.flywaydb:flyway-mysql:12.0.2")
-  implementation("org.mariadb.jdbc:mariadb-java-client:3.5.6")
+  implementation("org.jetbrains.exposed:exposed-core:1.1.1")
+  implementation("org.jetbrains.exposed:exposed-java-time:1.1.1")
+  implementation("org.jetbrains.exposed:exposed-jdbc:1.1.1")
+  implementation("org.flywaydb:flyway-core:12.1.1")
+  implementation("org.flywaydb:flyway-mysql:12.1.1")
+  implementation("org.mariadb.jdbc:mariadb-java-client:3.5.7")
+  implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
 
   // Utilities
   implementation(kotlin("stdlib"))
@@ -60,7 +61,7 @@ dependencies {
   implementation("org.jetbrains:annotations:26.1.0")
   implementation("com.google.flatbuffers:flatbuffers-java:25.2.10")
   implementation("org.spongepowered:configurate-yaml:4.2.0")
-  implementation("io.insert-koin:koin-core:4.1.1")
+  implementation("io.insert-koin:koin-core:4.2.0")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
   implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
 
@@ -70,7 +71,7 @@ dependencies {
   testImplementation("io.mockk:mockk:1.14.9")
   testCompileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
   testRuntimeOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
-  testRuntimeOnly("org.xerial:sqlite-jdbc:3.51.2.0")
+  testRuntimeOnly("org.xerial:sqlite-jdbc:3.51.3.0")
 }
 
 java {
@@ -91,6 +92,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     freeCompilerArgs.addAll("-jvm-default=enable")
   }
 }
+
+tasks.jar { archiveClassifier.set("thin") }
 
 tasks.shadowJar {
   archiveBaseName.set(rootProject.name)
@@ -122,6 +125,7 @@ tasks.shadowJar {
   relocate("io.leangen.geantyref", "space.kaelus.sloth.libs.geantyref")
   relocate("it.unimi.dsi.fastutil", "space.kaelus.sloth.libs.fastutil")
   relocate("com.google.flatbuffers", "space.kaelus.sloth.libs.flatbuffers")
+  relocate("com.fasterxml.jackson", "space.kaelus.sloth.libs.jackson")
   relocate("com.zaxxer", "space.kaelus.sloth.libs.hikari")
   relocate("org.slf4j", "space.kaelus.sloth.libs.slf4j")
   relocate("org.jetbrains.exposed", "space.kaelus.sloth.libs.jetbrains.exposed")
@@ -130,6 +134,7 @@ tasks.shadowJar {
   relocate("org.joml", "space.kaelus.sloth.libs.joml")
   relocate("org.koin", "space.kaelus.sloth.libs.koin")
   relocate("org.flywaydb", "space.kaelus.sloth.libs.flyway")
+  relocate("tools.jackson", "space.kaelus.sloth.libs.tools.jackson")
 }
 
 tasks.test {
