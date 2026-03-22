@@ -29,6 +29,10 @@ monitor:
   setting-updated: "<prefix> <color:#a8ff78>Монитор <white><setting></white> установлен: <white><value></white>.</color>"
   invalid-setting: "<prefix> <color:#ff4b2b>Неверный <white><setting></white>. Используй: <options>.</color>"
 
+view:
+  enabled: "<prefix> <color:#a8ff78>Режим наблюдения включен.</color>"
+  disabled: "<prefix> <color:#f6d365>Режим наблюдения выключен.</color>"
+
 brand:
   alerts-enabled: "<prefix> <color:#eef2f3>Оповещения о клиентах</color> <color:#a8ff78>включены</color>."
   alerts-disabled: "<prefix> <color:#eef2f3>Оповещения о клиентах</color> <color:#ff4b2b>выключены</color>."
@@ -99,6 +103,7 @@ help:
   - " <color:#00b4db>/<command> suspicious <list|top></color> <gray>- Просмотр подозрительных игроков</gray>"
   - " <color:#00b4db>/<command> profile <player></color> <gray>- Просмотреть профиль игрока</gray>"
   - " <color:#00b4db>/<command> monitor <player></color> <gray>- Мониторинг ИИ для игрока в реальном времени</gray>"
+  - " <color:#00b4db>/<command> view</color> <gray>- Включить/выключить режим наблюдения за игроками</gray>"
   - " <color:#00b4db>/<command> history <player> [page]</color> <gray>- Просмотреть историю нарушений игрока</gray>"
   - " <color:#00b4db>/<command> logs [page]</color> <gray>- Просмотр недавних нарушений</gray>"
   - " <color:#00b4db>/<command> stats</color> <gray>- Просмотр статистики сервера</gray>"

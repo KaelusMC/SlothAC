@@ -70,6 +70,7 @@ import space.kaelus.sloth.command.commands.info.LogsCommand
 import space.kaelus.sloth.command.commands.info.MonitorCommand
 import space.kaelus.sloth.command.commands.info.ProfileCommand
 import space.kaelus.sloth.command.commands.info.StatsCommand
+import space.kaelus.sloth.command.commands.info.ViewCommand
 import space.kaelus.sloth.command.handler.SlothCommandFailureHandler
 import space.kaelus.sloth.config.ConfigManager
 import space.kaelus.sloth.config.LocaleManager
@@ -81,6 +82,7 @@ import space.kaelus.sloth.debug.DebugManager
 import space.kaelus.sloth.event.DamageEvent
 import space.kaelus.sloth.integration.WorldGuardManager
 import space.kaelus.sloth.monitor.MonitorSettingsService
+import space.kaelus.sloth.monitor.MonitorViewService
 import space.kaelus.sloth.packet.PacketListener
 import space.kaelus.sloth.platform.scheduler.PlatformScheduler
 import space.kaelus.sloth.platform.scheduler.PlatformSchedulerFactory
@@ -112,6 +114,7 @@ private fun coreModule(plugin: SlothAC) = module {
   singleOf(::AIServerProvider)
   singleOf(::AlertManager)
   singleOf(::MonitorSettingsService)
+  singleOf(::MonitorViewService)
   singleOf(::ExemptManager)
   singleOf(::DataCollectorManager)
   singleOf(::WorldGuardManager)
@@ -167,6 +170,7 @@ private fun infoCommandsModule() = module {
   singleOf(::MonitorCommand).bind<SlothCommand>()
   singleOf(::ProfileCommand).bind<SlothCommand>()
   singleOf(::StatsCommand).bind<SlothCommand>()
+  singleOf(::ViewCommand).bind<SlothCommand>()
 }
 
 private fun checkModule() = module {

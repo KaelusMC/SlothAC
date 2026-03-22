@@ -29,12 +29,15 @@ import space.kaelus.sloth.coroutines.SlothCoroutines
 import space.kaelus.sloth.database.DatabaseManager
 import space.kaelus.sloth.debug.DebugManager
 import space.kaelus.sloth.event.DamageEvent
+import space.kaelus.sloth.monitor.MonitorViewService
 import space.kaelus.sloth.packet.PacketListener
 import space.kaelus.sloth.player.PlayerDataManager
 import space.kaelus.sloth.server.AIServerProvider
 import space.kaelus.sloth.utils.MessageUtil
 
-class SlothCore(
+class SlothCore
+@Suppress("LongParameterList")
+constructor(
   private val plugin: SlothAC,
   private val playerDataManager: PlayerDataManager,
   private val configManager: ConfigManager,
@@ -45,6 +48,7 @@ class SlothCore(
   private val databaseManager: DatabaseManager,
   private val debugManager: DebugManager,
   private val packetListener: PacketListener,
+  private val monitorViewService: MonitorViewService,
   private val damageEvent: DamageEvent,
   private val slothApi: SlothApi,
   private val adventure: BukkitAudiences,
@@ -57,6 +61,7 @@ class SlothCore(
 
     try {
       PacketEvents.getAPI().eventManager.registerListener(packetListener)
+      monitorViewService.start()
       PacketEvents.getAPI().init()
     } catch (e: Exception) {
       plugin.logger.severe("Failed to initialize PacketEvents.")
@@ -89,5 +94,6 @@ class SlothCore(
     alertManager.reload()
     aiServerProvider.reload()
     playerDataManager.reloadAllPlayers()
+    monitorViewService.reload()
   }
 }

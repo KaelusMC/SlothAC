@@ -1,6 +1,24 @@
 update: 2
 storage:
   per-player: true
+view:
+  update: 2
+  rebind-ticks: 100
+  resync-ticks: 100
+  ping-refresh-ticks: 20
+  ping-bucket-ms: 10
+  position: "BELOW_NAME" # ABOVE_NAME | BELOW_NAME
+  fallback:
+    prob: "--"
+    buffer: "--"
+  format:
+    prob-decimals: 0
+    buffer-decimals: 2
+  template:
+    prefix: "<dark_gray>[</dark_gray><white>{prob}%</white><dark_gray> • </dark_gray><yellow>{buffer}</yellow><dark_gray> • </dark_gray><aqua>{ping}ms</aqua><dark_gray>]</dark_gray> "
+    suffix: ""
+    below-title: ""
+    below: "<dark_gray>[</dark_gray><white>{prob}%</white><dark_gray> • </dark_gray><yellow>{buffer}</yellow><dark_gray> • </dark_gray><aqua>{ping}ms</aqua><dark_gray>]</dark_gray>"
 defaults:
   mode: compact           # compact | full
   theme: calm             # calm | vivid | minimal

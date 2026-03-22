@@ -78,7 +78,7 @@ dependencies {
   // Testing
   testImplementation(kotlin("test"))
   testImplementation(packetEventsSpigot)
-  testImplementation("org.junit.jupiter:junit-jupiter:6.0.2")
+  testImplementation("org.junit.jupiter:junit-jupiter:6.0.3")
   testImplementation("io.mockk:mockk:1.14.9")
   testCompileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
   testRuntimeOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
@@ -235,6 +235,10 @@ bukkit {
     }
     register("sloth.prob") {
       description = "Allows usage of the probability display command"
+      default = Permission.Default.OP
+    }
+    register("sloth.view") {
+      description = "Allows toggling AI nametag view above players"
       default = Permission.Default.OP
     }
     register("sloth.profile") {

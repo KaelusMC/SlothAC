@@ -29,6 +29,10 @@ monitor:
   setting-updated: "<prefix> <color:#a8ff78>Monitor <white><setting></white> set to: <white><value></white>.</color>"
   invalid-setting: "<prefix> <color:#ff4b2b>Invalid <white><setting></white>. Use: <options>.</color>"
 
+view:
+  enabled: "<prefix> <color:#a8ff78>Observation mode is now enabled.</color>"
+  disabled: "<prefix> <color:#f6d365>Observation mode is now disabled.</color>"
+
 brand:
   alerts-enabled: "<prefix> <color:#eef2f3>Client Alerts</color> <color:#a8ff78>enabled</color>."
   alerts-disabled: "<prefix> <color:#eef2f3>Client Alerts</color> <color:#ff4b2b>disabled</color>."
@@ -99,6 +103,7 @@ help:
   - " <color:#00b4db>/<command> suspicious <list|top></color> <gray>- View suspicious players</gray>"
   - " <color:#00b4db>/<command> profile <player></color> <gray>- View a player's profile</gray>"
   - " <color:#00b4db>/<command> monitor <player></color> <gray>- Live AI monitor for a player</gray>"
+  - " <color:#00b4db>/<command> view</color> <gray>- Toggle observation mode for all players</gray>"
   - " <color:#00b4db>/<command> history <player> [page]</color> <gray>- View a player's violation history</gray>"
   - " <color:#00b4db>/<command> logs [page]</color> <gray>- View recent violations</gray>"
   - " <color:#00b4db>/<command> stats</color> <gray>- View server statistics</gray>"

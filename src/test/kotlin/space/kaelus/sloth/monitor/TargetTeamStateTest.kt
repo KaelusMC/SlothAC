@@ -1,0 +1,97 @@
+/*
+ * This file is part of SlothAC - https://github.com/KaelusMC/SlothAC
+ * Copyright (C) 2026 KaelusMC
+ *
+ * SlothAC is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SlothAC is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package space.kaelus.sloth.monitor
+
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import org.bukkit.entity.Player
+import space.kaelus.sloth.player.PlayerDataManager
+
+class TargetTeamStateTest {
+  @Test
+  fun `recreated below-name objective resends unchanged entry`() {
+    val viewer = mockk<Player>(relaxed = true)
+    val belowNameBridge = mockk<ViewBelowNamePacketBridge>(relaxed = true)
+    every { belowNameBridge.supportsFancyText() } returns true
+
+    val state = TargetTeamState("slv_test")
+    val rendered = RenderedTag("", "", "<white>95%</white>", 95)
+
+    state.updateBelowName(viewer, "svw_test", "Target", rendered, belowNameBridge)
+    state.invalidateBelowName()
+    state.updateBelowName(viewer, "svw_test", "Target", rendered, belowNameBridge)
+
+    verify(exactly = 2) {
+      belowNameBridge.updateEntry(viewer, "svw_test", "Target", rendered.below, 95)
+    }
+  }
+
+  @Test
+  fun `below-name entry falls back to placeholder when target has no ai data`() {
+    val viewer = mockk<Player>(relaxed = true)
+    val belowNameBridge = mockk<ViewBelowNamePacketBridge>(relaxed = true)
+    every { belowNameBridge.supportsFancyText() } returns true
+
+    val state = TargetTeamState("slv_test")
+    val withData = RenderedTag("", "", "<white>95%</white>", 95)
+    val noData = RenderedTag("", "", "<gray>--</gray>", 0)
+
+    state.updateBelowName(viewer, "svw_test", "Target", withData, belowNameBridge)
+    state.updateBelowName(viewer, "svw_test", "Target", noData, belowNameBridge)
+
+    verify(exactly = 1) {
+      belowNameBridge.updateEntry(viewer, "svw_test", "Target", noData.below, 0)
+    }
+  }
+
+  @Test
+  fun `renderer emits fallback below-name score without registered sloth player`() {
+    val playerDataManager = mockk<PlayerDataManager>()
+    val target = mockk<Player>(relaxed = true)
+    val state = TargetTeamState("slv_test")
+    val config =
+      ViewRuntimeConfig(
+        updateTicks = 2,
+        rebindCycles = 10,
+        resyncCycles = 50,
+        pingRefreshCycles = 20,
+        pingBucketMs = 10,
+        placement = ViewPlacement.BELOW_NAME,
+        belowTitle = "<white>AI</white>",
+        fallbackProb = "--",
+        fallbackBuffer = "--",
+        probDecimals = 1,
+        bufferDecimals = 1,
+        prefixTemplate = "<white>{prob}</white>",
+        suffixTemplate = "<white>{buffer}</white>",
+        belowTemplate = "<white>{prob}</white>",
+        defaultBelowText = "<white>--</white>",
+        usesPing = false,
+      )
+
+    every { playerDataManager.getPlayer(target) } returns null
+
+    val rendered = ViewTagRenderer(playerDataManager).render(target, state, config)
+
+    assertEquals("<white>--</white>", rendered.below)
+    assertEquals(0, rendered.belowScore)
+  }
+}

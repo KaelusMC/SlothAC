@@ -52,6 +52,8 @@ enum class Message(val path: String) {
   MONITOR_NO_AICHECK("monitor.no-aicheck"),
   MONITOR_SETTING_UPDATED("monitor.setting-updated"),
   MONITOR_INVALID_SETTING("monitor.invalid-setting"),
+  VIEW_ENABLED("view.enabled"),
+  VIEW_DISABLED("view.disabled"),
 
   // Profile
   PROFILE_NO_DATA("profile.no-data"),
