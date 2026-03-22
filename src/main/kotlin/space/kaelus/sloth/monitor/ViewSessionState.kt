@@ -1,0 +1,260 @@
+/*
+ * This file is part of SlothAC - https://github.com/KaelusMC/SlothAC
+ * Copyright (C) 2026 KaelusMC
+ *
+ * SlothAC is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SlothAC is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package space.kaelus.sloth.monitor
+
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import org.bukkit.entity.Player
+import space.kaelus.sloth.platform.scheduler.TaskHandle
+
+internal class ViewSession(
+  val config: ViewRuntimeConfig,
+  var placement: ViewPlacement,
+  var belowObjectiveName: String?,
+) {
+  val targetTeams = ConcurrentHashMap<UUID, TargetTeamState>()
+  private val targetNamesById = ConcurrentHashMap<UUID, String>()
+  private val targetIdsByName = ConcurrentHashMap<String, UUID>()
+
+  var task: TaskHandle? = null
+  var cyclesSinceResync: Int = 0
+  var belowNameConflictLogged: Boolean = false
+
+  fun usesBelowName(): Boolean = placement == ViewPlacement.BELOW_NAME && belowObjectiveName != null
+
+  fun shouldResync(): Boolean {
+    cyclesSinceResync++
+    if (cyclesSinceResync < config.resyncCycles) {
+      return false
+    }
+    cyclesSinceResync = 0
+    return true
+  }
+
+  fun updateTrackedName(targetId: UUID, targetName: String) {
+    if (targetName.isBlank()) {
+      return
+    }
+
+    val previousName = targetNamesById.put(targetId, targetName)
+    if (previousName != null && previousName != targetName) {
+      targetIdsByName.remove(previousName, targetId)
+    }
+    targetIdsByName[targetName] = targetId
+  }
+
+  fun removeTrackedName(targetId: UUID, fallbackTargetName: String?) {
+    val trackedName = targetNamesById.remove(targetId) ?: fallbackTargetName
+    if (trackedName != null) {
+      targetIdsByName.remove(trackedName, targetId)
+    }
+  }
+
+  fun targetIdByName(name: String): UUID? = targetIdsByName[name]
+
+  fun targetNameFor(targetId: UUID): String? = targetNamesById[targetId]
+
+  fun clearTargets() {
+    targetTeams.clear()
+    targetNamesById.clear()
+    targetIdsByName.clear()
+  }
+}
+
+internal class TargetTeamState(val teamName: String) {
+  var created: Boolean = false
+  var lastPrefix: String = ""
+  var lastSuffix: String = ""
+  var lastBelow: String = ""
+  var lastBelowScore: Int = 0
+  var lastTargetName: String = ""
+
+  private var cyclesSinceRebind: Int = 0
+  private var pendingRebind: Boolean = false
+  private var lastPingBucket: Int = Int.MIN_VALUE
+  private var lastPingSample: String = ""
+  private var cyclesSincePingRefresh: Int = Int.MAX_VALUE
+
+  fun markRebindNeeded() {
+    pendingRebind = true
+  }
+
+  fun invalidateBelowName() {
+    created = false
+    lastBelow = ""
+    lastBelowScore = 0
+  }
+
+  fun resolvePingDisplay(ping: Int, config: ViewRuntimeConfig): String {
+    if (!config.usesPing) {
+      return ""
+    }
+
+    val shouldRefresh =
+      cyclesSincePingRefresh >= config.pingRefreshCycles || lastPingBucket == Int.MIN_VALUE
+    val pingSample =
+      if (!shouldRefresh) {
+        cyclesSincePingRefresh++
+        lastPingSample
+      } else {
+        cyclesSincePingRefresh = 0
+        val bucket = if (config.pingBucketMs <= 1) ping else ping / config.pingBucketMs
+        if (bucket != lastPingBucket || lastPingSample.isBlank()) {
+          lastPingBucket = bucket
+          lastPingSample = ping.toString()
+        }
+        lastPingSample
+      }
+
+    return pingSample
+  }
+
+  fun updateBelowName(
+    viewer: Player,
+    objectiveName: String?,
+    targetName: String,
+    rendered: RenderedTag,
+    belowNameBridge: ViewBelowNamePacketBridge,
+  ) {
+    val objective = objectiveName ?: return
+    val belowScore = rendered.belowScore
+    if (belowScore == null) {
+      clearBelowName(viewer, objective, targetName, belowNameBridge)
+      return
+    }
+
+    val nameChanged = lastTargetName.isNotBlank() && lastTargetName != targetName
+    if (
+      shouldUpdateBelowName(targetName, rendered, belowScore, belowNameBridge.supportsFancyText())
+    ) {
+      if (nameChanged) {
+        belowNameBridge.removeEntry(viewer, objective, lastTargetName)
+      }
+      belowNameBridge.updateEntry(viewer, objective, targetName, rendered.below, belowScore)
+      lastBelow = rendered.below
+      lastBelowScore = belowScore
+      lastTargetName = targetName
+      created = true
+    }
+  }
+
+  private fun clearBelowName(
+    viewer: Player,
+    objective: String,
+    targetName: String,
+    belowNameBridge: ViewBelowNamePacketBridge,
+  ) {
+    if (created) {
+      val entryName = lastTargetName.ifBlank { targetName }
+      if (entryName.isNotBlank()) {
+        belowNameBridge.removeEntry(viewer, objective, entryName)
+      }
+    }
+    lastBelow = ""
+    lastBelowScore = 0
+    lastTargetName = targetName
+    created = false
+  }
+
+  private fun shouldUpdateBelowName(
+    targetName: String,
+    rendered: RenderedTag,
+    belowScore: Int,
+    fancyTextSupported: Boolean,
+  ): Boolean {
+    val displayChanged = fancyTextSupported && rendered.below != lastBelow
+    val scoreChanged = belowScore != lastBelowScore
+    val nameChanged = lastTargetName.isNotBlank() && lastTargetName != targetName
+    return !created || displayChanged || scoreChanged || nameChanged
+  }
+
+  fun updateTeam(
+    viewer: Player,
+    rebindCycles: Int,
+    targetName: String,
+    rendered: RenderedTag,
+    teamBridge: ViewTeamPacketBridge,
+  ) {
+    val nameChanged = created && lastTargetName.isNotBlank() && lastTargetName != targetName
+    if (!created) {
+      teamBridge.createTeam(viewer, teamName, targetName, rendered)
+      apply(rendered)
+      created = true
+      cyclesSinceRebind = 0
+      pendingRebind = false
+      lastTargetName = targetName
+      return
+    }
+
+    if (nameChanged) {
+      teamBridge.removeTeam(viewer, teamName)
+      teamBridge.createTeam(viewer, teamName, targetName, rendered)
+      apply(rendered)
+      cyclesSinceRebind = 0
+      pendingRebind = false
+      lastTargetName = targetName
+      return
+    }
+
+    val changed = rendered.prefix != lastPrefix || rendered.suffix != lastSuffix
+    if (changed) {
+      teamBridge.updateTeam(viewer, teamName, rendered)
+      apply(rendered)
+      cyclesSinceRebind = 0
+    } else {
+      cyclesSinceRebind++
+    }
+
+    if (pendingRebind || cyclesSinceRebind >= rebindCycles) {
+      teamBridge.rebindEntity(viewer, teamName, targetName)
+      cyclesSinceRebind = 0
+      pendingRebind = false
+    }
+
+    lastTargetName = targetName
+  }
+
+  fun removeFromViewer(
+    viewer: Player,
+    objectiveName: String?,
+    fallbackTargetName: String,
+    belowNameBridge: ViewBelowNamePacketBridge,
+    teamBridge: ViewTeamPacketBridge,
+  ) {
+    if (objectiveName != null) {
+      val entryName = lastTargetName.ifBlank { fallbackTargetName }
+      if (entryName.isNotBlank()) {
+        belowNameBridge.removeEntry(viewer, objectiveName, entryName)
+      }
+      return
+    }
+    teamBridge.removeTeam(viewer, teamName)
+  }
+
+  private fun apply(tag: RenderedTag) {
+    lastPrefix = tag.prefix
+    lastSuffix = tag.suffix
+  }
+}
+
+internal data class RenderedTag(
+  val prefix: String,
+  val suffix: String,
+  val below: String,
+  val belowScore: Int?,
+)

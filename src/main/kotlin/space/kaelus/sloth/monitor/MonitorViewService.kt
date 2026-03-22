@@ -63,7 +63,7 @@ class MonitorViewService(
 
   fun toggle(viewer: Player): Boolean {
     val viewerId = viewer.uniqueId
-    return if (coordinator.hasSession(viewerId)) {
+    return if (coordinator.session(viewerId) != null) {
       coordinator.disable(viewerId, viewer)
       false
     } else {
@@ -123,7 +123,7 @@ class MonitorViewService(
     if (event.plugin !== plugin) {
       return
     }
-    for (viewerId in coordinator.activeViewerIds()) {
+    for (viewerId in coordinator.activeViewerIds) {
       coordinator.disable(viewerId, Bukkit.getPlayer(viewerId))
     }
   }
