@@ -1,6 +1,7 @@
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission
 import org.gradle.api.file.DuplicatesStrategy
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import tasks.PrintFilePathTask
 import versioning.BuildConfig
 
 plugins {
@@ -149,6 +150,12 @@ tasks.shadowJar {
   relocate("org.koin", "space.kaelus.sloth.libs.koin")
   relocate("org.flywaydb", "space.kaelus.sloth.libs.flyway")
   relocate("tools.jackson", "space.kaelus.sloth.libs.tools.jackson")
+}
+
+tasks.register<PrintFilePathTask>("printShadowJarPath") {
+  description = "Prints the absolute path of the release shadow JAR."
+  group = "help"
+  file.set(tasks.shadowJar.flatMap { it.archiveFile })
 }
 
 tasks.test {

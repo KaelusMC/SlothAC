@@ -31,6 +31,10 @@ jobs:
       - name: Build shadow JAR
         run: ./gradlew shadowJar
 
+      - name: Resolve shadow JAR path
+        id: shadow-jar
+        run: echo "path=$(./gradlew -q printShadowJarPath)" >> "$GITHUB_OUTPUT"
+
       - name: Generate tag
         id: tag
         run: echo "tag=v$(date -u +%Y.%m.%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
@@ -42,5 +46,4 @@ jobs:
           name: "${{ steps.tag.outputs.tag }}"
           body: |
             Automatic release from commit ${{ github.event.workflow_run.head_sha }}.
-          files: |
-            build/libs/SlothAC-*.jar
+          files: ${{ steps.shadow-jar.outputs.path }}

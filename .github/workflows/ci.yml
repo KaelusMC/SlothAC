@@ -56,9 +56,13 @@ jobs:
       - name: Build shadow JAR
         run: ./gradlew shadowJar
 
+      - name: Resolve shadow JAR path
+        id: shadow-jar
+        run: echo "path=$(./gradlew -q printShadowJarPath)" >> "$GITHUB_OUTPUT"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: SlothAC
-          path: build/libs/SlothAC-*.jar
+          path: ${{ steps.shadow-jar.outputs.path }}
           if-no-files-found: error
