@@ -99,6 +99,9 @@ constructor(
         if (!player.isOnline || players.containsKey(player.uniqueId)) {
           return@Runnable
         }
+        if (exemptManager.isDisabled(player)) {
+          return@Runnable
+        }
 
         players[player.uniqueId] =
           SlothPlayer(

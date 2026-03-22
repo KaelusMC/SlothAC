@@ -225,6 +225,10 @@ bukkit {
       description = "Exempt from all checks"
       default = Permission.Default.FALSE
     }
+    register("sloth.disable") {
+      description = "Disables anti-cheat tracking for the player"
+      default = Permission.Default.FALSE
+    }
     register("sloth.datacollect") {
       description = "Allows usage of the data collection commands"
       default = Permission.Default.OP

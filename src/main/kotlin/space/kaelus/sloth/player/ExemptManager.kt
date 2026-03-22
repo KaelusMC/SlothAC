@@ -24,11 +24,15 @@ import org.bukkit.entity.Player
 class ExemptManager {
   private val temporaryExemptions = ConcurrentHashMap<UUID, Long>()
 
+  fun isDisabled(player: Player?): Boolean {
+    return player?.hasPermission(DISABLE_PERMISSION) == true
+  }
+
   fun isExempt(player: Player?): Boolean {
     if (player == null) {
       return false
     }
-    if (player.hasPermission("sloth.exempt")) {
+    if (player.hasPermission(EXEMPT_PERMISSION)) {
       return true
     }
 
@@ -55,5 +59,10 @@ class ExemptManager {
 
   fun getExpiryTime(uuid: UUID): Long? {
     return temporaryExemptions[uuid]
+  }
+
+  companion object {
+    const val EXEMPT_PERMISSION = "sloth.exempt"
+    const val DISABLE_PERMISSION = "sloth.disable"
   }
 }
