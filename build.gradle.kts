@@ -1,6 +1,7 @@
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission
 import org.gradle.api.file.DuplicatesStrategy
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import versioning.BuildConfig
 
 plugins {
   id("java")
@@ -11,9 +12,13 @@ plugins {
   id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
 
+BuildConfig.init(project)
+
 group = "space.kaelus.sloth"
 
 version = "1.0"
+
+val packetEventsSpigot = "com.github.retrooper:packetevents-spigot:2.11.2"
 
 repositories {
   mavenCentral()
@@ -31,7 +36,11 @@ dependencies {
   compileOnly("me.clip:placeholderapi:2.12.2")
 
   // PacketEvents
-  implementation("com.github.retrooper:packetevents-spigot:2.11.2")
+  if (BuildConfig.shadePE) {
+    implementation(packetEventsSpigot)
+  } else {
+    compileOnly(packetEventsSpigot)
+  }
 
   // Cloud Command Framework
   implementation("org.incendo:cloud-paper:2.0.0-beta.14")
@@ -67,6 +76,7 @@ dependencies {
 
   // Testing
   testImplementation(kotlin("test"))
+  testImplementation(packetEventsSpigot)
   testImplementation("org.junit.jupiter:junit-jupiter:6.0.2")
   testImplementation("io.mockk:mockk:1.14.9")
   testCompileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
@@ -118,9 +128,11 @@ tasks.shadowJar {
 
   mergeServiceFiles()
 
-  relocate("com.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents.api")
-  relocate("io.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents.impl")
-  relocate("net.kyori", "space.kaelus.sloth.libs.kyori")
+  if (BuildConfig.shadePE) {
+    relocate("com.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents.api")
+    relocate("io.github.retrooper.packetevents", "space.kaelus.sloth.libs.packetevents.impl")
+    relocate("net.kyori", "space.kaelus.sloth.libs.kyori")
+  }
   relocate("org.incendo", "space.kaelus.sloth.libs.incendo")
   relocate("io.leangen.geantyref", "space.kaelus.sloth.libs.geantyref")
   relocate("it.unimi.dsi.fastutil", "space.kaelus.sloth.libs.fastutil")
@@ -172,6 +184,9 @@ bukkit {
   authors = listOf("KaelusMC")
   website = "https://dsc.gg/kaelus"
   foliaSupported = true
+  if (!BuildConfig.shadePE) {
+    depend = listOf("packetevents")
+  }
   softDepend =
     listOf(
       "ProtocolLib",
