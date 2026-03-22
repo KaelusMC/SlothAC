@@ -96,7 +96,16 @@ enum class Message(val path: String) {
   SUSPICIOUS_TOP_PLAYER("suspicious.top-player"),
 
   // Stats
-  STATS_LINES("stats.lines"),
+  STATS_HEADER("stats.header"),
+  STATS_FLAGS("stats.flags"),
+  STATS_FLAGS_HOVER("stats.flags-hover"),
+  STATS_PLAYERS("stats.players"),
+  STATS_PLAYERS_HOVER("stats.players-hover"),
+  STATS_VIOLATORS("stats.violators"),
+  STATS_VIOLATORS_HOVER("stats.violators-hover"),
+  STATS_ONLINE("stats.online"),
+  STATS_SUSPICIOUS("stats.suspicious"),
+  STATS_SUSPICIOUS_HOVER("stats.suspicious-hover"),
 
   // Help
   HELP_MESSAGE("help"),

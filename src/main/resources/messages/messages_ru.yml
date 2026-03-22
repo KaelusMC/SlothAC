@@ -48,8 +48,8 @@ profile:
     - " <color:#00b4db>Время сессии:</color> <white><session_time></white>"
     - " <color:#00b4db>Общее время игры:</color> <white><total_playtime></white>"
     - " <color:#00b4db>Чувствительность:</color> <white><sens_x>%</white> / <white><sens_y>%</white>"
-    - " <color:#ff416c>AI Буфер:</color> <white><ai_buffer></white>"
-    - " <color:#ff416c>AI Вер-ть >90%:</color> <white><ai_probs_90></white>"
+    - " <color:#ff416c>AI буфер:</color> <white><ai_buffer></white>"
+    - " <color:#ff416c>AI вер-ть >90%:</color> <white><ai_probs_90></white>"
 
 history:
   disabled: "<prefix> <color:#ff4b2b>Подсистема истории отключена!</color>"
@@ -88,12 +88,16 @@ suspicious:
   top-player: "<prefix> <color:#00b4db>Самый подозрительный:</color> <white><player></white> <gray>с буфером</gray> <color:#ff4b2b><buffer></color>"
 
 stats:
-  lines:
-    - "<gradient:#8e9eab:#eef2f3>---- [ Статистика Sloth ] ----</gradient>"
-    - " <color:#00b4db>Флагов (24ч):</color> <white><flags_24h></white>"
-    - " <color:#00b4db>Нарушителей (24ч):</color> <white><violators_24h></white>"
-    - " <color:#00b4db>Игроков онлайн:</color> <white><online_players></white>"
-    - " <color:#ff416c>Подозрительных сейчас:</color> <white><suspicious_now></white>"
+  header: "<gradient:#8e9eab:#eef2f3>---- [ Статистика Sloth ] ----</gradient>"
+  flags: " <color:#00b4db>Флагов (24ч):</color> <white><flags_24h></white>"
+  flags-hover: "<gray>Открыть недавние логи нарушений</gray>"
+  players: " <color:#00b4db>Игроков (24ч):</color> <white><players_24h></white>"
+  players-hover: "<gray>Уникальные игроки за последние 24 часа:</gray> <white><players_24h></white>"
+  violators: " <color:#00b4db>Нарушителей (24ч):</color> <white><violators_24h></white> <gray>(<violators_percent_24h>)</gray>"
+  violators-hover: "<white><violators_percent_24h></white> <gray>от уникальных игроков за последние 24 часа</gray>"
+  online: " <color:#00b4db>Игроков онлайн:</color> <white><online_players></white>"
+  suspicious: " <color:#ff416c>Подозрительных сейчас:</color> <white><suspicious_now></white> <gray>(<suspicious_percent_now>)</gray>"
+  suspicious-hover: "<white><suspicious_now></white> <gray>из</gray> <white><online_players></white> <gray>онлайн-игроков</gray><newline><gray>Порог:</gray> <white>AI буфер > <suspicious_threshold></white>"
 
 help:
   - "<gradient:#8e9eab:#eef2f3>-------- [ Sloth ] --------</gradient>"
