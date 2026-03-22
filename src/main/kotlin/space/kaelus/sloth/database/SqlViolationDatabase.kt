@@ -114,6 +114,25 @@ class SqlViolationDatabase(
     }
   }
 
+  override fun getLogCounts(playerUUIDs: Collection<UUID>): Map<UUID, Int> {
+    if (playerUUIDs.isEmpty()) {
+      return emptyMap()
+    }
+
+    return try {
+      transaction(database) {
+        val uuidCounts = Violations.id.count()
+        Violations.select(Violations.uuid, uuidCounts)
+          .where { Violations.uuid inList playerUUIDs.map(UUID::toString) }
+          .groupBy(Violations.uuid)
+          .associate { row -> UUID.fromString(row[Violations.uuid]) to row[uuidCounts].toInt() }
+      }
+    } catch (e: SQLException) {
+      plugin.logger.log(Level.SEVERE, "Failed to count violations for online players", e)
+      emptyMap()
+    }
+  }
+
   override fun getViolations(page: Int, limit: Int, since: Long): List<Violation> {
     return try {
       transaction(database) {

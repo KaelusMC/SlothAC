@@ -297,7 +297,13 @@ bukkit {
     register("sloth.suspicious") {
       description = "Permission for suspicious player commands"
       default = Permission.Default.OP
-      children = listOf("sloth.suspicious.alerts", "sloth.suspicious.list", "sloth.suspicious.top")
+      children =
+        listOf(
+          "sloth.suspicious.alerts",
+          "sloth.suspicious.list",
+          "sloth.suspicious.top",
+          "sloth.suspicious.flagged",
+        )
     }
     register("sloth.suspicious.alerts") {
       description = "Allows toggling suspicious player alerts"
@@ -309,6 +315,10 @@ bukkit {
     }
     register("sloth.suspicious.top") {
       description = "Allows viewing the top suspicious player"
+      default = Permission.Default.OP
+    }
+    register("sloth.suspicious.flagged") {
+      description = "Allows viewing online players with recorded flags"
       default = Permission.Default.OP
     }
   }

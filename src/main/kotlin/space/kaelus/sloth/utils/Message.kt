@@ -92,8 +92,13 @@ enum class Message(val path: String) {
   SUSPICIOUS_LIST_EMPTY("suspicious.list-empty"),
   SUSPICIOUS_LIST_HEADER("suspicious.list-header"),
   SUSPICIOUS_LIST_ENTRY("suspicious.list-entry"),
+  SUSPICIOUS_LIST_ENTRY_HOVER("suspicious.list-entry-hover"),
+  SUSPICIOUS_FLAGGED_EMPTY("suspicious.flagged-empty"),
+  SUSPICIOUS_FLAGGED_HEADER("suspicious.flagged-header"),
+  SUSPICIOUS_FLAGGED_ENTRY("suspicious.flagged-entry"),
   SUSPICIOUS_TOP_NONE("suspicious.top-none"),
   SUSPICIOUS_TOP_PLAYER("suspicious.top-player"),
+  SUSPICIOUS_TOP_PLAYER_HOVER("suspicious.top-player-hover"),
 
   // Stats
   STATS_HEADER("stats.header"),

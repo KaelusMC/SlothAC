@@ -37,6 +37,8 @@ interface ViolationDatabase {
 
   fun getLogCount(since: Long): Int
 
+  fun getLogCounts(playerUUIDs: Collection<UUID>): Map<UUID, Int>
+
   fun getViolations(page: Int, limit: Int, since: Long): List<Violation>
 
   fun getViolationLevel(playerUUID: UUID, punishGroupName: String): Int
