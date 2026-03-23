@@ -24,15 +24,25 @@ package space.kaelus.sloth.database
 
 import java.sql.SQLException
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatterBuilder
+import java.time.format.DateTimeParseException
+import java.time.temporal.ChronoField
 import java.util.UUID
 import java.util.logging.Level
+import kotlin.time.ExperimentalTime
+import kotlin.time.toJavaInstant
+import kotlin.time.toKotlinInstant
 import org.jetbrains.exposed.v1.core.*
-import org.jetbrains.exposed.v1.javatime.JavaInstantColumnType
+import org.jetbrains.exposed.v1.core.datetime.InstantColumnType
+import org.jetbrains.exposed.v1.core.statements.api.RowApi
+import org.jetbrains.exposed.v1.core.vendors.SQLiteDialect
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.upsert
 import space.kaelus.sloth.SlothAC
@@ -83,9 +93,9 @@ class SqlViolationDatabase(
   override fun getViolations(player: UUID, page: Int, limit: Int): List<Violation> {
     return try {
       transaction(database) {
-        Violations.selectAll()
+        Violations.select(VIOLATION_READ_COLUMNS)
           .where { Violations.uuid eq player.toString() }
-          .orderBy(Violations.createdAtInstant to SortOrder.DESC)
+          .orderBy(Violations.createdAt to SortOrder.DESC)
           .limit(limit)
           .offset(((page - 1) * limit).toLong())
           .map(::toViolation)
@@ -99,14 +109,14 @@ class SqlViolationDatabase(
   override fun getLogCount(since: Long): Int {
     return try {
       transaction(database) {
-        val sinceInstant = Instant.ofEpochMilli(since)
+        val totalViolations = Violations.id.count()
         val query =
           if (since > 0) {
-            Violations.selectAll().where { Violations.createdAtInstant greaterEq sinceInstant }
+            Violations.select(totalViolations).where { Violations.createdAt greaterEq since }
           } else {
-            Violations.selectAll()
+            Violations.select(totalViolations)
           }
-        query.count().toInt()
+        query.firstOrNull()?.get(totalViolations)?.toInt() ?: 0
       }
     } catch (e: SQLException) {
       plugin.logger.log(Level.SEVERE, "Failed to count all violations", e)
@@ -136,15 +146,14 @@ class SqlViolationDatabase(
   override fun getViolations(page: Int, limit: Int, since: Long): List<Violation> {
     return try {
       transaction(database) {
-        val sinceInstant = Instant.ofEpochMilli(since)
         val query =
           if (since > 0) {
-            Violations.selectAll().where { Violations.createdAtInstant greaterEq sinceInstant }
+            Violations.select(VIOLATION_READ_COLUMNS).where { Violations.createdAt greaterEq since }
           } else {
-            Violations.selectAll()
+            Violations.select(VIOLATION_READ_COLUMNS)
           }
         query
-          .orderBy(Violations.createdAtInstant to SortOrder.DESC)
+          .orderBy(Violations.createdAt to SortOrder.DESC)
           .limit(limit)
           .offset(((page - 1) * limit).toLong())
           .map(::toViolation)
@@ -198,9 +207,8 @@ class SqlViolationDatabase(
   override fun getUniqueViolatorsSince(since: Long): Int {
     return try {
       transaction(database) {
-        val sinceInstant = Instant.ofEpochMilli(since)
         Violations.select(Violations.uuid.countDistinct())
-          .where { Violations.createdAtInstant greaterEq sinceInstant }
+          .where { Violations.createdAt greaterEq since }
           .firstOrNull()
           ?.get(Violations.uuid.countDistinct())
           ?.toInt() ?: 0
@@ -288,7 +296,6 @@ class SqlViolationDatabase(
   }
 
   private fun toViolation(row: ResultRow): Violation {
-    val instant = row[Violations.createdAtInstant]
     return Violation(
       serverName = row[Violations.server],
       playerUUID = UUID.fromString(row[Violations.uuid]),
@@ -296,12 +303,7 @@ class SqlViolationDatabase(
       checkName = row[Violations.checkName],
       verbose = row[Violations.verbose],
       vl = row[Violations.vl],
-      createdAt =
-        if (instant == Instant.EPOCH) {
-          Instant.ofEpochMilli(row[Violations.createdAt])
-        } else {
-          instant
-        },
+      createdAt = row[Violations.createdAtInstant],
     )
   }
 
@@ -315,7 +317,7 @@ class SqlViolationDatabase(
     val vl: Column<Int> = integer("vl")
     val createdAt: Column<Long> = long("created_at")
     val createdAtInstant: Column<Instant> =
-      registerColumn("created_at_instant", JavaInstantColumnType()).default(Instant.EPOCH)
+      registerColumn("created_at_instant", SlothInstantColumnType()).default(Instant.EPOCH)
 
     override val primaryKey = PrimaryKey(id)
 
@@ -345,5 +347,51 @@ class SqlViolationDatabase(
     val showName: Column<String> = varchar("show_name", 16)
 
     override val primaryKey = PrimaryKey(uuid)
+  }
+
+  private companion object {
+    private val VIOLATION_READ_COLUMNS =
+      listOf<Expression<*>>(
+        Violations.server,
+        Violations.uuid,
+        Violations.playerName,
+        Violations.checkName,
+        Violations.verbose,
+        Violations.vl,
+        Violations.createdAt,
+        Violations.createdAtInstant,
+      )
+
+    private class SlothInstantColumnType : InstantColumnType<Instant>() {
+      @OptIn(ExperimentalTime::class)
+      override fun toInstant(value: Instant) = value.toKotlinInstant()
+
+      @OptIn(ExperimentalTime::class)
+      override fun fromInstant(instant: kotlin.time.Instant) = instant.toJavaInstant()
+
+      override fun readObject(rs: RowApi, index: Int): Any? {
+        return if (TransactionManager.current().db.dialect is SQLiteDialect) {
+          rs.getString(index)?.let(::parseSqliteTimestamp)
+        } else {
+          super.readObject(rs, index)
+        }
+      }
+
+      private fun parseSqliteTimestamp(rawValue: String): Any {
+        return try {
+          LocalDateTime.parse(rawValue, SQLITE_TIMESTAMP_FORMATTER)
+        } catch (_: DateTimeParseException) {
+          rawValue
+        }
+      }
+    }
+
+    private val SQLITE_TIMESTAMP_FORMATTER =
+      DateTimeFormatterBuilder()
+        .appendPattern("yyyy-MM-dd HH:mm:ss")
+        .optionalStart()
+        .appendFraction(ChronoField.NANO_OF_SECOND, 1, 9, true)
+        .optionalEnd()
+        .toFormatter()
   }
 }
