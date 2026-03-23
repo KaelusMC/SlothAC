@@ -56,6 +56,10 @@ class LogsCommand(
       return
     }
 
+    if (!databaseManager.isAvailable) {
+      MessageUtil.sendMessage(sender.nativeSender, Message.STORAGE_DEGRADED)
+    }
+
     scheduler.runAsync {
       val entriesPerPage = 10
       val violations: List<Violation> =

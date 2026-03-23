@@ -65,13 +65,11 @@ class HistoryCommand(
       MessageUtil.sendMessage(sender.nativeSender, Message.HISTORY_DISABLED)
       return
     }
-
     if (!target.hasPlayedBefore() && !target.isOnline) {
       MessageUtil.sendMessage(sender.nativeSender, Message.PLAYER_NOT_FOUND)
       return
     }
-
-    val targetName = target.name ?: target.uniqueId.toString()
+    warnIfStorageDegraded(sender)
     val targetId = target.uniqueId
 
     scheduler.runAsync {
@@ -86,7 +84,7 @@ class HistoryCommand(
         MessageUtil.getMessage(
           Message.HISTORY_HEADER,
           "player",
-          targetName,
+          displayName(target),
           "page",
           page.toString(),
           "max_pages",
@@ -123,5 +121,15 @@ class HistoryCommand(
         }
       }
     }
+  }
+
+  private fun warnIfStorageDegraded(sender: Sender) {
+    if (!databaseManager.isAvailable) {
+      MessageUtil.sendMessage(sender.nativeSender, Message.STORAGE_DEGRADED)
+    }
+  }
+
+  private fun displayName(target: OfflinePlayer): String {
+    return target.name ?: target.uniqueId.toString()
   }
 }

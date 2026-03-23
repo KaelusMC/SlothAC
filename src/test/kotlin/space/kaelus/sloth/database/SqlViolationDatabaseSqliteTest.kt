@@ -17,7 +17,6 @@
  */
 package space.kaelus.sloth.database
 
-import io.mockk.every
 import io.mockk.mockk
 import java.nio.file.Files
 import java.sql.DriverManager
@@ -25,13 +24,16 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
-import java.util.logging.Logger
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.junit.jupiter.api.Test
-import space.kaelus.sloth.SlothAC
 import space.kaelus.sloth.config.ConfigManager
+import space.kaelus.sloth.monitor.MonitorMode
+import space.kaelus.sloth.monitor.MonitorNameMode
+import space.kaelus.sloth.monitor.MonitorSettings
+import space.kaelus.sloth.monitor.MonitorTheme
 
 class SqlViolationDatabaseSqliteTest {
 
@@ -69,11 +71,9 @@ class SqlViolationDatabaseSqliteTest {
         }
     }
 
-    val plugin = mockk<SlothAC>(relaxed = true)
-    every { plugin.logger } returns mockk<Logger>(relaxed = true)
     val configManager = mockk<ConfigManager>(relaxed = true)
     val database = Database.connect(jdbcUrl, driver = "org.sqlite.JDBC")
-    val violationDatabase = SqlViolationDatabase(plugin, configManager, database)
+    val violationDatabase = SqlViolationDatabase(configManager, database)
 
     val playerViolations = violationDatabase.getViolations(playerId, page = 1, limit = 10)
     val recentViolations =
@@ -86,11 +86,43 @@ class SqlViolationDatabaseSqliteTest {
     assertEquals(1, violationDatabase.getUniqueViolatorsSince(createdAt - 1))
   }
 
+  @Test
+  fun `stores punishments and monitor settings on fresh sqlite`() {
+    val databaseFile = Files.createTempFile("slothac-sqlite-runtime-", ".db").toFile()
+    databaseFile.deleteOnExit()
+    val jdbcUrl = "jdbc:sqlite:${databaseFile.absolutePath}"
+    migrateFreshSqlite(jdbcUrl)
+
+    val configManager = mockk<ConfigManager>(relaxed = true)
+    val database = Database.connect(jdbcUrl, driver = "org.sqlite.JDBC")
+    val violationDatabase = SqlViolationDatabase(configManager, database)
+    val playerId = UUID.randomUUID()
+    val settings =
+      MonitorSettings(
+        mode = MonitorMode.COMPACT,
+        theme = MonitorTheme.CALM,
+        showPing = true,
+        showDmg = false,
+        showTrend = true,
+        showName = MonitorNameMode.AUTO,
+      )
+
+    assertEquals(1, violationDatabase.incrementViolationLevel(playerId, "default"))
+    assertEquals(2, violationDatabase.incrementViolationLevel(playerId, "default"))
+    assertEquals(2, violationDatabase.getViolationLevel(playerId, "default"))
+
+    violationDatabase.saveMonitorSettings(playerId, settings)
+    assertEquals(settings, violationDatabase.loadMonitorSettings(playerId))
+
+    violationDatabase.resetViolationLevel(playerId, "default")
+    assertEquals(0, violationDatabase.getViolationLevel(playerId, "default"))
+    assertNotNull(violationDatabase.loadMonitorSettings(playerId))
+  }
+
   private fun migrateFreshSqlite(jdbcUrl: String) {
     Flyway.configure()
       .dataSource(jdbcUrl, null, null)
       .locations("classpath:db/migration/common", "classpath:db/migration/sqlite")
-      .baselineOnMigrate(true)
       .baselineVersion("0")
       .load()
       .migrate()

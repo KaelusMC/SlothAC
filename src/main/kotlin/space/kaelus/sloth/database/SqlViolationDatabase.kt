@@ -22,14 +22,12 @@
  */
 package space.kaelus.sloth.database
 
-import java.sql.SQLException
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatterBuilder
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoField
 import java.util.UUID
-import java.util.logging.Level
 import kotlin.time.ExperimentalTime
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
@@ -45,7 +43,6 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.upsert
-import space.kaelus.sloth.SlothAC
 import space.kaelus.sloth.config.ConfigManager
 import space.kaelus.sloth.monitor.MonitorMode
 import space.kaelus.sloth.monitor.MonitorNameMode
@@ -54,73 +51,53 @@ import space.kaelus.sloth.monitor.MonitorTheme
 import space.kaelus.sloth.player.SlothPlayer
 
 class SqlViolationDatabase(
-  private val plugin: SlothAC,
   private val configManager: ConfigManager,
   private val database: Database,
 ) : ViolationDatabase {
 
   override fun logAlert(player: SlothPlayer, verbose: String, checkName: String, vls: Int) {
-    try {
-      transaction(database) {
-        val now = Instant.now()
-        Violations.insert {
-          it[server] = configManager.config.getString("history.server-name", "server")
-          it[uuid] = player.uuid.toString()
-          it[playerName] = player.player.name
-          it[Violations.checkName] = checkName
-          it[Violations.verbose] = verbose
-          it[vl] = vls
-          it[createdAt] = now.toEpochMilli()
-          it[createdAtInstant] = now
-        }
+    transaction(database) {
+      val now = Instant.now()
+      Violations.insert {
+        it[server] = configManager.config.getString("history.server-name", "server")
+        it[uuid] = player.uuid.toString()
+        it[playerName] = player.player.name
+        it[Violations.checkName] = checkName
+        it[Violations.verbose] = verbose
+        it[vl] = vls
+        it[createdAt] = now.toEpochMilli()
+        it[createdAtInstant] = now
       }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to log violation", e)
     }
   }
 
   override fun getLogCount(player: UUID): Int {
-    return try {
-      transaction(database) {
-        Violations.selectAll().where { Violations.uuid eq player.toString() }.count().toInt()
-      }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to count violations", e)
-      0
+    return transaction(database) {
+      Violations.selectAll().where { Violations.uuid eq player.toString() }.count().toInt()
     }
   }
 
   override fun getViolations(player: UUID, page: Int, limit: Int): List<Violation> {
-    return try {
-      transaction(database) {
-        Violations.select(VIOLATION_READ_COLUMNS)
-          .where { Violations.uuid eq player.toString() }
-          .orderBy(Violations.createdAt to SortOrder.DESC)
-          .limit(limit)
-          .offset(((page - 1) * limit).toLong())
-          .map(::toViolation)
-      }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to get violations", e)
-      emptyList()
+    return transaction(database) {
+      Violations.select(VIOLATION_READ_COLUMNS)
+        .where { Violations.uuid eq player.toString() }
+        .orderBy(Violations.createdAt to SortOrder.DESC)
+        .limit(limit)
+        .offset(((page - 1) * limit).toLong())
+        .map(::toViolation)
     }
   }
 
   override fun getLogCount(since: Long): Int {
-    return try {
-      transaction(database) {
-        val totalViolations = Violations.id.count()
-        val query =
-          if (since > 0) {
-            Violations.select(totalViolations).where { Violations.createdAt greaterEq since }
-          } else {
-            Violations.select(totalViolations)
-          }
-        query.firstOrNull()?.get(totalViolations)?.toInt() ?: 0
-      }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to count all violations", e)
-      0
+    return transaction(database) {
+      val totalViolations = Violations.id.count()
+      val query =
+        if (since > 0) {
+          Violations.select(totalViolations).where { Violations.createdAt greaterEq since }
+        } else {
+          Violations.select(totalViolations)
+        }
+      query.firstOrNull()?.get(totalViolations)?.toInt() ?: 0
     }
   }
 
@@ -129,169 +106,124 @@ class SqlViolationDatabase(
       return emptyMap()
     }
 
-    return try {
-      transaction(database) {
-        val uuidCounts = Violations.id.count()
-        Violations.select(Violations.uuid, uuidCounts)
-          .where { Violations.uuid inList playerUUIDs.map(UUID::toString) }
-          .groupBy(Violations.uuid)
-          .associate { row -> UUID.fromString(row[Violations.uuid]) to row[uuidCounts].toInt() }
-      }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to count violations for online players", e)
-      emptyMap()
+    return transaction(database) {
+      val uuidCounts = Violations.id.count()
+      Violations.select(Violations.uuid, uuidCounts)
+        .where { Violations.uuid inList playerUUIDs.map(UUID::toString) }
+        .groupBy(Violations.uuid)
+        .associate { row -> UUID.fromString(row[Violations.uuid]) to row[uuidCounts].toInt() }
     }
   }
 
   override fun getViolations(page: Int, limit: Int, since: Long): List<Violation> {
-    return try {
-      transaction(database) {
-        val query =
-          if (since > 0) {
-            Violations.select(VIOLATION_READ_COLUMNS).where { Violations.createdAt greaterEq since }
-          } else {
-            Violations.select(VIOLATION_READ_COLUMNS)
-          }
-        query
-          .orderBy(Violations.createdAt to SortOrder.DESC)
-          .limit(limit)
-          .offset(((page - 1) * limit).toLong())
-          .map(::toViolation)
-      }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to get all violations", e)
-      emptyList()
+    return transaction(database) {
+      val query =
+        if (since > 0) {
+          Violations.select(VIOLATION_READ_COLUMNS).where { Violations.createdAt greaterEq since }
+        } else {
+          Violations.select(VIOLATION_READ_COLUMNS)
+        }
+      query
+        .orderBy(Violations.createdAt to SortOrder.DESC)
+        .limit(limit)
+        .offset(((page - 1) * limit).toLong())
+        .map(::toViolation)
     }
   }
 
   override fun getViolationLevel(playerUUID: UUID, punishGroupName: String): Int {
-    return try {
-      transaction(database) {
-        Punishments.selectAll()
-          .where {
-            (Punishments.uuid eq playerUUID.toString()) and
-              (Punishments.punishGroup eq punishGroupName)
-          }
-          .firstOrNull()
-          ?.get(Punishments.vl) ?: 0
-      }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to get violation level for $playerUUID", e)
-      0
+    return transaction(database) {
+      Punishments.selectAll()
+        .where {
+          (Punishments.uuid eq playerUUID.toString()) and
+            (Punishments.punishGroup eq punishGroupName)
+        }
+        .firstOrNull()
+        ?.get(Punishments.vl) ?: 0
     }
   }
 
   override fun incrementViolationLevel(playerUUID: UUID, punishGroupName: String): Int {
-    return try {
-      transaction(database) {
-        Punishments.upsert(onUpdate = { it[Punishments.vl] = Punishments.vl + 1 }) {
-          it[uuid] = playerUUID.toString()
-          it[punishGroup] = punishGroupName
-          it[vl] = 1
-        }
-
-        Punishments.selectAll()
-          .where {
-            (Punishments.uuid eq playerUUID.toString()) and
-              (Punishments.punishGroup eq punishGroupName)
-          }
-          .firstOrNull()
-          ?.get(Punishments.vl) ?: 0
+    return transaction(database) {
+      Punishments.upsert(onUpdate = { it[Punishments.vl] = Punishments.vl + 1 }) {
+        it[uuid] = playerUUID.toString()
+        it[punishGroup] = punishGroupName
+        it[vl] = 1
       }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to increment violation level for $playerUUID", e)
-      0
+
+      Punishments.selectAll()
+        .where {
+          (Punishments.uuid eq playerUUID.toString()) and
+            (Punishments.punishGroup eq punishGroupName)
+        }
+        .firstOrNull()
+        ?.get(Punishments.vl) ?: 0
     }
   }
 
   override fun getUniqueViolatorsSince(since: Long): Int {
-    return try {
-      transaction(database) {
-        Violations.select(Violations.uuid.countDistinct())
-          .where { Violations.createdAt greaterEq since }
-          .firstOrNull()
-          ?.get(Violations.uuid.countDistinct())
-          ?.toInt() ?: 0
-      }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to count unique violators", e)
-      0
+    return transaction(database) {
+      Violations.select(Violations.uuid.countDistinct())
+        .where { Violations.createdAt greaterEq since }
+        .firstOrNull()
+        ?.get(Violations.uuid.countDistinct())
+        ?.toInt() ?: 0
     }
   }
 
   override fun resetViolationLevel(playerUUID: UUID, punishGroupName: String) {
-    try {
-      transaction(database) {
-        Punishments.deleteWhere {
-          (Punishments.uuid eq playerUUID.toString()) and
-            (Punishments.punishGroup eq punishGroupName)
-        }
+    transaction(database) {
+      Punishments.deleteWhere {
+        (Punishments.uuid eq playerUUID.toString()) and (Punishments.punishGroup eq punishGroupName)
       }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to reset violation level for $playerUUID", e)
     }
   }
 
   override fun resetAllViolationLevels(playerUUID: UUID) {
-    try {
-      transaction(database) {
-        Punishments.deleteWhere { Punishments.uuid eq playerUUID.toString() }
-      }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to reset all violation levels for $playerUUID", e)
-    }
+    transaction(database) { Punishments.deleteWhere { Punishments.uuid eq playerUUID.toString() } }
   }
 
   override fun loadMonitorSettings(playerUUID: UUID): MonitorSettings? {
-    return try {
-      transaction(database) {
-        MonitorSettingsTable.selectAll()
-          .where { MonitorSettingsTable.uuid eq playerUUID.toString() }
-          .firstOrNull()
-          ?.let { row ->
-            val mode = MonitorMode.fromConfig(row[MonitorSettingsTable.mode])
-            val theme = MonitorTheme.fromConfig(row[MonitorSettingsTable.theme])
-            val showName = MonitorNameMode.fromConfig(row[MonitorSettingsTable.showName])
-            MonitorSettings(
-              mode,
-              theme,
-              row[MonitorSettingsTable.showPing],
-              row[MonitorSettingsTable.showDmg],
-              row[MonitorSettingsTable.showTrend],
-              showName,
-            )
-          }
-      }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to load monitor settings", e)
-      null
+    return transaction(database) {
+      MonitorSettingsTable.selectAll()
+        .where { MonitorSettingsTable.uuid eq playerUUID.toString() }
+        .firstOrNull()
+        ?.let { row ->
+          val mode = MonitorMode.fromConfig(row[MonitorSettingsTable.mode])
+          val theme = MonitorTheme.fromConfig(row[MonitorSettingsTable.theme])
+          val showName = MonitorNameMode.fromConfig(row[MonitorSettingsTable.showName])
+          MonitorSettings(
+            mode,
+            theme,
+            row[MonitorSettingsTable.showPing],
+            row[MonitorSettingsTable.showDmg],
+            row[MonitorSettingsTable.showTrend],
+            showName,
+          )
+        }
     }
   }
 
   override fun saveMonitorSettings(playerUUID: UUID, settings: MonitorSettings) {
-    try {
-      transaction(database) {
-        MonitorSettingsTable.upsert(
-          onUpdate = {
-            it[MonitorSettingsTable.mode] = insertValue(MonitorSettingsTable.mode)
-            it[MonitorSettingsTable.theme] = insertValue(MonitorSettingsTable.theme)
-            it[MonitorSettingsTable.showPing] = insertValue(MonitorSettingsTable.showPing)
-            it[MonitorSettingsTable.showDmg] = insertValue(MonitorSettingsTable.showDmg)
-            it[MonitorSettingsTable.showTrend] = insertValue(MonitorSettingsTable.showTrend)
-            it[MonitorSettingsTable.showName] = insertValue(MonitorSettingsTable.showName)
-          }
-        ) {
-          it[uuid] = playerUUID.toString()
-          it[mode] = settings.mode.name
-          it[theme] = settings.theme.name
-          it[showPing] = settings.showPing
-          it[showDmg] = settings.showDmg
-          it[showTrend] = settings.showTrend
-          it[showName] = settings.showName.name
+    transaction(database) {
+      MonitorSettingsTable.upsert(
+        onUpdate = {
+          it[MonitorSettingsTable.mode] = insertValue(MonitorSettingsTable.mode)
+          it[MonitorSettingsTable.theme] = insertValue(MonitorSettingsTable.theme)
+          it[MonitorSettingsTable.showPing] = insertValue(MonitorSettingsTable.showPing)
+          it[MonitorSettingsTable.showDmg] = insertValue(MonitorSettingsTable.showDmg)
+          it[MonitorSettingsTable.showTrend] = insertValue(MonitorSettingsTable.showTrend)
+          it[MonitorSettingsTable.showName] = insertValue(MonitorSettingsTable.showName)
         }
+      ) {
+        it[uuid] = playerUUID.toString()
+        it[mode] = settings.mode.name
+        it[theme] = settings.theme.name
+        it[showPing] = settings.showPing
+        it[showDmg] = settings.showDmg
+        it[showTrend] = settings.showTrend
+        it[showName] = settings.showName.name
       }
-    } catch (e: SQLException) {
-      plugin.logger.log(Level.SEVERE, "Failed to save monitor settings", e)
     }
   }
 

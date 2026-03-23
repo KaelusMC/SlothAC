@@ -35,7 +35,6 @@ class FlywaySqliteMigrationsTest {
     Flyway.configure()
       .dataSource(jdbcUrl, null, null)
       .locations("classpath:db/migration/common", "classpath:db/migration/sqlite")
-      .baselineOnMigrate(true)
       .baselineVersion("0")
       .load()
       .migrate()
@@ -117,6 +116,78 @@ class FlywaySqliteMigrationsTest {
     }
   }
 
+  @Test
+  fun `migrates partial sqlite schema when only monitor settings exists`() {
+    val databaseFile = Files.createTempFile("slothac-monitor-only-", ".db").toFile()
+    databaseFile.deleteOnExit()
+    val jdbcUrl = "jdbc:sqlite:${databaseFile.absolutePath}"
+
+    DriverManager.getConnection(jdbcUrl).use { connection ->
+      connection.createStatement().use { statement ->
+        statement.executeUpdate(
+          """
+          CREATE TABLE monitor_settings (
+            uuid TEXT NOT NULL PRIMARY KEY,
+            mode TEXT NOT NULL,
+            theme TEXT NOT NULL,
+            show_ping INTEGER NOT NULL,
+            show_dmg INTEGER NOT NULL,
+            show_trend INTEGER NOT NULL
+          )
+          """
+            .trimIndent()
+        )
+      }
+    }
+
+    migrateSqliteDatabase(jdbcUrl)
+
+    DriverManager.getConnection(jdbcUrl).use { connection ->
+      assertTrue(tableExists(connection, "violations"))
+      assertTrue(tableExists(connection, "sloth_punishments"))
+      assertMonitorSettingsTable(connection)
+      assertTrue(hasAppliedMigrationVersion(connection, "1"))
+      assertTrue(hasAppliedMigrationVersion(connection, "2"))
+      assertTrue(hasAppliedMigrationVersion(connection, "3"))
+      assertTrue(!hasAppliedMigrationVersion(connection, "0.1"))
+    }
+  }
+
+  @Test
+  fun `migrates partial sqlite schema when only punishments table exists`() {
+    val databaseFile = Files.createTempFile("slothac-punishments-only-", ".db").toFile()
+    databaseFile.deleteOnExit()
+    val jdbcUrl = "jdbc:sqlite:${databaseFile.absolutePath}"
+
+    DriverManager.getConnection(jdbcUrl).use { connection ->
+      connection.createStatement().use { statement ->
+        statement.executeUpdate(
+          """
+          CREATE TABLE sloth_punishments (
+            uuid TEXT NOT NULL,
+            punish_group TEXT NOT NULL,
+            vl INTEGER NOT NULL,
+            PRIMARY KEY (uuid, punish_group)
+          )
+          """
+            .trimIndent()
+        )
+      }
+    }
+
+    migrateSqliteDatabase(jdbcUrl)
+
+    DriverManager.getConnection(jdbcUrl).use { connection ->
+      assertTrue(tableExists(connection, "violations"))
+      assertTrue(tableExists(connection, "monitor_settings"))
+      assertTrue(columnExists(connection, "violations", "created_at_instant"))
+      assertTrue(hasAppliedMigrationVersion(connection, "1"))
+      assertTrue(hasAppliedMigrationVersion(connection, "2"))
+      assertTrue(hasAppliedMigrationVersion(connection, "3"))
+      assertTrue(!hasAppliedMigrationVersion(connection, "0.1"))
+    }
+  }
+
   private fun tableExists(connection: Connection, tableName: String): Boolean {
     connection.metaData.getTables(null, null, tableName, arrayOf("TABLE")).use { resultSet ->
       return resultSet.next()
@@ -180,19 +251,26 @@ class FlywaySqliteMigrationsTest {
 
   private fun migrateSqliteDatabase(jdbcUrl: String) {
     val locations = mutableListOf("classpath:db/migration/common", "classpath:db/migration/sqlite")
+    var requiresBaseline = false
     DriverManager.getConnection(jdbcUrl).use { connection ->
       if (sqliteLegacyCompatRequired(connection) || hasAppliedMigrationVersion(connection, "0.1")) {
         locations += "classpath:db/migration/sqlitecompat"
       }
+      requiresBaseline = sqliteRequiresExplicitBaseline(connection)
     }
 
-    Flyway.configure()
-      .dataSource(jdbcUrl, null, null)
-      .locations(*locations.toTypedArray())
-      .baselineOnMigrate(true)
-      .baselineVersion("0")
-      .load()
-      .migrate()
+    val flyway =
+      Flyway.configure()
+        .dataSource(jdbcUrl, null, null)
+        .locations(*locations.toTypedArray())
+        .baselineVersion("0")
+        .load()
+
+    if (requiresBaseline) {
+      flyway.baseline()
+    }
+
+    flyway.migrate()
   }
 
   private fun assertMigratedSchema(connection: Connection) {

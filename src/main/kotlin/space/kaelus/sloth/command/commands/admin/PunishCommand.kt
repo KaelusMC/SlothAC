@@ -43,6 +43,10 @@ class PunishCommand(private val databaseManager: DatabaseManager) : SlothCommand
     val sender = context.sender()
     val target: OfflinePlayer = context["target"]
 
+    if (!databaseManager.isAvailable) {
+      MessageUtil.sendMessage(sender.nativeSender, Message.STORAGE_DEGRADED)
+    }
+
     databaseManager.database.resetAllViolationLevels(target.uniqueId)
 
     MessageUtil.sendMessage(

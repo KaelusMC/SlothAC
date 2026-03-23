@@ -53,8 +53,8 @@ class MonitorSettingsService(
 
   private fun loadSettings(uuid: UUID): MonitorSettings {
     val perPlayer = configManager.monitorConfig.getBoolean("storage.per-player", true)
-    val database: ViolationDatabase? = databaseManager.database
-    if (!perPlayer || database == null) {
+    val database: ViolationDatabase = databaseManager.database
+    if (!perPlayer) {
       return defaultSettings()
     }
 
@@ -64,8 +64,8 @@ class MonitorSettingsService(
 
   private fun saveAsync(uuid: UUID, settings: MonitorSettings) {
     val perPlayer = configManager.monitorConfig.getBoolean("storage.per-player", true)
-    val database: ViolationDatabase? = databaseManager.database
-    if (!perPlayer || database == null) {
+    val database: ViolationDatabase = databaseManager.database
+    if (!perPlayer) {
       return
     }
 

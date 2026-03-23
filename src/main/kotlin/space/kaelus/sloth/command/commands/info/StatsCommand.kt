@@ -83,6 +83,10 @@ class StatsCommand(
     val onlinePlayers = Bukkit.getOnlinePlayers().size
     val suspiciousNow = getSuspiciousCount()
 
+    if (!databaseManager.isAvailable) {
+      MessageUtil.sendMessage(sender.nativeSender, Message.STORAGE_DEGRADED)
+    }
+
     scheduler.runAsync {
       val totalFlags = db.getLogCount(since)
       val uniqueViolators = db.getUniqueViolatorsSince(since)

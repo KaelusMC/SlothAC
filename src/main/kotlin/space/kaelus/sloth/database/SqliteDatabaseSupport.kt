@@ -23,24 +23,23 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import space.kaelus.sloth.SlothAC
 import space.kaelus.sloth.config.ConfigManager
 
 private const val SQLITE_BACKUP_DIRECTORY = "db-backups"
 private val SQLITE_BACKUP_TIMESTAMP: DateTimeFormatter =
   DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
-internal fun resolveSqliteDatabaseFile(plugin: SlothAC, configManager: ConfigManager): Path {
+internal fun resolveSqliteDatabaseFile(dataDirectory: Path, configManager: ConfigManager): Path {
   val fileName = configManager.config.getString("database.sqlite.file", "violations.db")
-  return File(plugin.dataFolder, fileName).toPath()
+  return File(dataDirectory.toFile(), fileName).toPath()
 }
 
 internal fun createSqliteBackup(
-  plugin: SlothAC,
+  dataDirectory: Path,
   dataSource: HikariDataSource,
   databaseFile: Path,
 ): Path {
-  val backupDirectory = plugin.dataFolder.toPath().resolve(SQLITE_BACKUP_DIRECTORY)
+  val backupDirectory = dataDirectory.resolve(SQLITE_BACKUP_DIRECTORY)
   Files.createDirectories(backupDirectory)
   val timestamp = LocalDateTime.now().format(SQLITE_BACKUP_TIMESTAMP)
   val backupFile =
@@ -56,16 +55,6 @@ internal fun createSqliteBackup(
   return backupFile
 }
 
-internal fun resetSqliteDatabaseFiles(databaseFile: Path) {
-  listOf(
-      databaseFile,
-      sqliteSidecar(databaseFile, "-wal"),
-      sqliteSidecar(databaseFile, "-shm"),
-      sqliteSidecar(databaseFile, "-journal"),
-    )
-    .forEach(Files::deleteIfExists)
-}
-
 internal fun sqliteDatabaseHasContent(databaseFile: Path): Boolean {
   return Files.exists(databaseFile) && Files.size(databaseFile) > 0L
 }
@@ -77,8 +66,13 @@ internal fun sqliteLegacyCompatRequired(connection: java.sql.Connection): Boolea
   return !sqliteColumnExists(connection, "violations", "created_at_instant")
 }
 
-private fun sqliteSidecar(databaseFile: Path, suffix: String): Path {
-  return databaseFile.resolveSibling(databaseFile.fileName.toString() + suffix)
+internal fun sqliteRequiresExplicitBaseline(connection: java.sql.Connection): Boolean {
+  return !sqliteTableExists(connection, "flyway_schema_history") &&
+    sqliteContainsSlothTables(connection)
+}
+
+internal fun sqliteContainsSlothTables(connection: java.sql.Connection): Boolean {
+  return KNOWN_SLOTH_SQLITE_TABLES.any { tableName -> sqliteTableExists(connection, tableName) }
 }
 
 private fun sqliteTableExists(connection: java.sql.Connection, tableName: String): Boolean {
@@ -101,3 +95,5 @@ private fun sqliteColumnExists(
     return resultSet.next()
   }
 }
+
+private val KNOWN_SLOTH_SQLITE_TABLES = setOf("violations", "sloth_punishments", "monitor_settings")

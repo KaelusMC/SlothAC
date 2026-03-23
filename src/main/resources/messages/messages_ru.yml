@@ -8,6 +8,8 @@ player-not-found: "<prefix> <color:#ff4b2b>Игрок исключен или н
 run-as-player: "<prefix> <color:#ff4b2b>Эту команду могут использовать только игроки!</color>"
 reload-start: "<prefix> <color:#f6d365>Перезагрузка конфигурации...</color>"
 reload-success: "<prefix> <color:#a8ff78>Конфигурация Sloth перезагружена.</color>"
+storage:
+  degraded: "<prefix> <color:#f6d365>Постоянное хранилище недоступно. Sloth использует временное хранилище для данных. После перезапуска они исчезнут.</color>"
 
 datacollect:
   details-required: "<prefix> <color:#ff4b2b>Требуется указать детали для типов LEGIT и CHEAT.</color>"

@@ -18,9 +18,9 @@
 package space.kaelus.sloth.database
 
 import com.zaxxer.hikari.HikariDataSource
+import java.util.logging.Logger
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.ValidateResult
-import space.kaelus.sloth.SlothAC
 
 internal val SUPPORTED_DATABASE_TYPES = setOf("sqlite", "mysql", "mariadb")
 internal const val MARIADB_DRIVER_CLASS = "org.mariadb.jdbc.Driver"
@@ -28,6 +28,7 @@ internal const val MARIADB_JDBC_SCHEME = "jdbc:mariadb://"
 private const val COMMON_MIGRATION_LOCATION = "classpath:db/migration/common"
 private const val DEFAULT_LOCATIONS_COUNT = 2
 private const val COMPAT_LOCATIONS_COUNT = 3
+private const val SQLITE_BASELINE_VERSION = "0"
 private const val LEGACY_SQLITE_COMPAT_VERSION = "0.1"
 private const val LEGACY_SQLITE_COMPAT_LOCATION = "classpath:db/migration/sqlitecompat"
 private const val SQLITE_SCHEMA_VERSION = "1"
@@ -37,28 +38,42 @@ private const val LEGACY_SQLITE_COMPAT_LOG =
   "Detected a legacy SQLite schema. Enabling the compatibility migration location."
 
 internal fun buildMigrationFlyway(
-  plugin: SlothAC,
+  classLoader: ClassLoader,
+  logger: Logger,
   dataSource: HikariDataSource,
   databaseType: DatabaseType,
   announceCompat: Boolean = true,
 ): Flyway {
   val defaultLocations = defaultFlywayLocations(databaseType)
   if (databaseType != DatabaseType.SQLITE) {
-    return buildFlyway(plugin, dataSource, defaultLocations)
+    return buildFlyway(classLoader, dataSource, defaultLocations)
   }
 
-  val defaultFlyway = buildFlyway(plugin, dataSource, defaultLocations)
+  val defaultFlyway = buildFlyway(classLoader, dataSource, defaultLocations)
   val useCompatLocation =
     hasAppliedMigrationVersion(defaultFlyway, LEGACY_SQLITE_COMPAT_VERSION) ||
       sqliteRequiresLegacyCompat(dataSource)
 
   return if (useCompatLocation) {
     if (announceCompat) {
-      plugin.logger.info(LEGACY_SQLITE_COMPAT_LOG)
+      logger.info(LEGACY_SQLITE_COMPAT_LOG)
     }
-    buildFlyway(plugin, dataSource, defaultLocations + LEGACY_SQLITE_COMPAT_LOCATION)
+    buildFlyway(classLoader, dataSource, defaultLocations + LEGACY_SQLITE_COMPAT_LOCATION)
   } else {
     defaultFlyway
+  }
+}
+
+internal fun requiresExplicitBaseline(
+  dataSource: HikariDataSource,
+  databaseType: DatabaseType,
+): Boolean {
+  if (databaseType != DatabaseType.SQLITE) {
+    return false
+  }
+
+  dataSource.connection.use { connection ->
+    return sqliteRequiresExplicitBaseline(connection)
   }
 }
 
@@ -86,7 +101,7 @@ private fun defaultFlywayLocations(databaseType: DatabaseType): List<String> {
 }
 
 private fun buildFlyway(
-  plugin: SlothAC,
+  classLoader: ClassLoader,
   dataSource: HikariDataSource,
   locations: List<String>,
 ): Flyway {
@@ -94,11 +109,10 @@ private fun buildFlyway(
     "Unexpected Flyway locations count: ${locations.size}"
   }
   val configuration =
-    Flyway.configure(plugin.javaClass.classLoader)
+    Flyway.configure(classLoader)
       .dataSource(dataSource)
-      .baselineOnMigrate(true)
-      .baselineVersion("0")
-      .validateOnMigrate(false)
+      .baselineVersion(SQLITE_BASELINE_VERSION)
+      .validateOnMigrate(true)
   if (locations.size == DEFAULT_LOCATIONS_COUNT) {
     configuration.locations(locations[0], locations[1])
   } else {

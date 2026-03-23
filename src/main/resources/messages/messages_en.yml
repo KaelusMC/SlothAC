@@ -8,6 +8,8 @@ player-not-found: "<prefix> <color:#ff4b2b>Player is exempt or offline!</color>"
 run-as-player: "<prefix> <color:#ff4b2b>This command can only be used by players!</color>"
 reload-start: "<prefix> <color:#f6d365>Reloading Sloth configuration...</color>"
 reload-success: "<prefix> <color:#a8ff78>Sloth configuration reloaded.</color>"
+storage:
+  degraded: "<prefix> <color:#f6d365>Persistent storage is unavailable. Sloth is using temporary storage for data. It will disappear after a restart.</color>"
 
 datacollect:
   details-required: "<prefix> <color:#ff4b2b>Details are required for LEGIT and CHEAT types.</color>"

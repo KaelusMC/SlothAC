@@ -26,6 +26,7 @@ enum class Message(val path: String) {
   RUN_AS_PLAYER("run-as-player"),
   RELOAD_START("reload-start"),
   RELOAD_SUCCESS("reload-success"),
+  STORAGE_DEGRADED("storage.degraded"),
 
   // Brand
   BRAND_ALERTS_ENABLED("brand.alerts-enabled"),
