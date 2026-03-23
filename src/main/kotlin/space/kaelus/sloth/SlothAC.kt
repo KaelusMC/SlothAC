@@ -28,38 +28,24 @@ class SlothAC : JavaPlugin() {
   private var core: SlothCore? = null
   private val packetEventsLoader = PacketEventsLoader(this)
   private var packetEventsLoadFailure: Throwable? = null
+  private var runtimeStopped = false
 
   override fun onLoad() {
     packetEventsLoadFailure = runCatching { packetEventsLoader.load() }.exceptionOrNull()
   }
 
   override fun onEnable() {
-    var koinStarted = false
+    runtimeStopped = false
     packetEventsLoadFailure?.let { failure ->
-      handleEnableFailure(failure, koinStarted)
+      handleEnableFailure(failure)
       return
     }
 
-    val failure =
-      runCatching {
-          val koinApp = startKoin { modules(slothModules(this@SlothAC)) }
-          koinStarted = true
-          core = koinApp.koin.get()
-          core?.enable()
-          Metrics(this, BSTATS_PLUGIN_ID)
-        }
-        .exceptionOrNull()
-
-    if (failure != null) {
-      handleEnableFailure(failure, koinStarted)
-    }
+    runCatching(::enableRuntime).onFailure(::handleEnableFailure)
   }
 
   override fun onDisable() {
-    core?.disable()
-    core = null
-    runCatching { stopKoin() }
-    packetEventsLoader.shutdown()
+    shutdownRuntime()
   }
 
   fun onReload() {
@@ -70,14 +56,28 @@ class SlothAC : JavaPlugin() {
     const val BSTATS_PLUGIN_ID = 30367
   }
 
-  private fun handleEnableFailure(failure: Throwable, koinStarted: Boolean) {
+  private fun enableRuntime() {
+    val koinApp = startKoin { modules(slothModules(this@SlothAC)) }
+    core = koinApp.koin.get()
+    core?.enable()
+    Metrics(this, BSTATS_PLUGIN_ID)
+  }
+
+  private fun handleEnableFailure(failure: Throwable) {
     logger.log(Level.SEVERE, "Sloth failed to start and will disable itself safely.", failure)
+    shutdownRuntime()
+    server.pluginManager.disablePlugin(this)
+  }
+
+  private fun shutdownRuntime() {
+    if (runtimeStopped) {
+      return
+    }
+    runtimeStopped = true
+
     runCatching { core?.disable() }
     core = null
-    if (koinStarted) {
-      runCatching { stopKoin() }
-    }
+    runCatching { stopKoin() }
     packetEventsLoader.shutdown()
-    server.pluginManager.disablePlugin(this)
   }
 }
