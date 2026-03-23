@@ -17,8 +17,7 @@
  */
 package space.kaelus.sloth
 
-import com.github.retrooper.packetevents.PacketEvents
-import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
+import java.util.logging.Level
 import org.bstats.bukkit.Metrics
 import org.bukkit.plugin.java.JavaPlugin
 import org.koin.core.context.startKoin
@@ -27,34 +26,40 @@ import space.kaelus.sloth.di.slothModules
 
 class SlothAC : JavaPlugin() {
   private var core: SlothCore? = null
+  private val packetEventsLoader = PacketEventsLoader(this)
+  private var packetEventsLoadFailure: Throwable? = null
 
   override fun onLoad() {
-    try {
-      PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this))
-      PacketEvents.getAPI()
-        .settings
-        .checkForUpdates(false)
-        .debug(false)
-        .fullStackTrace(false)
-        .kickOnPacketException(false)
-        .reEncodeByDefault(false)
-      PacketEvents.getAPI().load()
-    } catch (e: Exception) {
-      logger.severe("Failed to load PacketEvents.")
-      e.printStackTrace()
-    }
+    packetEventsLoadFailure = runCatching { packetEventsLoader.load() }.exceptionOrNull()
   }
 
   override fun onEnable() {
-    val koinApp = startKoin { modules(slothModules(this@SlothAC)) }
-    core = koinApp.koin.get()
-    core?.enable()
-    Metrics(this, BSTATS_PLUGIN_ID)
+    var koinStarted = false
+    packetEventsLoadFailure?.let { failure ->
+      handleEnableFailure(failure, koinStarted)
+      return
+    }
+
+    val failure =
+      runCatching {
+          val koinApp = startKoin { modules(slothModules(this@SlothAC)) }
+          koinStarted = true
+          core = koinApp.koin.get()
+          core?.enable()
+          Metrics(this, BSTATS_PLUGIN_ID)
+        }
+        .exceptionOrNull()
+
+    if (failure != null) {
+      handleEnableFailure(failure, koinStarted)
+    }
   }
 
   override fun onDisable() {
     core?.disable()
-    stopKoin()
+    core = null
+    runCatching { stopKoin() }
+    packetEventsLoader.shutdown()
   }
 
   fun onReload() {
@@ -63,5 +68,16 @@ class SlothAC : JavaPlugin() {
 
   private companion object {
     const val BSTATS_PLUGIN_ID = 30367
+  }
+
+  private fun handleEnableFailure(failure: Throwable, koinStarted: Boolean) {
+    logger.log(Level.SEVERE, "Sloth failed to start and will disable itself safely.", failure)
+    runCatching { core?.disable() }
+    core = null
+    if (koinStarted) {
+      runCatching { stopKoin() }
+    }
+    packetEventsLoader.shutdown()
+    server.pluginManager.disablePlugin(this)
   }
 }

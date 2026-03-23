@@ -59,15 +59,7 @@ constructor(
 
     MessageUtil.init(localeManager, adventure, plugin.logger)
 
-    try {
-      PacketEvents.getAPI().eventManager.registerListener(packetListener)
-      monitorViewService.start()
-      PacketEvents.getAPI().init()
-    } catch (e: Exception) {
-      plugin.logger.severe("Failed to initialize PacketEvents.")
-      e.printStackTrace()
-    }
-
+    initializePacketRuntime()
     plugin.server.pluginManager.registerEvents(damageEvent, plugin)
     plugin.server.servicesManager.register(
       SlothApi::class.java,
@@ -82,9 +74,6 @@ constructor(
     adventure.close()
     coroutines.close()
     databaseManager.shutdown()
-    if (PacketEvents.getAPI().isInitialized) {
-      PacketEvents.getAPI().terminate()
-    }
   }
 
   fun reload() {
@@ -95,5 +84,11 @@ constructor(
     aiServerProvider.reload()
     playerDataManager.reloadAllPlayers()
     monitorViewService.reload()
+  }
+
+  private fun initializePacketRuntime() {
+    PacketEvents.getAPI().eventManager.registerListener(packetListener)
+    monitorViewService.start()
+    PacketEvents.getAPI().init()
   }
 }
