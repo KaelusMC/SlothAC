@@ -20,10 +20,12 @@ package space.kaelus.sloth.database
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import java.io.File
+import java.nio.file.Path
 import java.util.Locale
 import java.util.logging.Level
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.FlywayException
+import org.flywaydb.core.api.exception.FlywayValidateException
 import org.jetbrains.exposed.v1.jdbc.Database
 import space.kaelus.sloth.SlothAC
 import space.kaelus.sloth.config.ConfigManager
@@ -42,70 +44,146 @@ class DatabaseManager(plugin: SlothAC, configManager: ConfigManager) {
       )
     }
 
-    dataSource = createDataSource(plugin, configManager, databaseType)
-    runFlywayMigrations(plugin, dataSource, databaseType)
+    dataSource = createMigratedDataSource(plugin, configManager, databaseType)
     exposedDb = Database.connect(dataSource)
     database = SqlViolationDatabase(plugin, configManager, exposedDb)
+  }
+
+  private fun createMigratedDataSource(
+    plugin: SlothAC,
+    configManager: ConfigManager,
+    databaseType: DatabaseType,
+  ): HikariDataSource {
+    val initialDataSource = createDataSource(plugin, configManager, databaseType)
+    return if (databaseType == DatabaseType.SQLITE) {
+      migrateSqliteWithRecovery(plugin, configManager, initialDataSource)
+    } else {
+      try {
+        runFlywayMigrations(
+          plugin = plugin,
+          dataSource = initialDataSource,
+          migrationFlyway = buildMigrationFlyway(plugin, initialDataSource, databaseType),
+          databaseType = databaseType,
+        )
+      } catch (exception: FlywayException) {
+        failMigrations(plugin, exception)
+      }
+      initialDataSource
+    }
+  }
+
+  private fun migrateSqliteWithRecovery(
+    plugin: SlothAC,
+    configManager: ConfigManager,
+    dataSource: HikariDataSource,
+  ): HikariDataSource {
+    val databaseFile = resolveSqliteDatabaseFile(plugin, configManager)
+    var backupFile: Path? = null
+    var migrationFlyway =
+      buildMigrationFlyway(plugin, dataSource, DatabaseType.SQLITE, announceCompat = false)
+
+    fun ensureBackup(): Path? =
+      backupFile
+        ?: takeIf { sqliteDatabaseHasContent(databaseFile) }
+          ?.let {
+            createSqliteBackup(plugin, dataSource, databaseFile).also { createdBackup ->
+              backupFile = createdBackup
+            }
+          }
+
+    val needsPreMigrationBackup =
+      sqliteDatabaseHasContent(databaseFile) && migrationFlyway.info().pending().isNotEmpty()
+    if (needsPreMigrationBackup) {
+      ensureBackup()
+    }
+
+    return try {
+      runFlywayMigrations(
+        plugin = plugin,
+        dataSource = dataSource,
+        migrationFlyway = migrationFlyway,
+        databaseType = DatabaseType.SQLITE,
+        sqliteBackupSupplier = ::ensureBackup,
+      )
+      dataSource
+    } catch (exception: FlywayException) {
+      val preservedBackup = ensureBackup()
+      plugin.logger.warning(
+        buildString {
+          append("SQLite migrations failed")
+          preservedBackup?.let { append(". Preserved the previous database at $it") }
+          append(". Recreating a fresh SQLite database so the plugin can still start.")
+        }
+      )
+      if (!dataSource.isClosed) {
+        dataSource.close()
+      }
+      resetSqliteDatabaseFiles(databaseFile)
+
+      val freshDataSource = createDataSource(plugin, configManager, DatabaseType.SQLITE)
+      try {
+        migrationFlyway = buildMigrationFlyway(plugin, freshDataSource, DatabaseType.SQLITE)
+        runFlywayMigrations(
+          plugin = plugin,
+          dataSource = freshDataSource,
+          migrationFlyway = migrationFlyway,
+          databaseType = DatabaseType.SQLITE,
+        )
+        plugin.logger.warning(
+          buildString {
+            append("Sloth started with a fresh SQLite database after migration recovery")
+            preservedBackup?.let { append(". Previous data is available at $it") }
+            append(".")
+          }
+        )
+        freshDataSource
+      } catch (retryException: FlywayException) {
+        retryException.addSuppressed(exception)
+        if (!freshDataSource.isClosed) {
+          freshDataSource.close()
+        }
+        failMigrations(plugin, retryException)
+      }
+    }
   }
 
   private fun runFlywayMigrations(
     plugin: SlothAC,
     dataSource: HikariDataSource,
+    migrationFlyway: Flyway,
     databaseType: DatabaseType,
+    sqliteBackupSupplier: (() -> Path?)? = null,
   ) {
-    val defaultLocations = defaultFlywayLocations(databaseType)
-    val defaultFlyway = buildFlyway(plugin, dataSource, defaultLocations)
-    val migrationFlyway =
+    var activeFlyway = migrationFlyway
+    val validation = activeFlyway.validateWithResult()
+    if (!validation.validationSuccessful) {
       if (
         databaseType == DatabaseType.SQLITE &&
-          hasAppliedMigrationVersion(defaultFlyway, LEGACY_SQLITE_COMPAT_VERSION)
+          isRepairableSqliteV1ChecksumMismatch(validation, dataSource)
       ) {
-        plugin.logger.info(LEGACY_SQLITE_COMPAT_LOG)
-        buildFlyway(plugin, dataSource, defaultLocations + LEGACY_SQLITE_COMPAT_LOCATION)
+        val backupPath = sqliteBackupSupplier?.invoke()
+        plugin.logger.warning(
+          buildString {
+            append("Detected a legacy SQLite checksum mismatch for migration V1")
+            backupPath?.let { append(". Preserved the previous database at $it") }
+            append(". Repairing Flyway schema history automatically.")
+          }
+        )
+        activeFlyway.repair()
+        activeFlyway = buildMigrationFlyway(plugin, dataSource, databaseType)
+        val repairedValidation = activeFlyway.validateWithResult()
+        if (!repairedValidation.validationSuccessful) {
+          throw FlywayValidateException(
+            repairedValidation.errorDetails,
+            repairedValidation.getAllErrorMessages(),
+          )
+        }
       } else {
-        defaultFlyway
+        throw FlywayValidateException(validation.errorDetails, validation.getAllErrorMessages())
       }
-
-    try {
-      migrationFlyway.migrate()
-    } catch (exception: FlywayException) {
-      failMigrations(plugin, exception)
     }
-  }
 
-  private fun defaultFlywayLocations(databaseType: DatabaseType): List<String> {
-    return listOf(
-      COMMON_MIGRATION_LOCATION,
-      "classpath:db/migration/${databaseType.flywayLocation}",
-    )
-  }
-
-  private fun buildFlyway(
-    plugin: SlothAC,
-    dataSource: HikariDataSource,
-    locations: List<String>,
-  ): Flyway {
-    require(locations.size == DEFAULT_LOCATIONS_COUNT || locations.size == COMPAT_LOCATIONS_COUNT) {
-      "Unexpected Flyway locations count: ${locations.size}"
-    }
-    val configuration =
-      Flyway.configure(plugin.javaClass.classLoader)
-        .dataSource(dataSource)
-        .baselineOnMigrate(true)
-        .baselineVersion("0")
-    if (locations.size == DEFAULT_LOCATIONS_COUNT) {
-      configuration.locations(locations[0], locations[1])
-    } else {
-      configuration.locations(locations[0], locations[1], locations[2])
-    }
-    return configuration.load()
-  }
-
-  private fun hasAppliedMigrationVersion(flyway: Flyway, version: String): Boolean {
-    return flyway.info().all().any { migration ->
-      val migrationVersion = migration.version?.version
-      migrationVersion == version && migration.installedRank != null
-    }
+    activeFlyway.migrate()
   }
 
   private fun failMigrations(plugin: SlothAC, exception: FlywayException): Nothing {
@@ -176,18 +254,5 @@ class DatabaseManager(plugin: SlothAC, configManager: ConfigManager) {
     if (!dataSource.isClosed) {
       dataSource.close()
     }
-  }
-
-  private companion object {
-    val SUPPORTED_DATABASE_TYPES = setOf("sqlite", "mysql", "mariadb")
-    const val COMMON_MIGRATION_LOCATION = "classpath:db/migration/common"
-    const val DEFAULT_LOCATIONS_COUNT = 2
-    const val COMPAT_LOCATIONS_COUNT = 3
-    const val LEGACY_SQLITE_COMPAT_VERSION = "0.1"
-    const val LEGACY_SQLITE_COMPAT_LOCATION = "classpath:db/migration/sqlitecompat"
-    const val MARIADB_DRIVER_CLASS = "org.mariadb.jdbc.Driver"
-    const val MARIADB_JDBC_SCHEME = "jdbc:mariadb://"
-    const val LEGACY_SQLITE_COMPAT_LOG =
-      "Detected legacy Flyway migration 0.1 in schema history. Enabling compatibility location for validation."
   }
 }
