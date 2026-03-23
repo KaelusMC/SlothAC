@@ -242,28 +242,29 @@ class AiCheck(
           "player",
           slothPlayer.player.name,
           "buffer",
-          String.format("%.1f", buffer),
+          formatAiBuffer(buffer),
         ),
         AlertType.SUSPICIOUS,
       )
     }
 
-    debugManager.log(
-      DebugCategory.AI_PROBABILITY,
-      String.format(
-        "[%s] Prob: %.4f | Buffer: %.2f -> %.2f | Damage Multiplier: %.2f",
-        slothPlayer.player.name,
-        probability,
-        oldBuffer,
-        buffer,
-        slothPlayer.combat.damageMultiplier,
-      ),
-    )
+    if (debugManager.isEnabled(DebugCategory.AI_PROBABILITY)) {
+      debugManager.log(
+        DebugCategory.AI_PROBABILITY,
+        buildAiProbabilityDebugMessage(
+          playerName = slothPlayer.player.name,
+          probability = probability,
+          oldBuffer = oldBuffer,
+          newBuffer = buffer,
+          damageMultiplier = slothPlayer.combat.damageMultiplier,
+        ),
+      )
+    }
 
     var flagged = false
     if (buffer > flag) {
       flagged = true
-      flag("prob=${String.format("%.2f", probability)} buffer=${String.format("%.1f", buffer)}")
+      flag(buildAiFlagDebug(probability, buffer))
       buffer = bufferResetOnFlag
     }
 
