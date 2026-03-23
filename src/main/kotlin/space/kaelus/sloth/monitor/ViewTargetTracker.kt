@@ -29,6 +29,7 @@ internal class ViewTargetTracker(
 ) {
   fun trackTarget(session: ViewSession, target: Player) {
     session.updateTrackedName(target.uniqueId, target.name)
+    session.updateTrackedEntityId(target.uniqueId, target.entityId)
     session.targetTeams.computeIfAbsent(target.uniqueId) { TargetTeamState(teamNameForView(it)) }
   }
 
@@ -76,8 +77,12 @@ internal class ViewTargetTracker(
     targetId: UUID,
     fallbackTargetName: String?,
   ) {
-    val state = session.targetTeams.remove(targetId) ?: return
+    val state = session.targetTeams.remove(targetId)
+    session.removeTrackedEntityId(targetId)
     session.removeTrackedName(targetId, fallbackTargetName)
+    if (state == null) {
+      return
+    }
     state.removeFromViewer(
       viewer,
       if (session.usesBelowName()) session.belowObjectiveName else null,
@@ -88,9 +93,9 @@ internal class ViewTargetTracker(
   }
 
   fun dropTrackedTarget(session: ViewSession, targetId: UUID, fallbackTargetName: String?) {
-    if (session.targetTeams.remove(targetId) != null) {
-      session.removeTrackedName(targetId, fallbackTargetName)
-    }
+    session.targetTeams.remove(targetId)
+    session.removeTrackedEntityId(targetId)
+    session.removeTrackedName(targetId, fallbackTargetName)
   }
 
   fun clearTrackedTargets(viewer: Player, session: ViewSession) {
@@ -112,6 +117,7 @@ internal class ViewTargetTracker(
     target: Player,
     state: TargetTeamState,
   ) {
+    session.updateTrackedEntityId(target.uniqueId, target.entityId)
     val rendered = tagRenderer.render(target, state, session.config)
 
     if (session.usesBelowName()) {

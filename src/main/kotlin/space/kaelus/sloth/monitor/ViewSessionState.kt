@@ -30,6 +30,8 @@ internal class ViewSession(
   val targetTeams = ConcurrentHashMap<UUID, TargetTeamState>()
   private val targetNamesById = ConcurrentHashMap<UUID, String>()
   private val targetIdsByName = ConcurrentHashMap<String, UUID>()
+  private val targetIdsByEntityId = ConcurrentHashMap<Int, UUID>()
+  private val entityIdsByTargetId = ConcurrentHashMap<UUID, Int>()
 
   var task: TaskHandle? = null
   var cyclesSinceResync: Int = 0
@@ -69,10 +71,27 @@ internal class ViewSession(
 
   fun targetNameFor(targetId: UUID): String? = targetNamesById[targetId]
 
+  fun updateTrackedEntityId(targetId: UUID, entityId: Int) {
+    val previousEntityId = entityIdsByTargetId.put(targetId, entityId)
+    if (previousEntityId != null && previousEntityId != entityId) {
+      targetIdsByEntityId.remove(previousEntityId, targetId)
+    }
+    targetIdsByEntityId[entityId] = targetId
+  }
+
+  fun removeTrackedEntityId(targetId: UUID) {
+    val entityId = entityIdsByTargetId.remove(targetId) ?: return
+    targetIdsByEntityId.remove(entityId, targetId)
+  }
+
+  fun targetIdByEntityId(entityId: Int): UUID? = targetIdsByEntityId[entityId]
+
   fun clearTargets() {
     targetTeams.clear()
     targetNamesById.clear()
     targetIdsByName.clear()
+    targetIdsByEntityId.clear()
+    entityIdsByTargetId.clear()
   }
 }
 

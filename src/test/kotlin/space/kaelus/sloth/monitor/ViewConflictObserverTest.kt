@@ -30,10 +30,12 @@ class ViewConflictObserverTest {
   fun `send event without bukkit player is ignored`() {
     val scheduler = mockk<SchedulerService>(relaxed = true)
     val coordinator = mockk<ViewSessionCoordinator>(relaxed = true)
+    val belowNameConflicts = mockk<ViewBelowNameConflictCoordinator>(relaxed = true)
     val event = mockk<PacketSendEvent>()
     every { event.getPlayer<Any>() } returns Any()
 
-    val observer = ViewConflictObserver(scheduler, coordinator) { _: UUID -> null }
+    val observer =
+      ViewConflictObserver(scheduler, coordinator, belowNameConflicts) { _: UUID -> null }
 
     observer.onPacketSend(event)
 

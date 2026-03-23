@@ -17,7 +17,7 @@ view:
   template:
     prefix: "<dark_gray>[</dark_gray><white>{prob}%</white><dark_gray> • </dark_gray><yellow>{buffer}</yellow><dark_gray> • </dark_gray><aqua>{ping}ms</aqua><dark_gray>]</dark_gray> "
     suffix: ""
-    below-title: ""
+    below-title: "" # legacy fallback: "% AI"
     below: "<dark_gray>[</dark_gray><white>{prob}%</white><dark_gray> • </dark_gray><yellow>{buffer}</yellow><dark_gray> • </dark_gray><aqua>{ping}ms</aqua><dark_gray>]</dark_gray>"
 defaults:
   mode: compact           # compact | full

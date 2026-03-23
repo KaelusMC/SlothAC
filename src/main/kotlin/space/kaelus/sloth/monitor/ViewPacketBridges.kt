@@ -100,12 +100,13 @@ internal class ViewBelowNamePacketBridge(private val componentCache: ViewCompone
   }
 
   fun createObjective(viewer: Player, objectiveName: String, title: String, defaultText: String) {
+    val objectiveTitle = resolveObjectiveTitle(title)
     val createObjective =
       if (supportsFancyText()) {
         WrapperPlayServerScoreboardObjective(
           objectiveName,
           WrapperPlayServerScoreboardObjective.ObjectiveMode.CREATE,
-          componentCache.component(title),
+          componentCache.component(objectiveTitle),
           WrapperPlayServerScoreboardObjective.RenderType.INTEGER,
           ScoreFormat.fixedScore(componentCache.component(defaultText)),
         )
@@ -113,7 +114,7 @@ internal class ViewBelowNamePacketBridge(private val componentCache: ViewCompone
         WrapperPlayServerScoreboardObjective(
           objectiveName,
           WrapperPlayServerScoreboardObjective.ObjectiveMode.CREATE,
-          componentCache.component(title),
+          componentCache.component(objectiveTitle),
           WrapperPlayServerScoreboardObjective.RenderType.INTEGER,
         )
       }
@@ -158,6 +159,13 @@ internal class ViewBelowNamePacketBridge(private val componentCache: ViewCompone
     PacketEvents.getAPI().playerManager.sendPacket(viewer, packet)
   }
 
+  private fun resolveObjectiveTitle(title: String): String {
+    if (supportsFancyText()) {
+      return title
+    }
+    return title.ifBlank { DEFAULT_LEGACY_BELOW_TITLE }
+  }
+
   private fun createUpdateScorePacket(
     objectiveName: String,
     targetName: String,
@@ -196,6 +204,8 @@ internal class ViewBelowNamePacketBridge(private val componentCache: ViewCompone
     }
   }
 }
+
+private const val DEFAULT_LEGACY_BELOW_TITLE = "% AI"
 
 internal class ViewComponentCache(private val maxSize: Int = 256) {
   private val cache = ConcurrentHashMap<String, Component>()

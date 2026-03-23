@@ -18,16 +18,12 @@
 package space.kaelus.sloth.monitor
 
 import com.github.retrooper.packetevents.PacketEvents
-import io.papermc.paper.event.player.PlayerTrackEntityEvent
-import io.papermc.paper.event.player.PlayerUntrackEntityEvent
 import java.util.UUID
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.event.player.PlayerHideEntityEvent
 import org.bukkit.event.player.PlayerQuitEvent
-import org.bukkit.event.player.PlayerShowEntityEvent
 import org.bukkit.event.server.PluginDisableEvent
 import space.kaelus.sloth.SlothAC
 import space.kaelus.sloth.config.ConfigManager
@@ -41,8 +37,12 @@ class MonitorViewService(
   scheduler: SchedulerService,
 ) : Listener {
   private val coordinator = ViewSessionCoordinator(plugin, playerDataManager, scheduler)
+  private val trackingObserver =
+    ViewTrackingObserver(scheduler, coordinator) { viewerId ->
+      resolveActiveViewViewer(viewerId, coordinator)
+    }
   private val conflictObserver =
-    ViewConflictObserver(scheduler, coordinator) { viewerId ->
+    ViewConflictObserver(scheduler, coordinator, coordinator.belowNameConflicts) { viewerId ->
       resolveActiveViewViewer(viewerId, coordinator)
     }
 
@@ -57,6 +57,7 @@ class MonitorViewService(
     if (packetHooksRegistered) {
       return
     }
+    PacketEvents.getAPI().eventManager.registerListener(trackingObserver)
     PacketEvents.getAPI().eventManager.registerListener(conflictObserver)
     packetHooksRegistered = true
   }
@@ -82,36 +83,6 @@ class MonitorViewService(
   }
 
   @EventHandler
-  fun onPlayerTrackEntity(event: PlayerTrackEntityEvent) {
-    val target = event.entity as? Player ?: return
-    val viewer = event.player
-    if (isTrackableViewTarget(viewer, target)) {
-      coordinator.trackTarget(viewer.uniqueId, target)
-    }
-  }
-
-  @EventHandler
-  fun onPlayerUntrackEntity(event: PlayerUntrackEntityEvent) {
-    val target = event.entity as? Player ?: return
-    coordinator.removeTrackedTarget(event.player.uniqueId, target.uniqueId, target.name)
-  }
-
-  @EventHandler
-  fun onPlayerHideEntity(event: PlayerHideEntityEvent) {
-    val target = event.entity as? Player ?: return
-    coordinator.removeTrackedTarget(event.player.uniqueId, target.uniqueId, target.name)
-  }
-
-  @EventHandler
-  fun onPlayerShowEntity(event: PlayerShowEntityEvent) {
-    val target = event.entity as? Player ?: return
-    val viewer = event.player
-    if (isTrackableViewTarget(viewer, target)) {
-      coordinator.trackTarget(viewer.uniqueId, target)
-    }
-  }
-
-  @EventHandler
   fun onPlayerQuit(event: PlayerQuitEvent) {
     val left = event.player
     coordinator.disable(left.uniqueId, left)
@@ -131,7 +102,7 @@ class MonitorViewService(
 
 internal const val VIEW_PERMISSION = "sloth.view"
 
-private fun isTrackableViewTarget(viewer: Player, target: Player): Boolean {
+internal fun isTrackableViewTarget(viewer: Player, target: Player): Boolean {
   return target.isOnline && viewer.world.uid == target.world.uid && viewer.canSee(target)
 }
 

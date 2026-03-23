@@ -36,6 +36,10 @@ internal class ViewSessionCoordinator(
   private val belowNameBridge = ViewBelowNamePacketBridge(componentCache)
   private val tracker =
     ViewTargetTracker(ViewTagRenderer(playerDataManager), teamBridge, belowNameBridge)
+  internal val belowNameConflicts =
+    ViewBelowNameConflictCoordinator(plugin, tracker, belowNameBridge) { viewerId ->
+      sessions[viewerId]
+    }
 
   fun session(viewerId: UUID): ViewSession? = sessions[viewerId]
 
@@ -109,6 +113,15 @@ internal class ViewSessionCoordinator(
     tracker.removeTrackedTarget(viewer, session, targetId, fallbackTargetName)
   }
 
+  fun removeTrackedEntities(viewerId: UUID, entityIds: IntArray) {
+    val session = sessions[viewerId] ?: return
+    val viewer = resolveViewSessionViewer(viewerId) ?: return
+    for (entityId in entityIds) {
+      val targetId = session.targetIdByEntityId(entityId) ?: continue
+      tracker.removeTrackedTarget(viewer, session, targetId, session.targetNameFor(targetId))
+    }
+  }
+
   fun removeTargetFromAllSessions(targetId: UUID, targetName: String) {
     for ((viewerId, session) in sessions.entries) {
       val viewer = Bukkit.getPlayer(viewerId)
@@ -134,53 +147,6 @@ internal class ViewSessionCoordinator(
     }
 
     session.clearTargets()
-  }
-
-  fun reassertBelowNameDisplay(
-    viewerId: UUID,
-    conflictingObjective: String,
-    viewerResolver: (UUID) -> Player?,
-  ) {
-    val session = sessions[viewerId]
-    if (session != null && session.usesBelowName()) {
-      val viewer = viewerResolver(viewerId)
-      val objectiveName = session.belowObjectiveName
-      if (viewer != null && objectiveName != null) {
-        if (!session.belowNameConflictLogged) {
-          plugin.logger.warning(
-            "[View] Viewer ${viewer.name} reasserted Sloth below-name display after " +
-              "'$conflictingObjective' attempted to claim the slot."
-          )
-          session.belowNameConflictLogged = true
-        }
-
-        belowNameBridge.displayObjective(viewer, objectiveName)
-        tracker.refreshTrackedTargets(viewer, session)
-      }
-    }
-  }
-
-  fun recreateBelowNameObjective(
-    viewerId: UUID,
-    objectiveName: String,
-    viewerResolver: (UUID) -> Player?,
-  ) {
-    val session = sessions[viewerId]
-    val shouldRecreate =
-      session != null && session.usesBelowName() && session.belowObjectiveName == objectiveName
-    if (shouldRecreate) {
-      val viewer = viewerResolver(viewerId)
-      if (viewer != null) {
-        session.targetTeams.values.forEach(TargetTeamState::invalidateBelowName)
-        belowNameBridge.createObjective(
-          viewer,
-          objectiveName,
-          session.config.belowTitle,
-          session.config.defaultBelowText,
-        )
-        tracker.refreshTrackedTargets(viewer, session)
-      }
-    }
   }
 }
 

@@ -31,6 +31,7 @@ import space.kaelus.sloth.scheduler.SchedulerService
 internal class ViewConflictObserver(
   private val scheduler: SchedulerService,
   private val coordinator: ViewSessionCoordinator,
+  private val belowNameConflicts: ViewBelowNameConflictCoordinator,
   private val viewerResolver: (UUID) -> Player?,
 ) : PacketListenerAbstract(PacketListenerPriority.MONITOR) {
   override fun onPacketSend(event: PacketSendEvent) {
@@ -64,7 +65,7 @@ internal class ViewConflictObserver(
               scheduler.runSync(
                 viewer,
                 Runnable {
-                  coordinator.reassertBelowNameDisplay(
+                  belowNameConflicts.reassertDisplay(
                     viewer.uniqueId,
                     wrapper.scoreName,
                     viewerResolver,
@@ -96,7 +97,7 @@ internal class ViewConflictObserver(
               scheduler.runSync(
                 viewer,
                 Runnable {
-                  coordinator.recreateBelowNameObjective(
+                  belowNameConflicts.recreateObjective(
                     viewer.uniqueId,
                     objectiveName,
                     viewerResolver,
