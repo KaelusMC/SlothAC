@@ -26,23 +26,6 @@ private const val SQLITE_BASELINE_LOG =
 
 internal class DatabaseMigrationExecutor(private val environment: DatabaseEnvironment) {
 
-  fun hasPendingMigrations(
-    dataSource: HikariDataSource,
-    databaseType: DatabaseType,
-    announceCompat: Boolean = true,
-  ): Boolean {
-    return buildMigrationFlyway(
-        environment.classLoader,
-        environment.logger,
-        dataSource,
-        databaseType,
-        announceCompat,
-      )
-      .info()
-      .pending()
-      .isNotEmpty()
-  }
-
   fun migrate(
     dataSource: HikariDataSource,
     databaseType: DatabaseType,

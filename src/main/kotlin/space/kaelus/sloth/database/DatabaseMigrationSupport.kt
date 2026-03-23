@@ -49,9 +49,8 @@ internal fun buildMigrationFlyway(
     return buildFlyway(classLoader, dataSource, defaultLocations)
   }
 
-  val defaultFlyway = buildFlyway(classLoader, dataSource, defaultLocations)
   val useCompatLocation =
-    hasAppliedMigrationVersion(defaultFlyway, LEGACY_SQLITE_COMPAT_VERSION) ||
+    hasAppliedMigrationVersion(dataSource, LEGACY_SQLITE_COMPAT_VERSION) ||
       sqliteRequiresLegacyCompat(dataSource)
 
   return if (useCompatLocation) {
@@ -60,7 +59,7 @@ internal fun buildMigrationFlyway(
     }
     buildFlyway(classLoader, dataSource, defaultLocations + LEGACY_SQLITE_COMPAT_LOCATION)
   } else {
-    defaultFlyway
+    buildFlyway(classLoader, dataSource, defaultLocations)
   }
 }
 
@@ -121,10 +120,34 @@ private fun buildFlyway(
   return configuration.load()
 }
 
-private fun hasAppliedMigrationVersion(flyway: Flyway, version: String): Boolean {
-  return flyway.info().all().any { migration ->
-    val migrationVersion = migration.version?.version
-    migrationVersion == version && migration.installedRank != null
+private fun hasAppliedMigrationVersion(dataSource: HikariDataSource, version: String): Boolean {
+  dataSource.connection.use { connection ->
+    if (!flywaySchemaHistoryTableExists(connection)) {
+      return false
+    }
+    connection
+      .prepareStatement(
+        """
+        SELECT 1
+        FROM flyway_schema_history
+        WHERE version = ? AND success = 1
+        LIMIT 1
+        """
+          .trimIndent()
+      )
+      .use { statement ->
+        statement.setString(1, version)
+        statement.executeQuery().use { resultSet ->
+          return resultSet.next()
+        }
+      }
+  }
+}
+
+private fun flywaySchemaHistoryTableExists(connection: java.sql.Connection): Boolean {
+  connection.metaData.getTables(null, null, "flyway_schema_history", arrayOf("TABLE")).use {
+    resultSet ->
+    return resultSet.next()
   }
 }
 

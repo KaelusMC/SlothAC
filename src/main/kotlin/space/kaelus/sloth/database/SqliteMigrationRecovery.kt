@@ -52,20 +52,6 @@ internal class SqliteMigrationRecovery(
         .getOrNull()
     }
 
-    val needsPreMigrationBackup =
-      sqliteDatabaseHasContent(databaseFile) &&
-        runCatching {
-            migrationExecutor.hasPendingMigrations(
-              dataSource = initialDataSource,
-              databaseType = DatabaseType.SQLITE,
-              announceCompat = false,
-            )
-          }
-          .getOrDefault(false)
-    if (needsPreMigrationBackup) {
-      ensureBackup()
-    }
-
     return try {
       migrationExecutor.migrate(
         dataSource = initialDataSource,
