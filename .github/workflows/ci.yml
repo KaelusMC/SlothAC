@@ -36,6 +36,9 @@ jobs:
       - name: Run tests
         run: ./gradlew test
 
+      - name: Run container-backed tests
+        run: ./gradlew --no-daemon containerTest
+
   build:
     name: Build
     needs: check

@@ -81,6 +81,8 @@ dependencies {
   testImplementation(packetEventsSpigot)
   testImplementation("org.junit.jupiter:junit-jupiter:6.0.3")
   testImplementation("io.mockk:mockk:1.14.9")
+  testImplementation("org.testcontainers:junit-jupiter:1.21.4")
+  testImplementation("org.testcontainers:mariadb:1.21.4")
   testCompileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
   testRuntimeOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
   testRuntimeOnly("org.xerial:sqlite-jdbc:3.51.3.0")
@@ -159,7 +161,7 @@ tasks.register<PrintFilePathTask>("printShadowJarPath") {
 }
 
 tasks.test {
-  useJUnitPlatform()
+  useJUnitPlatform { excludeTags("container") }
   jvmArgs(
     "-XX:+EnableDynamicAgentLoading",
     "--add-opens",
@@ -168,6 +170,23 @@ tasks.test {
     "java.base/java.lang=ALL-UNNAMED",
   )
 }
+
+val containerTest by
+  tasks.registering(Test::class) {
+    description = "Runs container-backed integration tests."
+    group = "verification"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform { includeTags("container") }
+    shouldRunAfter(tasks.test)
+    jvmArgs(
+      "-XX:+EnableDynamicAgentLoading",
+      "--add-opens",
+      "java.base/java.lang.reflect=ALL-UNNAMED",
+      "--add-opens",
+      "java.base/java.lang=ALL-UNNAMED",
+    )
+  }
 
 tasks.build { dependsOn(tasks.shadowJar) }
 
