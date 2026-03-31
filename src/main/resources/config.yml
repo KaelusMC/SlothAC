@@ -1,6 +1,9 @@
 # SlothAC main configuration
 # Copyright 2026 KaelusMC, DefineOutside and contributors, Licensed under GPLv3.
 
+# Do not change this value manually.
+config-version: 1
+
 # Locale: en, ru
 locale: "en"
 
@@ -15,6 +18,8 @@ ai:
   sequence: 40
   # The number of ticks to wait before sending the next sequence.
   step: 10
+  # When true, sequences are recorded and sent continuously without requiring combat (hits).
+  continuous: false
   buffer:
     # The violation level (VL) at which a flag will be triggered.
     flag: 50.0

@@ -52,6 +52,9 @@ class ConfigManager(private val plugin: SlothAC) {
   var aiStep: Int = 0
     private set
 
+  var aiContinuous: Boolean = false
+    private set
+
   var aiFlag: Double = 0.0
     private set
 
@@ -117,14 +120,14 @@ class ConfigManager(private val plugin: SlothAC) {
       plugin.dataFolder.mkdirs()
     }
 
-    config = loadConfig("config.yml")
+    config = loadConfig("config.yml", migrate = true)
     punishments = loadConfig("punishments.yml")
     monitorConfig = loadConfig("monitor.yml")
 
     loadValues()
   }
 
-  private fun loadConfig(fileName: String): ConfigView {
+  private fun loadConfig(fileName: String, migrate: Boolean = false): ConfigView {
     val file = File(plugin.dataFolder, fileName)
     if (!file.exists()) {
       plugin.saveResource(fileName, false)
@@ -132,6 +135,12 @@ class ConfigManager(private val plugin: SlothAC) {
     return try {
       val loader = YamlConfigurationLoader.builder().path(file.toPath()).build()
       val node = loader.load()
+      if (migrate && ConfigMigrations.apply(node)) {
+        loader.save(node)
+        plugin.logger.info(
+          "[Config] Migrated $fileName to version ${ConfigMigrations.LATEST_VERSION}"
+        )
+      }
       ConfigView(node)
     } catch (e: Exception) {
       plugin.logger.severe("Failed to load $fileName: ${e.message}")
@@ -145,6 +154,7 @@ class ConfigManager(private val plugin: SlothAC) {
     aiApiKey = config.getString("ai.api-key", "API-KEY")
     aiSequence = config.getInt("ai.sequence", 40)
     aiStep = config.getInt("ai.step", 10)
+    aiContinuous = config.getBoolean("ai.continuous", false)
 
     aiFlag = config.getDouble("ai.buffer.flag", 50.0)
     aiResetOnFlag = config.getDouble("ai.buffer.reset-on-flag", 25.0)

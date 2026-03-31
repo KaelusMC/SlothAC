@@ -62,6 +62,22 @@ class LocaleManager(private val plugin: SlothAC, private val configManager: Conf
     val file = File(dir, "messages_$locale.yml")
     if (!file.exists()) {
       plugin.saveResource("messages/messages_$locale.yml", false)
+    } else {
+      mergeDefaults(file, "messages/messages_$locale.yml")
+    }
+  }
+
+  private fun mergeDefaults(userFile: File, resourcePath: String) {
+    val resource = plugin.getResource(resourcePath) ?: return
+    try {
+      val userLoader = YamlConfigurationLoader.builder().path(userFile.toPath()).build()
+      val userNode = userLoader.load()
+      val defaultNode =
+        YamlConfigurationLoader.builder().source { resource.bufferedReader() }.build().load()
+      userNode.mergeFrom(defaultNode)
+      userLoader.save(userNode)
+    } catch (e: java.io.IOException) {
+      plugin.logger.warning("Failed to merge defaults for ${userFile.name}: ${e.message}")
     }
   }
 
