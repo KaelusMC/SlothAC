@@ -182,7 +182,7 @@ private fun checkModule() = module {
     }
   }
   single<CheckFactory>(named("collector")) {
-    CheckFactory { player -> DataCollectorCheck(player, get(), get()) }
+    CheckFactory { player -> DataCollectorCheck(player, get(), get(), get()) }
   }
   single<CheckFactory>(named("brand")) {
     CheckFactory { player -> ClientBrand(player, get(), get()) }

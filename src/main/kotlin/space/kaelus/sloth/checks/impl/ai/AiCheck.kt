@@ -123,7 +123,7 @@ class AiCheck(
       return
     }
 
-    if (slothPlayer.combat.ticksSinceAttack > sequence) {
+    if (!configManager.aiContinuous && slothPlayer.combat.ticksSinceAttack > sequence) {
       if (ticks.isNotEmpty()) {
         ticks.clear()
       }

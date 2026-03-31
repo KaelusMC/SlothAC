@@ -24,6 +24,7 @@ import space.kaelus.sloth.checks.AbstractCheck
 import space.kaelus.sloth.checks.CheckData
 import space.kaelus.sloth.checks.CheckFactory
 import space.kaelus.sloth.checks.type.PacketCheck
+import space.kaelus.sloth.config.ConfigManager
 import space.kaelus.sloth.data.DataSession
 import space.kaelus.sloth.data.TickData
 import space.kaelus.sloth.player.SlothPlayer
@@ -33,6 +34,7 @@ class DataCollectorCheck(
   slothPlayer: SlothPlayer,
   private val dataCollectorManager: DataCollectorManager,
   private val plugin: SlothAC,
+  private val configManager: ConfigManager,
 ) : AbstractCheck(slothPlayer), PacketCheck {
   interface Factory : CheckFactory {
     override fun create(player: SlothPlayer): DataCollectorCheck
@@ -52,7 +54,9 @@ class DataCollectorCheck(
         return
       }
 
-      if (slothPlayer.combat.ticksSinceAttack < 40) {
+      if (
+        configManager.aiContinuous || slothPlayer.combat.ticksSinceAttack < configManager.aiSequence
+      ) {
         session.addTick(TickData(slothPlayer))
       }
     }
