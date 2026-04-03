@@ -315,7 +315,15 @@ class MonitorCommand(
     val keepAliveCycles =
       ((keepAliveTicks + updatePeriodTicks - 1L) / updatePeriodTicks).coerceAtLeast(1L).toInt()
 
-    val newSession = MonitorSession(targetId, keepAliveCycles)
+    val targetName = target.name
+    val newSession =
+      MonitorSession(
+        targetUuid = targetId,
+        keepAliveCycles = keepAliveCycles,
+        noDataComponent = MessageUtil.getMessage(Message.MONITOR_NO_DATA, "player", targetName),
+        noAiCheckComponent =
+          MessageUtil.getMessage(Message.MONITOR_NO_AICHECK, "player", targetName),
+      )
     activeSessions[viewerId] = newSession
 
     val task =
@@ -337,19 +345,13 @@ class MonitorCommand(
 
           val slothTarget = playerDataManager.getPlayer(onlineTarget)
           if (slothTarget == null) {
-            sendActionBar(
-              onlineViewer,
-              MessageUtil.getMessage(Message.MONITOR_NO_DATA, "player", onlineTarget.name),
-            )
+            sendActionBar(onlineViewer, newSession.noDataComponent)
             return@Runnable
           }
 
           val aiCheck: AiCheck? = slothTarget.checkManager.getCheck(AiCheck::class.java)
           if (aiCheck == null) {
-            sendActionBar(
-              onlineViewer,
-              MessageUtil.getMessage(Message.MONITOR_NO_AICHECK, "player", onlineTarget.name),
-            )
+            sendActionBar(onlineViewer, newSession.noAiCheckComponent)
             return@Runnable
           }
 
@@ -601,7 +603,12 @@ class MonitorCommand(
     TREND("trend"),
   }
 
-  private class MonitorSession(val targetUuid: UUID, val keepAliveCycles: Int) {
+  private class MonitorSession(
+    val targetUuid: UUID,
+    val keepAliveCycles: Int,
+    val noDataComponent: Component,
+    val noAiCheckComponent: Component,
+  ) {
     var task: TaskHandle? = null
     var lastSentComponent: Component? = null
     var lastProbability: Double = -1.0
