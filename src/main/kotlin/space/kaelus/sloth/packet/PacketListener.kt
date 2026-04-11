@@ -289,36 +289,33 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
 
   override fun onPacketSend(event: PacketSendEvent) {
     val player: Player? = event.getPlayer<Player>()
-    if (player == null) {
-      return
-    }
-
-    val slothPlayer = playerDataManager.getPlayer(player) ?: return
-
-    val packetType = event.packetType as PacketType.Play.Server
-
-    when (packetType) {
-      PacketType.Play.Server.WINDOW_CONFIRMATION ->
-        handleWindowConfirmation(WrapperPlayServerWindowConfirmation(event), slothPlayer)
-      PacketType.Play.Server.PING -> handlePing(WrapperPlayServerPing(event), slothPlayer)
-      PacketType.Play.Server.SPAWN_ENTITY ->
-        handleSpawnEntity(WrapperPlayServerSpawnEntity(event), slothPlayer)
-      PacketType.Play.Server.SPAWN_LIVING_ENTITY ->
-        handleSpawnLivingEntity(WrapperPlayServerSpawnLivingEntity(event), slothPlayer)
-      PacketType.Play.Server.SPAWN_PAINTING ->
-        handleSpawnPainting(WrapperPlayServerSpawnPainting(event), slothPlayer)
-      PacketType.Play.Server.SPAWN_PLAYER ->
-        handleSpawnPlayer(WrapperPlayServerSpawnPlayer(event), slothPlayer)
-      PacketType.Play.Server.DESTROY_ENTITIES ->
-        handleDestroyEntities(WrapperPlayServerDestroyEntities(event), slothPlayer)
-      PacketType.Play.Server.JOIN_GAME ->
-        handleJoinGame(WrapperPlayServerJoinGame(event), slothPlayer)
-      PacketType.Play.Server.RESPAWN -> handleRespawn(slothPlayer)
-      PacketType.Play.Server.PLAYER_POSITION_AND_LOOK ->
-        handlePositionAndLook(WrapperPlayServerPlayerPositionAndLook(event), slothPlayer)
-      PacketType.Play.Server.PLAYER_ROTATION ->
-        handlePlayerRotation(WrapperPlayServerPlayerRotation(event), slothPlayer)
-      else -> Unit
+    if (player != null) {
+      val slothPlayer = playerDataManager.getPlayer(player) ?: return
+      (event.packetType as? PacketType.Play.Server)?.let { packetType ->
+        when (packetType) {
+          PacketType.Play.Server.WINDOW_CONFIRMATION ->
+            handleWindowConfirmation(WrapperPlayServerWindowConfirmation(event), slothPlayer)
+          PacketType.Play.Server.PING -> handlePing(WrapperPlayServerPing(event), slothPlayer)
+          PacketType.Play.Server.SPAWN_ENTITY ->
+            handleSpawnEntity(WrapperPlayServerSpawnEntity(event), slothPlayer)
+          PacketType.Play.Server.SPAWN_LIVING_ENTITY ->
+            handleSpawnLivingEntity(WrapperPlayServerSpawnLivingEntity(event), slothPlayer)
+          PacketType.Play.Server.SPAWN_PAINTING ->
+            handleSpawnPainting(WrapperPlayServerSpawnPainting(event), slothPlayer)
+          PacketType.Play.Server.SPAWN_PLAYER ->
+            handleSpawnPlayer(WrapperPlayServerSpawnPlayer(event), slothPlayer)
+          PacketType.Play.Server.DESTROY_ENTITIES ->
+            handleDestroyEntities(WrapperPlayServerDestroyEntities(event), slothPlayer)
+          PacketType.Play.Server.JOIN_GAME ->
+            handleJoinGame(WrapperPlayServerJoinGame(event), slothPlayer)
+          PacketType.Play.Server.RESPAWN -> handleRespawn(slothPlayer)
+          PacketType.Play.Server.PLAYER_POSITION_AND_LOOK ->
+            handlePositionAndLook(WrapperPlayServerPlayerPositionAndLook(event), slothPlayer)
+          PacketType.Play.Server.PLAYER_ROTATION ->
+            handlePlayerRotation(WrapperPlayServerPlayerRotation(event), slothPlayer)
+          else -> Unit
+        }
+      }
     }
   }
 
