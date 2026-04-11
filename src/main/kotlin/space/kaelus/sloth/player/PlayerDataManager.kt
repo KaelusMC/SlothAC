@@ -136,6 +136,15 @@ constructor(
             alertManager.toggle(player, AlertType.BRAND, true)
           }
         }
+
+        if (
+          player.hasPermission("sloth.suspicious.alerts") &&
+            player.hasPermission("sloth.suspicious.alerts.enable-on-join")
+        ) {
+          if (!alertManager.hasAlertsEnabled(player, AlertType.SUSPICIOUS)) {
+            alertManager.toggle(player, AlertType.SUSPICIOUS, true)
+          }
+        }
       },
     )
   }

@@ -330,6 +330,10 @@ bukkit {
       description = "Allows toggling suspicious player alerts"
       default = Permission.Default.OP
     }
+    register("sloth.suspicious.alerts.enable-on-join") {
+      description = "Automatically enables suspicious alerts on join"
+      default = Permission.Default.OP
+    }
     register("sloth.suspicious.list") {
       description = "Allows listing suspicious players"
       default = Permission.Default.OP
