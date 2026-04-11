@@ -17,34 +17,23 @@
  */
 package space.kaelus.sloth.config
 
-import org.spongepowered.configurate.ConfigurationNode
-import org.spongepowered.configurate.NodePath
-import org.spongepowered.configurate.transformation.ConfigurationTransformation
+import java.io.File
 
-object ConfigMigrations {
+internal object ConfigMigrations {
   const val LATEST_VERSION = 1
 
-  private val VERSIONED: ConfigurationTransformation.Versioned =
-    ConfigurationTransformation.versionedBuilder()
-      .versionKey("config-version")
-      .addVersion(LATEST_VERSION, initialTransform())
-      .build()
+  private val VERSION_RE = Regex("""^\s*config-version:\s*(\d+)""", RegexOption.MULTILINE)
 
-  fun apply(node: ConfigurationNode): Boolean {
-    val before = VERSIONED.version(node)
-    VERSIONED.apply(node)
-    return VERSIONED.version(node) != before
+  fun readVersion(file: File): Int {
+    val text = runCatching { file.readText(Charsets.UTF_8) }.getOrNull() ?: return LATEST_VERSION
+    return VERSION_RE.find(text)?.groupValues?.get(1)?.toIntOrNull() ?: 0
   }
 
-  /** Migration from unknown (-1) to version 1: add ai.continuous default. */
-  private fun initialTransform(): ConfigurationTransformation {
-    return ConfigurationTransformation.builder()
-      .addAction(NodePath.path("ai")) { _, value ->
-        if (value.node("continuous").virtual()) {
-          value.node("continuous").set(false)
-        }
-        null
-      }
-      .build()
+  // yaml-config-updater uses `/` as the path separator because `.` is valid inside key names.
+  fun forcedDropsForUpgradeFrom(currentVersion: Int): List<String> {
+    if (currentVersion >= LATEST_VERSION) return emptyList()
+    val drops = mutableListOf("config-version")
+    // if (currentVersion < 2) drops += "ai/legacy-path"
+    return drops
   }
 }

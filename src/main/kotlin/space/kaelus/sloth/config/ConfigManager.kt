@@ -28,6 +28,7 @@ import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 import org.spongepowered.configurate.CommentedConfigurationNode
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
+import ru.vyarus.yaml.updater.YamlUpdater
 import space.kaelus.sloth.SlothAC
 import space.kaelus.sloth.debug.DebugCategory
 
@@ -132,19 +133,51 @@ class ConfigManager(private val plugin: SlothAC) {
     if (!file.exists()) {
       plugin.saveResource(fileName, false)
     }
+
+    if (migrate) {
+      runMigration(file, fileName)
+    }
+
     return try {
       val loader = YamlConfigurationLoader.builder().path(file.toPath()).build()
-      val node = loader.load()
-      if (migrate && ConfigMigrations.apply(node)) {
-        loader.save(node)
-        plugin.logger.info(
-          "[Config] Migrated $fileName to version ${ConfigMigrations.LATEST_VERSION}"
-        )
-      }
-      ConfigView(node)
+      ConfigView(loader.load())
     } catch (e: Exception) {
       plugin.logger.severe("Failed to load $fileName: ${e.message}")
       ConfigView(CommentedConfigurationNode.root())
+    }
+  }
+
+  private fun runMigration(file: File, fileName: String) {
+    val updateStream = javaClass.classLoader.getResourceAsStream(fileName) ?: return
+
+    val currentVersion = ConfigMigrations.readVersion(file)
+    val drops = ConfigMigrations.forcedDropsForUpgradeFrom(currentVersion)
+
+    val report =
+      runCatching {
+          YamlUpdater.create(file, updateStream).backup(true).deleteProps(drops).update()
+        }
+        .onFailure {
+          plugin.logger.warning("[Config] Migration of $fileName failed: ${it.message}")
+        }
+        .getOrNull()
+
+    if (report != null && report.isConfigChanged) {
+      val added = report.added.map { it.path }
+      val removed = report.removed.map { it.path }
+      if (added.isNotEmpty()) {
+        plugin.logger.info(
+          "[Config] Added ${added.size} key(s) to $fileName: ${added.joinToString(", ")}"
+        )
+      }
+      if (removed.isNotEmpty()) {
+        plugin.logger.info(
+          "[Config] Removed ${removed.size} key(s) from $fileName: ${removed.joinToString(", ")}"
+        )
+      }
+      report.backup?.let {
+        plugin.logger.info("[Config] Backup saved to ${it.name} before migrating $fileName")
+      }
     }
   }
 
