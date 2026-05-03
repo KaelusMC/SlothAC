@@ -31,6 +31,8 @@ internal class InMemoryViolationDatabase(private val configManager: ConfigManage
   ViolationDatabase {
   private val monitorSettings = ConcurrentHashMap<UUID, MonitorSettings>()
   private val punishmentLevels = ConcurrentHashMap<PunishmentKey, Int>()
+  private val playerLogins = ConcurrentHashMap<UUID, Long>()
+  private val aiBuffers = ConcurrentHashMap<UUID, AiBufferState>()
   private val violations = ArrayDeque<Violation>()
   private val violationsLock = Any()
 
@@ -73,6 +75,20 @@ internal class InMemoryViolationDatabase(private val configManager: ConfigManage
       .distinct()
       .count()
   }
+
+  override fun recordLogin(playerUUID: UUID, timestamp: Long) {
+    playerLogins[playerUUID] = timestamp
+  }
+
+  override fun countUniquePlayersSince(since: Long): Int {
+    return playerLogins.values.count { it >= since }
+  }
+
+  override fun saveAiBuffer(playerUUID: UUID, buffer: Double, updatedAt: Long) {
+    aiBuffers[playerUUID] = AiBufferState(buffer, updatedAt)
+  }
+
+  override fun loadAiBuffer(playerUUID: UUID): AiBufferState? = aiBuffers[playerUUID]
 
   override fun getLogCount(since: Long): Int {
     return snapshotViolations().count { violation -> violation.createdAt.toEpochMilli() >= since }

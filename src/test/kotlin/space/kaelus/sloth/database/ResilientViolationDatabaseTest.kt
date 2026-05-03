@@ -121,6 +121,14 @@ class ResilientViolationDatabaseTest {
 
     override fun getUniqueViolatorsSince(since: Long): Int = error("db down")
 
+    override fun recordLogin(playerUUID: UUID, timestamp: Long) = error("db down")
+
+    override fun countUniquePlayersSince(since: Long): Int = error("db down")
+
+    override fun saveAiBuffer(playerUUID: UUID, buffer: Double, updatedAt: Long) = error("db down")
+
+    override fun loadAiBuffer(playerUUID: UUID): AiBufferState? = error("db down")
+
     override fun getLogCount(since: Long): Int = error("db down")
 
     override fun getLogCounts(playerUUIDs: Collection<UUID>): Map<UUID, Int> = error("db down")
@@ -155,6 +163,14 @@ class ResilientViolationDatabaseTest {
       error("db down")
 
     override fun getUniqueViolatorsSince(since: Long): Int = error("db down")
+
+    override fun recordLogin(playerUUID: UUID, timestamp: Long) = error("db down")
+
+    override fun countUniquePlayersSince(since: Long): Int = error("db down")
+
+    override fun saveAiBuffer(playerUUID: UUID, buffer: Double, updatedAt: Long) = error("db down")
+
+    override fun loadAiBuffer(playerUUID: UUID): AiBufferState? = error("db down")
 
     override fun getLogCount(since: Long): Int = error("db down")
 

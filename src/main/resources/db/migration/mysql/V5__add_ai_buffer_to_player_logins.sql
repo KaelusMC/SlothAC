@@ -1,0 +1,3 @@
+ALTER TABLE player_logins
+  ADD COLUMN ai_buffer DOUBLE NOT NULL DEFAULT 0,
+  ADD COLUMN ai_buffer_updated_at BIGINT NOT NULL DEFAULT 0;

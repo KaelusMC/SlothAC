@@ -35,6 +35,14 @@ interface ViolationDatabase {
 
   fun getUniqueViolatorsSince(since: Long): Int
 
+  fun recordLogin(playerUUID: UUID, timestamp: Long)
+
+  fun countUniquePlayersSince(since: Long): Int
+
+  fun saveAiBuffer(playerUUID: UUID, buffer: Double, updatedAt: Long)
+
+  fun loadAiBuffer(playerUUID: UUID): AiBufferState?
+
   fun getLogCount(since: Long): Int
 
   fun getLogCounts(playerUUIDs: Collection<UUID>): Map<UUID, Int>

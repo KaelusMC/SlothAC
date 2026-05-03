@@ -42,6 +42,7 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.jetbrains.exposed.v1.jdbc.upsert
 import space.kaelus.sloth.config.ConfigManager
 import space.kaelus.sloth.monitor.MonitorMode
@@ -171,6 +172,64 @@ class SqlViolationDatabase(
     }
   }
 
+  override fun recordLogin(playerUUID: UUID, timestamp: Long) {
+    transaction(database) {
+      PlayerLogins.upsert(onUpdate = { it[PlayerLogins.lastSeen] = timestamp }) {
+        it[uuid] = playerUUID.toString()
+        it[lastSeen] = timestamp
+      }
+    }
+  }
+
+  override fun countUniquePlayersSince(since: Long): Int {
+    return transaction(database) {
+      val total = PlayerLogins.uuid.count()
+      PlayerLogins.select(total)
+        .where { PlayerLogins.lastSeen greaterEq since }
+        .firstOrNull()
+        ?.get(total)
+        ?.toInt() ?: 0
+    }
+  }
+
+  override fun saveAiBuffer(playerUUID: UUID, buffer: Double, updatedAt: Long) {
+    transaction(database) {
+      val uuidString = playerUUID.toString()
+      val updated =
+        PlayerLogins.update({ PlayerLogins.uuid eq uuidString }) {
+          it[PlayerLogins.aiBuffer] = buffer
+          it[PlayerLogins.aiBufferUpdatedAt] = updatedAt
+        }
+      if (updated > 0) return@transaction
+      try {
+        PlayerLogins.insert {
+          it[uuid] = uuidString
+          it[lastSeen] = updatedAt
+          it[aiBuffer] = buffer
+          it[aiBufferUpdatedAt] = updatedAt
+        }
+      } catch (_: java.sql.SQLException) {
+        PlayerLogins.update({ PlayerLogins.uuid eq uuidString }) {
+          it[PlayerLogins.aiBuffer] = buffer
+          it[PlayerLogins.aiBufferUpdatedAt] = updatedAt
+        }
+      }
+    }
+  }
+
+  override fun loadAiBuffer(playerUUID: UUID): AiBufferState? {
+    return transaction(database) {
+      PlayerLogins.select(PlayerLogins.aiBuffer, PlayerLogins.aiBufferUpdatedAt)
+        .where { PlayerLogins.uuid eq playerUUID.toString() }
+        .firstOrNull()
+        ?.let { row ->
+          val updatedAt = row[PlayerLogins.aiBufferUpdatedAt]
+          if (updatedAt == 0L) null
+          else AiBufferState(buffer = row[PlayerLogins.aiBuffer], updatedAt = updatedAt)
+        }
+    }
+  }
+
   override fun resetViolationLevel(playerUUID: UUID, punishGroupName: String) {
     transaction(database) {
       Punishments.deleteWhere {
@@ -267,6 +326,19 @@ class SqlViolationDatabase(
     val vl: Column<Int> = integer("vl")
 
     override val primaryKey = PrimaryKey(uuid, punishGroup)
+  }
+
+  private object PlayerLogins : Table("player_logins") {
+    val uuid: Column<String> = varchar("uuid", 36)
+    val lastSeen: Column<Long> = long("last_seen")
+    val aiBuffer: Column<Double> = double("ai_buffer").default(0.0)
+    val aiBufferUpdatedAt: Column<Long> = long("ai_buffer_updated_at").default(0L)
+
+    override val primaryKey = PrimaryKey(uuid)
+
+    init {
+      index(isUnique = false, lastSeen)
+    }
   }
 
   private object MonitorSettingsTable : Table("monitor_settings") {
