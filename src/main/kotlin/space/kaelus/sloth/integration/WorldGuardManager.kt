@@ -20,6 +20,8 @@ package space.kaelus.sloth.integration
 import com.sk89q.worldedit.bukkit.BukkitAdapter
 import com.sk89q.worldedit.math.BlockVector3
 import com.sk89q.worldguard.WorldGuard
+import com.sk89q.worldguard.protection.ApplicableRegionSet
+import com.sk89q.worldguard.protection.flags.StateFlag
 import java.util.Locale
 import java.util.logging.Logger
 import org.bukkit.Bukkit
@@ -45,10 +47,6 @@ class WorldGuardManager(private val logger: Logger, private val configManager: C
     if (!worldGuardLoaded) {
       return false
     }
-    val disabledRegions = configManager.aiDisabledRegions
-    if (disabledRegions.isEmpty()) {
-      return false
-    }
     val worldGuard = worldGuardInstance ?: return false
     val container = worldGuard.platform.regionContainer
     val regions = container.get(BukkitAdapter.adapt(player.world)) ?: return false
@@ -58,18 +56,31 @@ class WorldGuardManager(private val logger: Logger, private val configManager: C
         BlockVector3.at(player.location.x, player.location.y, player.location.z)
       )
 
+    queryFlag(set)?.let {
+      return it
+    }
+    return matchLegacyDisabledList(player, set)
+  }
+
+  private fun queryFlag(set: ApplicableRegionSet): Boolean? {
+    val flag = SlothFlags.checks ?: return null
+    return when (set.queryState(null, flag)) {
+      StateFlag.State.DENY -> true
+      StateFlag.State.ALLOW -> false
+      null -> null
+    }
+  }
+
+  private fun matchLegacyDisabledList(player: Player, set: ApplicableRegionSet): Boolean {
+    val disabledRegions = configManager.aiDisabledRegions
     val playerRegions = set.regions.filterNot { it.id.equals("__global__", ignoreCase = true) }
-    if (playerRegions.isEmpty()) {
+    val topRegion = playerRegions.maxByOrNull { it.priority }
+    if (disabledRegions.isEmpty() || topRegion == null) {
       return false
     }
-
     val worldName = player.world.name.lowercase(Locale.ROOT)
-    val globalRegions = disabledRegions["*"].orEmpty()
-    val worldRegions = disabledRegions[worldName].orEmpty()
-
-    return playerRegions.any { region ->
-      val regionId = region.id.lowercase(Locale.ROOT)
-      regionId in globalRegions || regionId in worldRegions
-    }
+    val regionId = topRegion.id.lowercase(Locale.ROOT)
+    return regionId in disabledRegions["*"].orEmpty() ||
+      regionId in disabledRegions[worldName].orEmpty()
   }
 }

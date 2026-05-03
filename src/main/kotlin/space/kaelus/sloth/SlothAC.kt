@@ -23,6 +23,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import space.kaelus.sloth.di.slothModules
+import space.kaelus.sloth.integration.SlothFlags
 
 class SlothAC : JavaPlugin() {
   private var core: SlothCore? = null
@@ -32,6 +33,8 @@ class SlothAC : JavaPlugin() {
 
   override fun onLoad() {
     packetEventsLoadFailure = runCatching { packetEventsLoader.load() }.exceptionOrNull()
+    runCatching { SlothFlags.register(logger) }
+      .onFailure { logger.log(Level.WARNING, "Failed to register WorldGuard flags", it) }
   }
 
   override fun onEnable() {
