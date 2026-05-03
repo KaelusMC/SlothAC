@@ -77,7 +77,7 @@ internal class ViewSessionCoordinator(
       scheduler.runTimer(
         viewer,
         Runnable { refreshViewer(viewerId, ::resolveViewSessionViewer) },
-        0L,
+        1L,
         config.updateTicks,
       )
   }
