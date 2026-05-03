@@ -81,10 +81,21 @@ class MonitorCommand(
       )
     val toggleSuggestions =
       SuggestionProvider.suggesting<Sender>(listOf("on", "off").map { Suggestion.suggestion(it) })
+    val nameSuggestions =
+      SuggestionProvider.suggesting<Sender>(
+        MonitorNameMode.entries.map { Suggestion.suggestion(it.name.lowercase(Locale.ROOT)) }
+      )
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("monitor")
-        .permission("sloth.prob")
+        .permission("sloth.prob.self")
+        .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
+        .handler(this@MonitorCommand::toggleMonitorSelf)
+    }
+
+    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
+      literal("monitor")
+        .permission("sloth.prob.self")
         .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
         .required("target", PlayerParser.playerParser())
         .handler(this@MonitorCommand::toggleMonitor)
@@ -92,7 +103,39 @@ class MonitorCommand(
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("monitor")
-        .permission("sloth.prob")
+        .permission("sloth.prob.self")
+        .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
+        .literal("stop")
+        .handler(this@MonitorCommand::stopMonitor)
+    }
+
+    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
+      literal("monitor")
+        .permission("sloth.prob.self")
+        .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
+        .literal("reset")
+        .handler(this@MonitorCommand::resetSettings)
+    }
+
+    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
+      literal("monitor")
+        .permission("sloth.prob.list")
+        .literal("list")
+        .handler(this@MonitorCommand::listSessions)
+    }
+
+    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
+      literal("monitor")
+        .permission("sloth.prob.self")
+        .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
+        .literal("name")
+        .required("mode", StringParser.stringParser()) { suggestionProvider = nameSuggestions }
+        .handler(this@MonitorCommand::setNameMode)
+    }
+
+    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
+      literal("monitor")
+        .permission("sloth.prob.self")
         .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
         .literal("mode")
         .required("mode", StringParser.stringParser()) { suggestionProvider = modeSuggestions }
@@ -101,7 +144,7 @@ class MonitorCommand(
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("monitor")
-        .permission("sloth.prob")
+        .permission("sloth.prob.self")
         .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
         .literal("ping")
         .required("state", StringParser.stringParser()) { suggestionProvider = toggleSuggestions }
@@ -110,7 +153,7 @@ class MonitorCommand(
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("monitor")
-        .permission("sloth.prob")
+        .permission("sloth.prob.self")
         .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
         .literal("dmg")
         .required("state", StringParser.stringParser()) { suggestionProvider = toggleSuggestions }
@@ -119,7 +162,7 @@ class MonitorCommand(
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("monitor")
-        .permission("sloth.prob")
+        .permission("sloth.prob.self")
         .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
         .literal("trend")
         .required("state", StringParser.stringParser()) { suggestionProvider = toggleSuggestions }
@@ -128,7 +171,7 @@ class MonitorCommand(
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("monitor")
-        .permission("sloth.prob")
+        .permission("sloth.prob.self")
         .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
         .literal("theme")
         .required("theme", StringParser.stringParser()) { suggestionProvider = themeSuggestions }
@@ -137,7 +180,14 @@ class MonitorCommand(
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("prob")
-        .permission("sloth.prob")
+        .permission("sloth.prob.self")
+        .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
+        .handler(this@MonitorCommand::toggleMonitorSelf)
+    }
+
+    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
+      literal("prob")
+        .permission("sloth.prob.self")
         .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
         .required("target", PlayerParser.playerParser())
         .handler(this@MonitorCommand::toggleMonitor)
@@ -172,11 +222,100 @@ class MonitorCommand(
     }
   }
 
+  private fun toggleMonitorSelf(context: CommandContext<Sender>) {
+    val sender = context.sender()
+    val player = sender.player ?: return
+    toggleMonitorFor(player, player)
+  }
+
+  private fun stopMonitor(context: CommandContext<Sender>) {
+    val sender = context.sender()
+    val player = sender.player ?: return
+    val session = activeSessions[player.uniqueId]
+    if (session == null) {
+      MessageUtil.sendMessage(sender.nativeSender, Message.MONITOR_NOT_ACTIVE)
+      return
+    }
+    val targetName = Bukkit.getPlayer(session.targetUuid)?.name ?: session.targetUuid.toString()
+    stop(player)
+    MessageUtil.sendMessage(sender.nativeSender, Message.MONITOR_DISABLED, "player", targetName)
+  }
+
+  private fun resetSettings(context: CommandContext<Sender>) {
+    val sender = context.sender()
+    val player = sender.player ?: return
+    settingsService.updateSettings(player.uniqueId, settingsService.defaultSettings())
+    MessageUtil.sendMessage(sender.nativeSender, Message.MONITOR_RESET)
+  }
+
+  private fun listSessions(context: CommandContext<Sender>) {
+    val sender = context.sender()
+    val nativeSender = sender.nativeSender
+    if (activeSessions.isEmpty()) {
+      MessageUtil.sendMessage(nativeSender, Message.MONITOR_LIST_EMPTY)
+      return
+    }
+    MessageUtil.sendMessage(
+      nativeSender,
+      Message.MONITOR_LIST_HEADER,
+      "count",
+      activeSessions.size.toString(),
+    )
+    for ((viewerUuid, session) in activeSessions) {
+      val viewerName = Bukkit.getPlayer(viewerUuid)?.name ?: viewerUuid.toString()
+      val targetName = Bukkit.getPlayer(session.targetUuid)?.name ?: session.targetUuid.toString()
+      MessageUtil.sendMessage(
+        nativeSender,
+        Message.MONITOR_LIST_ENTRY,
+        "viewer",
+        viewerName,
+        "target",
+        targetName,
+      )
+    }
+  }
+
+  private fun setNameMode(context: CommandContext<Sender>) {
+    val sender = context.sender()
+    val player = sender.player ?: return
+    val rawMode: String = context["mode"]
+    val mode = MonitorNameMode.entries.firstOrNull { it.name.equals(rawMode, ignoreCase = true) }
+    if (mode == null) {
+      MessageUtil.sendMessage(
+        sender.nativeSender,
+        Message.MONITOR_INVALID_SETTING,
+        "setting",
+        "name",
+        "options",
+        MonitorNameMode.entries.joinToString("/") { it.name.lowercase(Locale.ROOT) },
+      )
+      return
+    }
+    updateSettings(player) { settings -> settings.showName = mode }
+    MessageUtil.sendMessage(
+      sender.nativeSender,
+      Message.MONITOR_SETTING_UPDATED,
+      "setting",
+      "name",
+      "value",
+      mode.name.lowercase(Locale.ROOT),
+    )
+  }
+
   private fun toggleMonitor(context: CommandContext<Sender>) {
     val sender = context.sender()
     val player = sender.player ?: return
     val target: Player = context["target"]
 
+    if (player.uniqueId != target.uniqueId && !player.hasPermission("sloth.prob")) {
+      MessageUtil.sendMessage(sender.nativeSender, Message.MONITOR_NO_PERMISSION_OTHER)
+      return
+    }
+
+    toggleMonitorFor(player, target)
+  }
+
+  private fun toggleMonitorFor(player: Player, target: Player) {
     val session = activeSessions[player.uniqueId]
 
     if (session != null && session.targetUuid == target.uniqueId) {
@@ -357,7 +496,7 @@ class MonitorCommand(
 
           sendActionBar(onlineViewer, onlineTarget, slothTarget, aiCheck, newSession)
         },
-        0L,
+        1L,
         updatePeriodTicks,
       )
 
