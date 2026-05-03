@@ -116,7 +116,10 @@ class PunishmentManager(
   }
 
   fun handleFlag(check: ICheck, debug: String) {
-    if (slothPlayer.exemptManager.isExempt(slothPlayer.player)) {
+    if (
+      slothPlayer.exemptManager.isExempt(slothPlayer.player) ||
+        slothPlayer.exemptManager.isDisabled(slothPlayer.player)
+    ) {
       return
     }
 

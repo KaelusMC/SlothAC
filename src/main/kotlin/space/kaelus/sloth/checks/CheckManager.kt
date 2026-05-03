@@ -28,7 +28,7 @@ import space.kaelus.sloth.checks.type.RotationCheck
 import space.kaelus.sloth.player.SlothPlayer
 import space.kaelus.sloth.utils.update.RotationUpdate
 
-class CheckManager(player: SlothPlayer, checkFactories: Set<CheckFactory>) {
+class CheckManager(private val player: SlothPlayer, checkFactories: Set<CheckFactory>) {
   private val rotationChecks = ArrayList<RotationCheck>()
   private val packetChecks = ArrayList<PacketCheck>()
   private val checks = HashMap<Class<out ICheck>, ICheck>()
@@ -38,6 +38,8 @@ class CheckManager(player: SlothPlayer, checkFactories: Set<CheckFactory>) {
       registerCheck(factory.create(player))
     }
   }
+
+  private fun checksDisabled(): Boolean = player.exemptManager.isDisabled(player.player)
 
   private fun registerCheck(check: ICheck) {
     checks[check.javaClass] = check
@@ -60,12 +62,18 @@ class CheckManager(player: SlothPlayer, checkFactories: Set<CheckFactory>) {
   }
 
   fun onRotationUpdate(update: RotationUpdate) {
+    if (checksDisabled()) {
+      return
+    }
     for (check in rotationChecks) {
       check.process(update)
     }
   }
 
   fun onPacketReceive(event: PacketReceiveEvent) {
+    if (checksDisabled()) {
+      return
+    }
     for (check in packetChecks) {
       check.onPacketReceive(event)
     }
