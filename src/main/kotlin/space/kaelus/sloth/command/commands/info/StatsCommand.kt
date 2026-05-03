@@ -23,10 +23,13 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent
 import org.bukkit.Bukkit
-import org.bukkit.OfflinePlayer
 import org.incendo.cloud.CommandManager
 import org.incendo.cloud.context.CommandContext
 import org.incendo.cloud.kotlin.extension.buildAndRegister
+import org.incendo.cloud.kotlin.extension.suggestionProvider
+import org.incendo.cloud.parser.standard.StringParser
+import org.incendo.cloud.suggestion.Suggestion
+import org.incendo.cloud.suggestion.SuggestionProvider
 import space.kaelus.sloth.checks.impl.ai.AiCheck
 import space.kaelus.sloth.command.SlothCommand
 import space.kaelus.sloth.database.DatabaseManager
@@ -42,8 +45,33 @@ private const val PERCENT_MULTIPLIER = 100.0
 private const val WHOLE_PERCENT_DISPLAY_THRESHOLD = 10.0
 private const val WHOLE_NUMBER_REMAINDER = 1.0
 
-private fun hasBeenSeenSince(player: OfflinePlayer, since: Long): Boolean {
-  return player.hasPlayedBefore() && player.lastSeen >= since
+private const val PERIOD_HOURS_1H = 1L
+private const val PERIOD_HOURS_6H = 6L
+private const val PERIOD_HOURS_DAY = 24L
+private const val PERIOD_HOURS_WEEK = PERIOD_HOURS_DAY * 7L
+
+private enum class StatsPeriod(val label: String, val hours: Long) {
+  H1("1h", PERIOD_HOURS_1H),
+  H6("6h", PERIOD_HOURS_6H),
+  H24("24h", PERIOD_HOURS_DAY),
+  D7("7d", PERIOD_HOURS_WEEK);
+
+  fun millis(): Long = TimeUnit.HOURS.toMillis(hours)
+
+  companion object {
+    val DEFAULT = H24
+
+    fun parse(raw: String): StatsPeriod? =
+      when (raw.lowercase(Locale.ROOT)) {
+        "1h" -> H1
+        "6h" -> H6
+        "24h",
+        "1d" -> H24
+        "7d",
+        "1w" -> D7
+        else -> null
+      }
+  }
 }
 
 private fun formatThreshold(value: Double): String {
@@ -60,8 +88,10 @@ class StatsCommand(
   private val playerDataManager: PlayerDataManager,
 ) : SlothCommand {
   private data class StatsSnapshot(
+    val period: StatsPeriod,
     val totalFlags: Int,
-    val uniquePlayers24h: Int,
+    val flagsPerHour: String,
+    val uniquePlayers: Int,
     val uniqueViolators: Int,
     val violatorPercent: String,
     val onlinePlayers: Int,
@@ -70,16 +100,42 @@ class StatsCommand(
   )
 
   override fun register(manager: CommandManager<Sender>) {
+    val periodSuggestions =
+      SuggestionProvider.suggesting<Sender>(
+        StatsPeriod.entries.map { Suggestion.suggestion(it.label) }
+      )
+
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
-      literal("stats").permission("sloth.stats").handler(this@StatsCommand::execute)
+      literal("stats").permission("sloth.stats").handler { context ->
+        execute(context, StatsPeriod.DEFAULT)
+      }
+    }
+
+    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
+      literal("stats")
+        .permission("sloth.stats")
+        .required("period", StringParser.stringParser()) { suggestionProvider = periodSuggestions }
+        .handler { context ->
+          val raw: String = context["period"]
+          val period = StatsPeriod.parse(raw)
+          if (period == null) {
+            MessageUtil.sendMessage(
+              context.sender().nativeSender,
+              Message.STATS_INVALID_PERIOD,
+              "options",
+              StatsPeriod.entries.joinToString("/") { it.label },
+            )
+            return@handler
+          }
+          execute(context, period)
+        }
     }
   }
 
-  private fun execute(context: CommandContext<Sender>) {
+  private fun execute(context: CommandContext<Sender>, period: StatsPeriod) {
     val sender = context.sender()
     val db: ViolationDatabase = databaseManager.database
-    val since = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1)
-    val uniquePlayers24h = countUniquePlayersSince(since)
+    val since = System.currentTimeMillis() - period.millis()
     val onlinePlayers = Bukkit.getOnlinePlayers().size
     val suspiciousNow = getSuspiciousCount()
 
@@ -88,14 +144,17 @@ class StatsCommand(
     }
 
     scheduler.runAsync {
+      val uniquePlayers = db.countUniquePlayersSince(since)
       val totalFlags = db.getLogCount(since)
       val uniqueViolators = db.getUniqueViolatorsSince(since)
       val snapshot =
         StatsSnapshot(
+          period = period,
           totalFlags = totalFlags,
-          uniquePlayers24h = uniquePlayers24h,
+          flagsPerHour = formatPerHour(totalFlags, period.hours),
+          uniquePlayers = uniquePlayers,
           uniqueViolators = uniqueViolators,
-          violatorPercent = formatPercent(uniqueViolators, uniquePlayers24h),
+          violatorPercent = formatPercent(uniqueViolators, uniquePlayers),
           onlinePlayers = onlinePlayers,
           suspiciousNow = suspiciousNow,
           suspiciousPercent = formatPercent(suspiciousNow, onlinePlayers),
@@ -121,22 +180,38 @@ class StatsCommand(
   }
 
   private fun buildFlagsLine(snapshot: StatsSnapshot): Component =
-    MessageUtil.getMessage(Message.STATS_FLAGS, "flags_24h", snapshot.totalFlags.toString())
-      .hoverEvent(HoverEvent.showText(MessageUtil.getMessage(Message.STATS_FLAGS_HOVER)))
+    MessageUtil.getMessage(
+        Message.STATS_FLAGS,
+        "flags",
+        snapshot.totalFlags.toString(),
+        "period",
+        snapshot.period.label,
+        "flags_per_hour",
+        snapshot.flagsPerHour,
+      )
+      .hoverEvent(
+        HoverEvent.showText(
+          MessageUtil.getMessage(Message.STATS_FLAGS_HOVER, "flags_per_hour", snapshot.flagsPerHour)
+        )
+      )
       .clickEvent(ClickEvent.runCommand("/sloth logs"))
 
   private fun buildPlayersLine(snapshot: StatsSnapshot): Component =
     MessageUtil.getMessage(
         Message.STATS_PLAYERS,
-        "players_24h",
-        snapshot.uniquePlayers24h.toString(),
+        "players",
+        snapshot.uniquePlayers.toString(),
+        "period",
+        snapshot.period.label,
       )
       .hoverEvent(
         HoverEvent.showText(
           MessageUtil.getMessage(
             Message.STATS_PLAYERS_HOVER,
-            "players_24h",
-            snapshot.uniquePlayers24h.toString(),
+            "players",
+            snapshot.uniquePlayers.toString(),
+            "period",
+            snapshot.period.label,
           )
         )
       )
@@ -144,17 +219,21 @@ class StatsCommand(
   private fun buildViolatorsLine(snapshot: StatsSnapshot): Component =
     MessageUtil.getMessage(
         Message.STATS_VIOLATORS,
-        "violators_24h",
+        "violators",
         snapshot.uniqueViolators.toString(),
-        "violators_percent_24h",
+        "violators_percent",
         snapshot.violatorPercent,
+        "period",
+        snapshot.period.label,
       )
       .hoverEvent(
         HoverEvent.showText(
           MessageUtil.getMessage(
             Message.STATS_VIOLATORS_HOVER,
-            "violators_percent_24h",
+            "violators_percent",
             snapshot.violatorPercent,
+            "period",
+            snapshot.period.label,
           )
         )
       )
@@ -182,10 +261,6 @@ class StatsCommand(
       )
       .clickEvent(ClickEvent.runCommand("/sloth suspicious list"))
 
-  private fun countUniquePlayersSince(since: Long): Int {
-    return Bukkit.getOfflinePlayers().count { player -> hasBeenSeenSince(player, since) }
-  }
-
   private fun getSuspiciousCount(): Long {
     return playerDataManager
       .getPlayers()
@@ -196,6 +271,16 @@ class StatsCommand(
       }
       .count()
       .toLong()
+  }
+
+  private fun formatPerHour(totalFlags: Int, hours: Long): String {
+    if (hours <= 0L) return "0"
+    val rate = totalFlags.toDouble() / hours.toDouble()
+    return if (rate >= WHOLE_PERCENT_DISPLAY_THRESHOLD || rate % WHOLE_NUMBER_REMAINDER == 0.0) {
+      String.format(Locale.US, "%.0f", rate)
+    } else {
+      String.format(Locale.US, "%.1f", rate)
+    }
   }
 
   private fun formatPercent(numerator: Number, denominator: Int): String {

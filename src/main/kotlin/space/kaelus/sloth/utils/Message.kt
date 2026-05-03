@@ -53,6 +53,12 @@ enum class Message(val path: String) {
   MONITOR_NO_AICHECK("monitor.no-aicheck"),
   MONITOR_SETTING_UPDATED("monitor.setting-updated"),
   MONITOR_INVALID_SETTING("monitor.invalid-setting"),
+  MONITOR_NO_PERMISSION_OTHER("monitor.no-permission-other"),
+  MONITOR_NOT_ACTIVE("monitor.not-active"),
+  MONITOR_RESET("monitor.reset"),
+  MONITOR_LIST_HEADER("monitor.list-header"),
+  MONITOR_LIST_ENTRY("monitor.list-entry"),
+  MONITOR_LIST_EMPTY("monitor.list-empty"),
   VIEW_ENABLED("view.enabled"),
   VIEW_DISABLED("view.disabled"),
 
@@ -102,6 +108,7 @@ enum class Message(val path: String) {
   SUSPICIOUS_TOP_PLAYER_HOVER("suspicious.top-player-hover"),
 
   // Stats
+  STATS_INVALID_PERIOD("stats.invalid-period"),
   STATS_HEADER("stats.header"),
   STATS_FLAGS("stats.flags"),
   STATS_FLAGS_HOVER("stats.flags-hover"),

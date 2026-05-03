@@ -30,6 +30,12 @@ monitor:
   no-aicheck: "<prefix> <color:#ff4b2b>AI-Чек неактивен для <white><player></white>.</color>"
   setting-updated: "<prefix> <color:#a8ff78>Монитор <white><setting></white> установлен: <white><value></white>.</color>"
   invalid-setting: "<prefix> <color:#ff4b2b>Неверный <white><setting></white>. Используй: <options>.</color>"
+  no-permission-other: "<prefix> <color:#ff4b2b>Нет прав на мониторинг других игроков.</color>"
+  not-active: "<prefix> <color:#f6d365>Мониторинг не активен.</color>"
+  reset: "<prefix> <color:#a8ff78>Настройки монитора сброшены.</color>"
+  list-header: "<prefix> <color:#a8ff78>Активные сессии (<count>):</color>"
+  list-entry: " <gray>•</gray> <white><viewer></white> <gray>→</gray> <white><target></white>"
+  list-empty: "<prefix> <color:#f6d365>Нет активных сессий мониторинга.</color>"
 
 view:
   enabled: "<prefix> <color:#a8ff78>Режим наблюдения включен.</color>"
@@ -95,13 +101,14 @@ suspicious:
   top-player-hover: "<gray>Включить мониторинг</gray>"
 
 stats:
+  invalid-period: "<prefix> <color:#ff4b2b>Неверный период. Используй: <options>.</color>"
   header: "<gradient:#8e9eab:#eef2f3>---- [ Статистика Sloth ] ----</gradient>"
-  flags: " <color:#00b4db>Флагов (24ч):</color> <white><flags_24h></white>"
-  flags-hover: "<gray>Открыть недавние логи нарушений</gray>"
-  players: " <color:#00b4db>Игроков (24ч):</color> <white><players_24h></white>"
-  players-hover: "<gray>Уникальные игроки за последние 24 часа:</gray> <white><players_24h></white>"
-  violators: " <color:#00b4db>Нарушителей (24ч):</color> <white><violators_24h></white> <gray>(<violators_percent_24h>)</gray>"
-  violators-hover: "<white><violators_percent_24h></white> <gray>от уникальных игроков за последние 24 часа</gray>"
+  flags: " <color:#00b4db>Флагов (<period>):</color> <white><flags></white> <gray>(<flags_per_hour>/ч)</gray>"
+  flags-hover: "<gray>Срабатываний в час:</gray> <white><flags_per_hour></white><newline><gray>Открыть недавние логи</gray>"
+  players: " <color:#00b4db>Игроков (<period>):</color> <white><players></white>"
+  players-hover: "<gray>Уникальные игроки за</gray> <white><period></white>: <white><players></white>"
+  violators: " <color:#00b4db>Нарушителей (<period>):</color> <white><violators></white> <gray>(<violators_percent>)</gray>"
+  violators-hover: "<white><violators_percent></white> <gray>от уникальных игроков за</gray> <white><period></white>"
   online: " <color:#00b4db>Игроков онлайн:</color> <white><online_players></white>"
   suspicious: " <color:#ff416c>Подозрительных сейчас:</color> <white><suspicious_now></white> <gray>(<suspicious_percent_now>)</gray>"
   suspicious-hover: "<white><suspicious_now></white> <gray>из</gray> <white><online_players></white> <gray>онлайн-игроков</gray><newline><gray>Порог:</gray> <white>AI буфер > <suspicious_threshold></white>"
