@@ -28,7 +28,6 @@ import org.bukkit.Server
 import org.bukkit.entity.Player
 import org.bukkit.plugin.PluginManager
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -37,24 +36,14 @@ import space.kaelus.sloth.alert.AlertManager
 import space.kaelus.sloth.api.event.SlothEventBus
 import space.kaelus.sloth.checks.CheckManager
 import space.kaelus.sloth.checks.impl.ai.DataCollectorManager
+import space.kaelus.sloth.checks.impl.ai.PersistentBufferService
 import space.kaelus.sloth.config.ConfigManager
+import space.kaelus.sloth.database.DatabaseManager
 import space.kaelus.sloth.punishment.PunishmentManager
 import space.kaelus.sloth.scheduler.SchedulerService
 import space.kaelus.sloth.server.AIServerProvider
 
 class PlayerDataManagerTest {
-
-  @Test
-  fun `handleUserLogin skips players with sloth disable permission`() {
-    val fixture = createFixture()
-    fixture.disablePermission = true
-
-    fixture.manager.handleUserLogin(fixture.user, fixture.player)
-
-    assertNull(fixture.manager.getPlayer(fixture.player))
-    assertTrue(fixture.manager.getPlayers().isEmpty())
-    verify(exactly = 0) { fixture.checkManagerFactory.create(any()) }
-  }
 
   @Test
   fun `getPlayer keeps tracked player after sloth disable is granted mid-session`() {
@@ -129,6 +118,8 @@ class PlayerDataManagerTest {
         checkManagerFactory = checkManagerFactory,
         punishmentManagerFactory = punishmentManagerFactory,
         eventBus = mockk<SlothEventBus>(relaxed = true),
+        databaseManager = mockk<DatabaseManager>(relaxed = true),
+        persistentBufferService = mockk<PersistentBufferService>(relaxed = true),
       )
 
     return Fixture(

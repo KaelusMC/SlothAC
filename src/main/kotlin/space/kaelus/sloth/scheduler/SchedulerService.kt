@@ -17,6 +17,7 @@
  */
 package space.kaelus.sloth.scheduler
 
+import java.util.concurrent.TimeUnit
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import space.kaelus.sloth.SlothAC
@@ -54,6 +55,10 @@ class SchedulerService(private val plugin: SlothAC, private val scheduler: Platf
 
   fun runLater(task: Runnable, delayTicks: Long): TaskHandle {
     return scheduler.globalRegionScheduler.runDelayed(plugin, task, delayTicks)
+  }
+
+  fun runLaterAsync(task: Runnable, delayMillis: Long): TaskHandle {
+    return scheduler.asyncScheduler.runDelayed(plugin, task, delayMillis, TimeUnit.MILLISECONDS)
   }
 
   fun runLater(player: Player?, task: Runnable, delayTicks: Long): TaskHandle {

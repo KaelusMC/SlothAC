@@ -41,6 +41,9 @@
     <ID>ImplicitDefaultLocale:SuspiciousCommand.kt$SuspiciousCommand$String.format("%.1f", buffer)</ID>
     <ID>ImplicitDefaultLocale:SuspiciousCommand.kt$SuspiciousCommand$String.format("%.1f", topBuffer)</ID>
     <ID>LongMethod:AiCheck.kt$AiCheck$private fun onResponse(parsed: AiResult)</ID>
+    <ID>LongMethod:ConfigManager.kt$ConfigManager$private fun loadValues()</ID>
+    <ID>LongMethod:PlayerDataManagerTest.kt$PlayerDataManagerTest$private fun createFixture(): Fixture</ID>
+    <ID>LargeClass:MonitorCommand.kt$MonitorCommand : SlothCommandListener</ID>
     <ID>LongMethod:MonitorCommand.kt$MonitorCommand$override fun register(manager: CommandManager&lt;Sender>)</ID>
     <ID>LongMethod:MonitorCommand.kt$MonitorCommand$private fun buildPart( part: String, viewer: Player, target: Player, probability: Double, buffer: Double, ping: Int, dmgMultiplier: Double, trend: Double, settings: MonitorSettings, ): Component?</ID>
     <ID>LongParameterList:AiCheck.kt$AiCheck$( slothPlayer: SlothPlayer, private val plugin: SlothAC, private val aiService: AiService, private val configManager: ConfigManager, private val regionProvider: RegionProvider, private val alertManager: AlertManager, private val damageProcessor: DamageProcessor, private val debugManager: DebugManager, private val scheduler: SchedulerService, )</ID>
@@ -70,6 +73,10 @@
     <ID>MagicNumber:AIServer.kt$AIServer.ResponseCode.INVALID_SEQUENCE$422</ID>
     <ID>MagicNumber:AIServer.kt$AIServer.ResponseCode.NETWORK_ERROR$2</ID>
     <ID>MagicNumber:AIServer.kt$AIServer.ResponseCode.PARSE_ERROR$3</ID>
+    <ID>MagicNumber:AIServer.kt$AIServer.ResponseCode.NOT_FOUND$404</ID>
+    <ID>MagicNumber:AIServer.kt$AIServer.ResponseCode.PAYLOAD_TOO_LARGE$413</ID>
+    <ID>MagicNumber:AIServer.kt$AIServer.ResponseCode.RATE_LIMITED$429</ID>
+    <ID>MagicNumber:AIServer.kt$AIServer.ResponseCode.SERVICE_UNAVAILABLE$503</ID>
     <ID>MagicNumber:AIServer.kt$AIServer.ResponseCode.SERVER_ERROR$500</ID>
     <ID>MagicNumber:AIServer.kt$AIServer.ResponseCode.SUCCESS$200</ID>
     <ID>MagicNumber:AIServer.kt$AIServer.ResponseCode.UNAUTHORIZED$403</ID>
@@ -120,6 +127,7 @@
     <ID>MagicNumber:SlothPlayer.kt$SlothPlayer$0.03</ID>
     <ID>MagicNumber:SqlViolationDatabase.kt$SqlViolationDatabase.MonitorSettingsTable$16</ID>
     <ID>MagicNumber:SqlViolationDatabase.kt$SqlViolationDatabase.MonitorSettingsTable$36</ID>
+    <ID>MagicNumber:SqlViolationDatabase.kt$SqlViolationDatabase.PlayerLogins$36</ID>
     <ID>MagicNumber:SqlViolationDatabase.kt$SqlViolationDatabase.Punishments$255</ID>
     <ID>MagicNumber:SqlViolationDatabase.kt$SqlViolationDatabase.Punishments$36</ID>
     <ID>MagicNumber:SqlViolationDatabase.kt$SqlViolationDatabase.Violations$255</ID>
@@ -188,6 +196,8 @@
     <ID>TooGenericExceptionCaught:SlothAC.kt$SlothAC$e: Exception</ID>
     <ID>TooGenericExceptionCaught:SlothCore.kt$SlothCore$e: Exception</ID>
     <ID>TooGenericExceptionCaught:TimeUtil.kt$TimeUtil$ex: Exception</ID>
+    <ID>TooManyFunctions:AIServerProvider.kt$AIServerProvider : Supplier</ID>
+    <ID>TooManyFunctions:BatchingAiTransport.kt$BatchingAiTransport : AiTransport</ID>
     <ID>TooManyFunctions:ConfigManager.kt$ConfigManager</ID>
     <ID>TooManyFunctions:MessageUtil.kt$MessageUtil</ID>
     <ID>TooManyFunctions:MonitorCommand.kt$MonitorCommand : SlothCommandListener</ID>

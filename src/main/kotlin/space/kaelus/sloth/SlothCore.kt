@@ -71,6 +71,8 @@ constructor(
 
   fun disable() {
     plugin.server.servicesManager.unregister(SlothApi::class.java, slothApi)
+    runCatching { playerDataManager.saveAllBuffersSync() }
+    runCatching { aiServerProvider.shutdownTransport() }
     adventure.close()
     coroutines.close()
     databaseManager.shutdown()

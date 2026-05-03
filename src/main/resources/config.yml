@@ -63,6 +63,33 @@ ai:
     max-duration: 60
     # Multiplier for the time to wait for each subsequent error.
     multiplier: 2.0
+  batch:
+    # Send inferences in batches
+    enabled: true
+    # Max items per batch (server limit 256)
+    max-size: 32
+    # Flush partial batch after this delay
+    max-delay-ms: 50
+  retry:
+    # Total attempts (including initial)
+    max-attempts: 3
+    initial-delay-ms: 500
+    max-delay-ms: 5000
+    multiplier: 2.0
+    # Jitter (0.0 disables)
+    jitter: 0.25
+  persistent-buffer:
+    enabled: true
+    # Drop saved buffer after N hours offline
+    ttl-hours: 48
+    # Max buffer value that can be restored
+    cap-on-restore: 40.0
+    # Buffer drop per hour offline
+    decay-rate-per-hour: 2.0
+    # Restore as-is within this window
+    disconnect-window-seconds: 300
+    # Skip save below this value
+    save-threshold: 1.0
 
 client-brand:
   # This means it won't broadcast their brand to operators if the brand matches the following regexes
@@ -120,7 +147,12 @@ debug:
   # Category toggles
   categories:
     probability: false    # AI probability values per check
-    timeout: false        # API timeouts and retries
+    api-error:
+      timeout: true              # Request timed out
+      network: false             # Connection refused/reset
+      rate-limited: false        # HTTP 429
+      service-unavailable: true  # HTTP 503
+    persistent-buffer: false  # AI buffer save/restore on quit/login
     rate-limit: false     # Rate limiting events
     worldguard: false     # WorldGuard region checks
     packet-duplication: false  # Mojang packet duplication bugs

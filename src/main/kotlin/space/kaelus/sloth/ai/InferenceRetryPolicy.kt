@@ -15,16 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package space.kaelus.sloth.debug
+package space.kaelus.sloth.ai
 
-enum class DebugCategory(val configKey: String) {
-  AI_PROBABILITY("probability"),
-  AI_API_TIMEOUT("api-error.timeout"),
-  AI_API_NETWORK("api-error.network"),
-  AI_API_RATE_LIMITED("api-error.rate-limited"),
-  AI_API_SERVICE_UNAVAILABLE("api-error.service-unavailable"),
-  AI_PERSISTENT_BUFFER("persistent-buffer"),
-  RATE_LIMIT("rate-limit"),
-  WORLDGUARD("worldguard"),
-  PACKET_DUPLICATION("packet-duplication"),
+import space.kaelus.sloth.server.AIServer
+
+object InferenceRetryPolicy {
+  fun shouldRetry(throwable: Throwable): Boolean {
+    if (throwable !is AIServer.RequestException) return false
+    return when (throwable.code) {
+      AIServer.ResponseCode.TIMEOUT,
+      AIServer.ResponseCode.NETWORK_ERROR,
+      AIServer.ResponseCode.SERVER_ERROR,
+      AIServer.ResponseCode.SERVICE_UNAVAILABLE,
+      AIServer.ResponseCode.RATE_LIMITED -> true
+      else -> false
+    }
+  }
 }

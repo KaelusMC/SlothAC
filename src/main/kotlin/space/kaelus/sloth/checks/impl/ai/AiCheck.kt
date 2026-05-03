@@ -67,6 +67,11 @@ class AiCheck(
   var buffer: Double = 0.0
     private set
 
+  fun restoreBuffer(value: Double) {
+    val sanitized = kotlin.math.max(0.0, value)
+    buffer = kotlin.math.max(buffer, sanitized)
+  }
+
   var lastProbability: Double = 0.0
     private set
 
@@ -318,8 +323,9 @@ class AiCheck(
       val logMessage =
         "[AiCheck] API Error ${cause.code} for player ${slothPlayer.player.name}: ${cause.message}"
 
-      if (cause.code == AIServer.ResponseCode.TIMEOUT) {
-        debugManager.log(DebugCategory.AI_TIMEOUT, logMessage)
+      val transientCategory = transientCategoryFor(cause.code)
+      if (transientCategory != null) {
+        debugManager.log(transientCategory, logMessage)
       } else {
         plugin.logger.warning(logMessage)
       }
@@ -330,6 +336,15 @@ class AiCheck(
     }
     return null
   }
+
+  private fun transientCategoryFor(code: AIServer.ResponseCode): DebugCategory? =
+    when (code) {
+      AIServer.ResponseCode.TIMEOUT -> DebugCategory.AI_API_TIMEOUT
+      AIServer.ResponseCode.NETWORK_ERROR -> DebugCategory.AI_API_NETWORK
+      AIServer.ResponseCode.RATE_LIMITED -> DebugCategory.AI_API_RATE_LIMITED
+      AIServer.ResponseCode.SERVICE_UNAVAILABLE -> DebugCategory.AI_API_SERVICE_UNAVAILABLE
+      else -> null
+    }
 
   private fun borrowSnapshot(size: Int): Array<TickData?> {
     val buffer = snapshotBuffer.getAndSet(null)

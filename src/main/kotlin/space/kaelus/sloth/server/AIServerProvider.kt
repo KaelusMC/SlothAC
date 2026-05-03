@@ -19,38 +19,120 @@ package space.kaelus.sloth.server
 
 import java.util.function.Supplier
 import space.kaelus.sloth.SlothAC
+import space.kaelus.sloth.ai.AiTransport
+import space.kaelus.sloth.ai.BatchingAiTransport
+import space.kaelus.sloth.ai.RetryExecutor
+import space.kaelus.sloth.ai.RetryingAiBatchTransport
+import space.kaelus.sloth.ai.RetryingAiTransport
 import space.kaelus.sloth.config.ConfigManager
+import space.kaelus.sloth.scheduler.SchedulerService
 
-class AIServerProvider(private val plugin: SlothAC, private val configManager: ConfigManager) :
-  Supplier<AIServer?> {
-  private var currentInstance: AIServer? = null
-  private var apiCooldown: ApiCooldown? = null
+class AIServerProvider(
+  private val plugin: SlothAC,
+  private val configManager: ConfigManager,
+  private val scheduler: SchedulerService,
+) : Supplier<AiTransport?> {
+  @Volatile private var currentTransport: AiTransport? = null
+  @Volatile private var batchingTransport: BatchingAiTransport? = null
+  @Volatile private var apiCooldown: ApiCooldown? = null
 
   init {
     reload()
   }
 
   fun reload() {
-    val initialDuration = configManager.config.getLong("ai.backoff.initial-duration", 5)
-    val maxDuration = configManager.config.getLong("ai.backoff.max-duration", 60)
-    val multiplier = configManager.config.getDouble("ai.backoff.multiplier", 2.0)
-    apiCooldown = ApiCooldown(initialDuration, maxDuration, multiplier)
-    if (configManager.isAiEnabled()) {
-      val url = configManager.aiServerUrl
-      val key = configManager.aiApiKey
+    shutdown()
+    apiCooldown = buildCooldown()
+    currentTransport = buildTransport()
+  }
 
-      if (url.isBlank() || key == "API-KEY") {
-        plugin.logger.warning("[AiCheck] AI is enabled but not configured.")
-        currentInstance = null
-      } else {
-        plugin.logger.info("[AiCheck] AI Check loaded.")
-        currentInstance = AIServer(plugin, url, key, apiCooldown!!)
+  fun shutdown() {
+    batchingTransport?.stop()
+    batchingTransport = null
+    currentTransport = null
+  }
+
+  fun shutdownTransport() {
+    shutdown()
+    AIServer.shutdownHttpClient()
+  }
+
+  override fun get(): AiTransport? = currentTransport
+
+  private fun buildTransport(): AiTransport? {
+    val server = buildServer() ?: return null
+    return if (configManager.batchEnabled) wrapWithBatching(server) else wrapWithRetry(server)
+  }
+
+  private fun buildServer(): AIServer? {
+    val url = configManager.aiServerUrl
+    val key = configManager.aiApiKey
+    val state =
+      when {
+        !configManager.isAiEnabled() -> ServerState.DISABLED
+        url.isBlank() || key == "API-KEY" -> ServerState.NOT_CONFIGURED
+        else -> ServerState.READY
       }
-    } else {
-      plugin.logger.info("[AiCheck] AI Check disabled.")
-      currentInstance = null
+    return when (state) {
+      ServerState.DISABLED -> {
+        plugin.logger.info("[AiCheck] AI Check disabled.")
+        null
+      }
+      ServerState.NOT_CONFIGURED -> {
+        plugin.logger.warning("[AiCheck] AI is enabled but not configured.")
+        null
+      }
+      ServerState.READY -> {
+        plugin.logger.info("[AiCheck] AI Check loaded.")
+        AIServer(plugin, url, key, apiCooldown!!)
+      }
     }
   }
 
-  override fun get(): AIServer? = currentInstance
+  private enum class ServerState {
+    DISABLED,
+    NOT_CONFIGURED,
+    READY,
+  }
+
+  private fun wrapWithRetry(server: AIServer): AiTransport =
+    RetryingAiTransport(server, newRetryExecutor())
+
+  private fun wrapWithBatching(server: AIServer): AiTransport {
+    val retriedBatch = RetryingAiBatchTransport(server, newRetryExecutor())
+    val retriedSingle = RetryingAiTransport(server, newRetryExecutor())
+    val batching =
+      BatchingAiTransport(
+        batchTransport = retriedBatch,
+        singleTransport = retriedSingle,
+        scheduler = scheduler,
+        logger = plugin.logger,
+        config =
+          BatchingAiTransport.BatchConfig(
+            maxBatchSize = configManager.batchMaxSize.coerceIn(1, AIServer.BATCH_MAX_ITEMS),
+            maxDelayMs = configManager.batchMaxDelayMs.coerceAtLeast(1L),
+          ),
+      )
+    batching.start()
+    batchingTransport = batching
+    return batching
+  }
+
+  private fun newRetryExecutor(): RetryExecutor = RetryExecutor(scheduler, buildRetryConfig())
+
+  private fun buildCooldown(): ApiCooldown {
+    val initialDuration = configManager.config.getLong("ai.backoff.initial-duration", 5)
+    val maxDuration = configManager.config.getLong("ai.backoff.max-duration", 60)
+    val multiplier = configManager.config.getDouble("ai.backoff.multiplier", 2.0)
+    return ApiCooldown(initialDuration, maxDuration, multiplier)
+  }
+
+  private fun buildRetryConfig(): RetryExecutor.RetryConfig =
+    RetryExecutor.RetryConfig(
+      maxAttempts = configManager.retryMaxAttempts.coerceAtLeast(1),
+      initialDelayMs = configManager.retryInitialDelayMs.coerceAtLeast(0L),
+      maxDelayMs = configManager.retryMaxDelayMs.coerceAtLeast(0L),
+      multiplier = configManager.retryMultiplier.coerceAtLeast(1.0),
+      jitter = configManager.retryJitter.coerceIn(0.0, 1.0),
+    )
 }

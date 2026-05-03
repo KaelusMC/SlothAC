@@ -19,10 +19,11 @@ group = "space.kaelus.sloth"
 
 version = "1.0"
 
-val packetEventsSpigot = "com.github.retrooper:packetevents-spigot:2.11.2"
+val packetEventsSpigot = "com.github.KaelusMC.packetevents:packetevents-spigot:v2026.04.26-f4aaadc"
 
 repositories {
   mavenCentral()
+  maven("https://jitpack.io")
   maven("https://repo.papermc.io/repository/maven-public/")
   maven("https://repo.codemc.io/repository/maven-releases/")
   maven("https://repo.codemc.io/repository/maven-snapshots/")
@@ -277,6 +278,15 @@ bukkit {
     }
     register("sloth.prob") {
       description = "Allows usage of the probability display command"
+      default = Permission.Default.OP
+      children = listOf("sloth.prob.self", "sloth.prob.list")
+    }
+    register("sloth.prob.self") {
+      description = "Allows enabling the probability display only on self"
+      default = Permission.Default.FALSE
+    }
+    register("sloth.prob.list") {
+      description = "Allows listing active monitor sessions"
       default = Permission.Default.OP
     }
     register("sloth.view") {

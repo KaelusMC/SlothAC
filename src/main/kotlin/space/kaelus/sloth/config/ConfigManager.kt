@@ -79,6 +79,48 @@ class ConfigManager(private val plugin: SlothAC) {
   var aiDisabledRegions: Map<String, List<String>> = emptyMap()
     private set
 
+  var persistentBufferEnabled: Boolean = false
+    private set
+
+  var persistentBufferTtlMillis: Long = 0L
+    private set
+
+  var persistentBufferCap: Double = 0.0
+    private set
+
+  var persistentBufferDecayPerHour: Double = 0.0
+    private set
+
+  var persistentBufferDisconnectWindowMillis: Long = 0L
+    private set
+
+  var persistentBufferSaveThreshold: Double = 0.0
+    private set
+
+  var batchEnabled: Boolean = true
+    private set
+
+  var batchMaxSize: Int = 0
+    private set
+
+  var batchMaxDelayMs: Long = 0L
+    private set
+
+  var retryMaxAttempts: Int = 0
+    private set
+
+  var retryInitialDelayMs: Long = 0L
+    private set
+
+  var retryMaxDelayMs: Long = 0L
+    private set
+
+  var retryMultiplier: Double = 0.0
+    private set
+
+  var retryJitter: Double = 0.0
+    private set
+
   private var ignoredClientPatterns: List<Pattern> = emptyList()
   private var disconnectBlacklistedForge = false
 
@@ -201,6 +243,39 @@ class ConfigManager(private val plugin: SlothAC) {
     aiWorldGuardEnabled = config.getBoolean("ai.worldguard.enabled", true)
     aiDisabledRegions = loadDisabledRegions()
 
+    persistentBufferEnabled = config.getBoolean("ai.persistent-buffer.enabled", true)
+    val ttlHours =
+      config.getLong("ai.persistent-buffer.ttl-hours", DEFAULT_BUFFER_TTL_HOURS).also {
+        if (it <= 0L) {
+          plugin.logger.warning(
+            "[Config] ai.persistent-buffer.ttl-hours=$it is invalid, using $DEFAULT_BUFFER_TTL_HOURS"
+          )
+        }
+      }
+    persistentBufferTtlMillis = ttlHours.coerceAtLeast(1L) * MILLIS_PER_HOUR
+    persistentBufferCap =
+      config.getDouble("ai.persistent-buffer.cap-on-restore", DEFAULT_BUFFER_CAP)
+    persistentBufferDecayPerHour =
+      config.getDouble("ai.persistent-buffer.decay-rate-per-hour", DEFAULT_BUFFER_DECAY)
+    persistentBufferDisconnectWindowMillis =
+      config.getLong(
+        "ai.persistent-buffer.disconnect-window-seconds",
+        DEFAULT_BUFFER_DISCONNECT_WINDOW_SECS,
+      ) * MILLIS_PER_SEC
+    persistentBufferSaveThreshold =
+      config.getDouble("ai.persistent-buffer.save-threshold", DEFAULT_BUFFER_SAVE_THRESHOLD)
+
+    batchEnabled = config.getBoolean("ai.batch.enabled", true)
+    batchMaxSize = config.getInt("ai.batch.max-size", DEFAULT_BATCH_MAX_SIZE)
+    batchMaxDelayMs = config.getLong("ai.batch.max-delay-ms", DEFAULT_BATCH_MAX_DELAY_MS)
+
+    retryMaxAttempts = config.getInt("ai.retry.max-attempts", DEFAULT_RETRY_MAX_ATTEMPTS)
+    retryInitialDelayMs =
+      config.getLong("ai.retry.initial-delay-ms", DEFAULT_RETRY_INITIAL_DELAY_MS)
+    retryMaxDelayMs = config.getLong("ai.retry.max-delay-ms", DEFAULT_RETRY_MAX_DELAY_MS)
+    retryMultiplier = config.getDouble("ai.retry.multiplier", DEFAULT_RETRY_MULTIPLIER)
+    retryJitter = config.getDouble("ai.retry.jitter", DEFAULT_RETRY_JITTER)
+
     val ignoredPatterns = ArrayList<Pattern>()
     for (pattern in config.getStringList("client-brand.ignored-clients")) {
       try {
@@ -270,5 +345,24 @@ class ConfigManager(private val plugin: SlothAC) {
       }
     }
     return false
+  }
+
+  private companion object {
+    const val MILLIS_PER_SEC = 1000L
+    const val MILLIS_PER_HOUR = 3_600_000L
+    const val DEFAULT_BUFFER_TTL_HOURS = 48L
+    const val DEFAULT_BUFFER_CAP = 40.0
+    const val DEFAULT_BUFFER_DECAY = 2.0
+    const val DEFAULT_BUFFER_DISCONNECT_WINDOW_SECS = 300L
+    const val DEFAULT_BUFFER_SAVE_THRESHOLD = 1.0
+
+    const val DEFAULT_BATCH_MAX_SIZE = 32
+    const val DEFAULT_BATCH_MAX_DELAY_MS = 50L
+
+    const val DEFAULT_RETRY_MAX_ATTEMPTS = 3
+    const val DEFAULT_RETRY_INITIAL_DELAY_MS = 500L
+    const val DEFAULT_RETRY_MAX_DELAY_MS = 5000L
+    const val DEFAULT_RETRY_MULTIPLIER = 2.0
+    const val DEFAULT_RETRY_JITTER = 0.25
   }
 }

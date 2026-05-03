@@ -34,8 +34,9 @@ import space.kaelus.sloth.alert.AlertType
 import space.kaelus.sloth.api.event.SlothEventBus
 import space.kaelus.sloth.checks.CheckManager
 import space.kaelus.sloth.checks.impl.ai.DataCollectorManager
+import space.kaelus.sloth.checks.impl.ai.PersistentBufferService
 import space.kaelus.sloth.config.ConfigManager
-import space.kaelus.sloth.data.DataSession
+import space.kaelus.sloth.database.DatabaseManager
 import space.kaelus.sloth.punishment.PunishmentManager
 import space.kaelus.sloth.scheduler.SchedulerService
 import space.kaelus.sloth.server.AIServerProvider
@@ -53,6 +54,8 @@ constructor(
   private val checkManagerFactory: CheckManager.Factory,
   private val punishmentManagerFactory: PunishmentManager.Factory,
   private val eventBus: SlothEventBus,
+  private val databaseManager: DatabaseManager,
+  private val persistentBufferService: PersistentBufferService,
 ) : Listener {
   private val players = ConcurrentHashMap<UUID, SlothPlayer>()
 
@@ -62,16 +65,31 @@ constructor(
 
   @EventHandler
   fun onQuit(event: PlayerQuitEvent) {
-    val player = event.player
-    val uuid = player.uniqueId
+    cleanupPlayer(event.player.uniqueId, event.player)
+  }
 
-    val session: DataSession? = dataCollectorManager.getSession(uuid)
-    if (session != null) {
+  private fun cleanupPlayer(uuid: UUID, player: Player?) {
+    if (dataCollectorManager.getSession(uuid) != null) {
       dataCollectorManager.stopCollecting(uuid)
     }
+    if (player != null) {
+      runCatching { alertManager.handlePlayerQuit(player) }
+        .onFailure {
+          plugin.logger.log(
+            java.util.logging.Level.WARNING,
+            "alertManager.handlePlayerQuit failed for ${player.name}",
+            it,
+          )
+        }
+    }
+    val tracked = players.remove(uuid) ?: return
+    scheduler.runAsync { persistentBufferService.saveOnQuit(tracked) }
+  }
 
-    alertManager.handlePlayerQuit(player)
-    players.remove(uuid)
+  fun saveAllBuffersSync() {
+    for (slothPlayer in players.values) {
+      persistentBufferService.saveOnShutdown(slothPlayer)
+    }
   }
 
   fun getPlayer(player: Player?): SlothPlayer? {
@@ -99,11 +117,12 @@ constructor(
         if (!player.isOnline || players.containsKey(player.uniqueId)) {
           return@Runnable
         }
-        if (exemptManager.isDisabled(player)) {
-          return@Runnable
-        }
 
-        players[player.uniqueId] =
+        val loginTimestamp = System.currentTimeMillis()
+        val playerUuid = player.uniqueId
+        scheduler.runAsync { databaseManager.database.recordLogin(playerUuid, loginTimestamp) }
+
+        val slothPlayer =
           SlothPlayer(
             player = player,
             user = user,
@@ -119,6 +138,8 @@ constructor(
             punishmentManagerFactory = punishmentManagerFactory,
             eventBus = eventBus,
           )
+        players[player.uniqueId] = slothPlayer
+        persistentBufferService.restoreOnLogin(slothPlayer)
 
         if (
           player.hasPermission("sloth.alerts") &&
@@ -151,7 +172,7 @@ constructor(
 
   fun handleUserDisconnect(user: com.github.retrooper.packetevents.protocol.player.User) {
     val uuid = user.uuid ?: return
-    players.remove(uuid)
+    cleanupPlayer(uuid, players[uuid]?.player)
   }
 
   fun reloadAllPlayers() {

@@ -52,6 +52,7 @@ import space.kaelus.sloth.checks.impl.ai.ActionManager
 import space.kaelus.sloth.checks.impl.ai.AiCheck
 import space.kaelus.sloth.checks.impl.ai.DataCollectorCheck
 import space.kaelus.sloth.checks.impl.ai.DataCollectorManager
+import space.kaelus.sloth.checks.impl.ai.PersistentBufferService
 import space.kaelus.sloth.checks.impl.combat.AimProcessor
 import space.kaelus.sloth.checks.impl.misc.ClientBrand
 import space.kaelus.sloth.command.CommandManager
@@ -117,6 +118,7 @@ private fun coreModule(plugin: SlothAC) = module {
   singleOf(::MonitorViewService)
   singleOf(::ExemptManager)
   singleOf(::DataCollectorManager)
+  singleOf(::PersistentBufferService)
   singleOf(::WorldGuardManager)
   single<RegionProvider> { get<WorldGuardManager>() }
   single<DamageProcessor> { AiDamageProcessor(get()) }
