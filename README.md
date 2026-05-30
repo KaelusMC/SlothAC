@@ -30,14 +30,9 @@ Sloth is an open-source anti-cheat plugin for Minecraft servers.
 
 ## Important before you install
 
-Sloth's AI check uses the official Sloth API. Before enabling it, make sure your server has access.
+Sloth's AI check uses the official Sloth API. Access is arranged in the [Discord server](https://dsc.gg/kaelus).
 
-Access requests are handled in the [Discord server](https://dsc.gg/kaelus).
-
-Once access is set up, fill in these values in [`config.yml`](src/main/resources/config.yml):
-
-- `ai.server`
-- `ai.api-key`
+To connect a server to the API, run `/sloth connect` and authorize it in the [Sloth panel](https://panel.kaelus.dev).
 
 If API access is not available yet, disable the AI check for now.
 
@@ -53,9 +48,7 @@ If API access is not available yet, disable the AI check for now.
 1. Download the latest release from [GitHub Releases](https://github.com/KaelusMC/SlothAC/releases).
 2. Place the main `SlothAC-<version>.jar` in the server `plugins/` directory.
 3. Start the server once so Sloth can generate its configuration files.
-4. In [`config.yml`](src/main/resources/config.yml), set:
-   - `ai.server`
-   - `ai.api-key`
+4. Run `/sloth connect` and authorize the server in the panel.
 5. If needed, configure storage:
    - SQLite is the default
    - MySQL and MariaDB are also supported
@@ -74,6 +67,9 @@ If API access is not available yet, disable the AI check for now.
 
 | Command | Purpose |
 | --- | --- |
+| `/sloth connect` | Link this server to the panel |
+| `/sloth connect status` | Show the panel connection status |
+| `/sloth disconnect` | Unlink this server from the panel |
 | `/sloth alerts` | Toggle violation alerts |
 | `/sloth suspicious <list\|top\|flagged>` | Review suspicious or previously flagged online players |
 | `/sloth profile <player>` | Open a player's live profile |

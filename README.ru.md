@@ -30,14 +30,9 @@ Sloth - это AI-античит с открытым исходным кодом
 
 ## Важный момент перед установкой
 
-AI-проверка Sloth использует официальный Sloth API. Перед её включением необходимо получить доступ к API.
+AI-проверка Sloth использует официальный Sloth API. Доступ запрашивается в [Discord](https://dsc.gg/kaelus).
 
-Запросить доступ можно в [Discord](https://dsc.gg/kaelus).
-
-После этого в [`config.yml`](src/main/resources/config.yml) нужно указать:
-
-- `ai.server`
-- `ai.api-key`
+Чтобы подключить сервер к API, выполните `/sloth connect` и подтвердите привязку в [панели Sloth](https://panel.kaelus.dev).
 
 При отсутствии доступа к API AI-проверку следует временно отключить.
 
@@ -53,9 +48,7 @@ AI-проверка Sloth использует официальный Sloth API.
 1. Скачать актуальный релиз из [GitHub Releases](https://github.com/KaelusMC/SlothAC/releases).
 2. Поместить основной `SlothAC-<version>.jar` в каталог `plugins/`.
 3. Один раз запустить сервер, чтобы Sloth создал конфиги.
-4. В [`config.yml`](src/main/resources/config.yml) указать:
-   - `ai.server`
-   - `ai.api-key`
+4. Выполнить `/sloth connect` и подтвердить привязку в панели.
 5. При необходимости настроить хранилище:
    - SQLite используется по умолчанию
    - MySQL и MariaDB тоже поддерживаются
@@ -74,6 +67,9 @@ AI-проверка Sloth использует официальный Sloth API.
 
 | Команда | Что делает |
 | --- | --- |
+| `/sloth connect` | Привязывает сервер к панели |
+| `/sloth connect status` | Показывает статус подключения к панели |
+| `/sloth disconnect` | Отвязывает сервер от панели |
 | `/sloth alerts` | Включает и выключает уведомления о нарушениях |
 | `/sloth suspicious <list\|top\|flagged>` | Показывает подозрительных игроков и онлайн-игроков с флагами |
 | `/sloth profile <player>` | Открывает профиль игрока |
