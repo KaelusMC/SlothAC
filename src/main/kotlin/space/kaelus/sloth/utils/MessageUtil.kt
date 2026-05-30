@@ -98,6 +98,11 @@ object MessageUtil {
   }
 
   @JvmStatic
+  fun sendMessage(sender: CommandSender, component: Component) {
+    adventure.sender(sender).sendMessage(component)
+  }
+
+  @JvmStatic
   fun sendMessageList(sender: CommandSender, key: Message, vararg placeholders: String) {
     getMessageList(key, *placeholders).forEach { line ->
       adventure.sender(sender).sendMessage(line)

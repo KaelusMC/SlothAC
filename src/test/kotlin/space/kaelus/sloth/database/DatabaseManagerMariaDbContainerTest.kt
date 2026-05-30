@@ -36,6 +36,7 @@ import org.testcontainers.containers.MariaDBContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import space.kaelus.sloth.SlothAC
 import space.kaelus.sloth.config.ConfigManager
+import space.kaelus.sloth.connect.CredentialsStore
 import space.kaelus.sloth.monitor.MonitorMode
 import space.kaelus.sloth.monitor.MonitorNameMode
 import space.kaelus.sloth.monitor.MonitorSettings
@@ -161,7 +162,7 @@ class DatabaseManagerMariaDbContainerTest {
     copyResourceTo(dataDirectory, "punishments.yml")
     copyResourceTo(dataDirectory, "monitor.yml")
 
-    return TestRuntime(plugin, ConfigManager(plugin), logger)
+    return TestRuntime(plugin, ConfigManager(plugin, CredentialsStore(plugin)), logger)
   }
 
   private fun withMariaDbContainer(databaseName: String, block: (MariaDBContainer<*>) -> Unit) {

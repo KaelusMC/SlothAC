@@ -37,6 +37,7 @@ import org.flywaydb.core.Flyway
 import org.junit.jupiter.api.Test
 import space.kaelus.sloth.SlothAC
 import space.kaelus.sloth.config.ConfigManager
+import space.kaelus.sloth.connect.CredentialsStore
 import space.kaelus.sloth.monitor.MonitorMode
 import space.kaelus.sloth.monitor.MonitorNameMode
 import space.kaelus.sloth.monitor.MonitorSettings
@@ -237,7 +238,7 @@ class DatabaseManagerTest {
       jdbcUrl = "jdbc:sqlite:${dataDirectory.resolve("violations.db").absolutePathString()}",
       plugin = plugin,
       logger = logger,
-      configManager = ConfigManager(plugin),
+      configManager = ConfigManager(plugin, CredentialsStore(plugin)),
     )
   }
 

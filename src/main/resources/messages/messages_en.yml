@@ -11,6 +11,30 @@ reload-success: "<prefix> <color:#a8ff78>Sloth configuration reloaded.</color>"
 storage:
   degraded: "<prefix> <color:#f6d365>Persistent storage is unavailable. Sloth is using temporary storage for data. It will disappear after a restart.</color>"
 
+connect:
+  disabled: "<prefix> <color:#ff4b2b>Connecting is disabled: set</color> <white>connect.panel-url</white> <color:#ff4b2b>in config.yml.</color>"
+  console-only: "<prefix> <color:#ff4b2b>For security, manage the panel link from the server console.</color>"
+  insecure-url: "<prefix> <color:#ff4b2b>Refusing to send credentials over an insecure URL.</color> <gray>Use https for</gray> <white>connect.panel-url</white><gray>.</gray>"
+  start: "<prefix> <white>To link this server,</white> <link><color:#74ebd5><u>click here to open the panel</u></color></link><white>, then enter code</white> <color:#a8ff78><code></color>"
+  url: "<prefix> <gray>Or open</gray> <white><url></white> <gray>and enter</gray> <color:#a8ff78><code></color>"
+  waiting: "<prefix> <color:#f6d365>Waiting for you to authorize in the panel...</color>"
+  restarted: "<prefix> <gray>Cancelled the previous link request.</gray>"
+  success: "<prefix> <color:#a8ff78>Connected!</color> <gray>This server is linked to</gray> <white><server></white><gray>. AI checks are ready.</gray>"
+  success-needs-plan: "<prefix> <color:#a8ff78>Connected to</color> <white><server></white><color:#f6d365>, but it has no active plan yet. Pick a plan in the panel to enable AI checks.</color>"
+  denied: "<prefix> <color:#ff4b2b>Connection was declined in the panel.</color>"
+  expired: "<prefix> <color:#ff4b2b>The code expired.</color> <gray>Run</gray> <white>/sloth connect</white> <gray>again.</gray>"
+  error: "<prefix> <color:#ff4b2b>Connect failed:</color> <white><reason></white>"
+  disconnect-confirm: "<prefix> <color:#f6d365>This unlinks the server and revokes its key.</color> <gray>Run</gray> <white>/sloth disconnect confirm</white> <gray>within 30s to proceed.</gray>"
+  disconnect-no-pending: "<prefix> <gray>Nothing to confirm. Run</gray> <white>/sloth disconnect</white> <gray>first.</gray>"
+  disconnect-success: "<prefix> <color:#a8ff78>Disconnected.</color> <gray>This server's IP was removed from the panel and the local key cleared.</gray>"
+  disconnect-local-only: "<prefix> <color:#f6d365>Local link removed, but the panel could not be reached.</color> <gray>Revoke this server in the panel manually.</gray>"
+  disconnect-nothing: "<prefix> <gray>This server is not linked.</gray>"
+  status-header: "<gradient:#8e9eab:#eef2f3>--- Sloth connection ---</gradient>"
+  status-linked: "<color:#a8ff78> ▶ Linked to <white><server></white></color><gray> (IP: <white><ip></white>)</gray>"
+  status-key: "<gray> Key: <white><key></white></gray>"
+  status-server-url: "<gray> Inference: <white><url></white></gray>"
+  status-not-linked: "<prefix> <gray>This server is not linked. Run</gray> <white>/sloth connect</white><gray>.</gray>"
+
 datacollect:
   details-required: "<prefix> <color:#ff4b2b>Details are required for LEGIT and CHEAT types.</color>"
   invalid-type: "<prefix> <color:#ff4b2b>Invalid status. Use LEGIT or CHEAT.</color>"
@@ -129,6 +153,9 @@ help:
   - " <color:#00b4db>/<command> punish reset <player></color> <gray>- Reset all of a player's violation levels</gray>"
   - " <color:#00b4db>/<command> exempt</color> <gray>- Exempt a player from checks</gray>"
   - " <color:#00b4db>/<command> reload</color> <gray>- Reload the configuration</gray>"
+  - " <color:#00b4db>/<command> connect</color> <gray>- Link this server to the Sloth panel</gray>"
+  - " <color:#00b4db>/<command> disconnect</color> <gray>- Unlink this server from the panel</gray>"
+  - " <color:#00b4db>/<command> status</color> <gray>- Show the panel connection status</gray>"
   - " <color:#00b4db>/<command> help</color> <gray>- View this help message</gray>"
 
 internal:
