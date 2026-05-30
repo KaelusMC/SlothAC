@@ -60,6 +60,7 @@ import space.kaelus.sloth.command.CommandRegister
 import space.kaelus.sloth.command.SlothCommand
 import space.kaelus.sloth.command.commands.admin.AlertsCommand
 import space.kaelus.sloth.command.commands.admin.BrandsCommand
+import space.kaelus.sloth.command.commands.admin.ConnectCommand
 import space.kaelus.sloth.command.commands.admin.DataCollectCommand
 import space.kaelus.sloth.command.commands.admin.ExemptCommand
 import space.kaelus.sloth.command.commands.admin.PunishCommand
@@ -75,6 +76,8 @@ import space.kaelus.sloth.command.commands.info.ViewCommand
 import space.kaelus.sloth.command.handler.SlothCommandFailureHandler
 import space.kaelus.sloth.config.ConfigManager
 import space.kaelus.sloth.config.LocaleManager
+import space.kaelus.sloth.connect.ConnectService
+import space.kaelus.sloth.connect.CredentialsStore
 import space.kaelus.sloth.coroutines.SlothCoroutines
 import space.kaelus.sloth.damage.AiDamageProcessor
 import space.kaelus.sloth.damage.DamageProcessor
@@ -108,7 +111,9 @@ private fun coreModule(plugin: SlothAC) = module {
 
   singleOf(::SchedulerService)
   singleOf(::SlothCoroutines)
+  singleOf(::CredentialsStore)
   singleOf(::ConfigManager)
+  singleOf(::ConnectService)
   singleOf(::LocaleManager)
   singleOf(::DatabaseManager)
   singleOf(::DebugManager)
@@ -158,6 +163,7 @@ private fun commandModule() = module {
 private fun adminCommandsModule() = module {
   singleOf(::AlertsCommand).bind<SlothCommand>()
   singleOf(::BrandsCommand).bind<SlothCommand>()
+  singleOf(::ConnectCommand).bind<SlothCommand>()
   singleOf(::DataCollectCommand).bind<SlothCommand>()
   singleOf(::ExemptCommand).bind<SlothCommand>()
   singleOf(::PunishCommand).bind<SlothCommand>()

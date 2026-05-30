@@ -21,6 +21,8 @@ import java.util.UUID
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
 import org.bukkit.command.CommandSender
+import org.bukkit.command.ConsoleCommandSender
+import org.bukkit.command.RemoteConsoleCommandSender
 import org.bukkit.entity.Player
 import org.incendo.cloud.SenderMapper
 import space.kaelus.sloth.utils.MessageUtil
@@ -64,6 +66,9 @@ class SenderFactory(private val adventure: BukkitAudiences) : SenderMapper<Comma
     override val isPlayer: Boolean
       get() = true
 
+    override val isTrustedConsole: Boolean
+      get() = false
+
     override val nativeSender: CommandSender
       get() = bukkitPlayer
 
@@ -96,6 +101,9 @@ class SenderFactory(private val adventure: BukkitAudiences) : SenderMapper<Comma
 
     override val isPlayer: Boolean
       get() = false
+
+    override val isTrustedConsole: Boolean
+      get() = sender is ConsoleCommandSender || sender is RemoteConsoleCommandSender
 
     override val nativeSender: CommandSender
       get() = sender

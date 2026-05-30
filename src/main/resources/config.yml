@@ -11,9 +11,7 @@ ai:
   # Enable AI check?
   enabled: true
   # URL for the AI inference API.
-  server: "https://url/v1/inference"
-  # The API key for the AI server.
-  api-key: "API-KEY"
+  server: "https://api.kaelus.dev/v1/inference"
   # The number of ticks to send in a sequence to the AI.
   sequence: 40
   # The number of ticks to wait before sending the next sequence.
@@ -90,6 +88,10 @@ ai:
     disconnect-window-seconds: 300
     # Skip save below this value
     save-threshold: 1.0
+
+connect:
+  # Base URL of the Sloth panel (used by "/sloth connect").
+  panel-url: "https://panel.kaelus.dev"
 
 client-brand:
   # This means it won't broadcast their brand to operators if the brand matches the following regexes

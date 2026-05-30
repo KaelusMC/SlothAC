@@ -30,9 +30,10 @@ import org.spongepowered.configurate.CommentedConfigurationNode
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import ru.vyarus.yaml.updater.YamlUpdater
 import space.kaelus.sloth.SlothAC
+import space.kaelus.sloth.connect.CredentialsStore
 import space.kaelus.sloth.debug.DebugCategory
 
-class ConfigManager(private val plugin: SlothAC) {
+class ConfigManager(private val plugin: SlothAC, private val credentialsStore: CredentialsStore) {
   var config: ConfigView = ConfigView(CommentedConfigurationNode.root())
     private set
 
@@ -47,6 +48,9 @@ class ConfigManager(private val plugin: SlothAC) {
     private set
 
   var aiApiKey: String = ""
+    private set
+
+  var connectPanelUrl: String = ""
     private set
 
   var aiSequence: Int = 0
@@ -226,7 +230,23 @@ class ConfigManager(private val plugin: SlothAC) {
   private fun loadValues() {
     aiEnabled = config.getBoolean("ai.enabled", false)
     aiServerUrl = config.getString("ai.server", "")
-    aiApiKey = config.getString("ai.api-key", "API-KEY")
+    val configKey = config.getString("ai.api-key", "API-KEY")
+    aiApiKey = configKey
+    credentialsStore
+      .read()
+      ?.secretKey
+      ?.takeIf { it.isNotBlank() }
+      ?.let {
+        aiApiKey = it
+        if (configKey.isNotBlank() && configKey != "API-KEY") {
+          plugin.logger.warning(
+            "config.yml still has ai.api-key set, but this server is linked via /sloth connect - " +
+              "the config key is ignored. Remove it from config.yml."
+          )
+        }
+      }
+
+    connectPanelUrl = config.getString("connect.panel-url", "https://panel.kaelus.dev")
     aiSequence = config.getInt("ai.sequence", 40)
     aiStep = config.getInt("ai.step", 10)
     aiContinuous = config.getBoolean("ai.continuous", false)

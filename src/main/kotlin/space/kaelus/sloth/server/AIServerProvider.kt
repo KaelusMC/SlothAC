@@ -70,7 +70,8 @@ class AIServerProvider(
     val state =
       when {
         !configManager.isAiEnabled() -> ServerState.DISABLED
-        url.isBlank() || key == "API-KEY" -> ServerState.NOT_CONFIGURED
+        url.isBlank() || url == LEGACY_PLACEHOLDER_URL || key == "API-KEY" ->
+          ServerState.NOT_CONFIGURED
         else -> ServerState.READY
       }
     return when (state) {
@@ -93,6 +94,11 @@ class AIServerProvider(
     DISABLED,
     NOT_CONFIGURED,
     READY,
+  }
+
+  private companion object {
+    // Old config.yml placeholder URL - treat as not-configured.
+    const val LEGACY_PLACEHOLDER_URL = "https://url/v1/inference"
   }
 
   private fun wrapWithRetry(server: AIServer): AiTransport =

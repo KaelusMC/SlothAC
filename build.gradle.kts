@@ -250,6 +250,10 @@ bukkit {
       description = "Allows reloading the config"
       default = Permission.Default.OP
     }
+    register("sloth.connect") {
+      description = "Allows linking/unlinking this server to the Sloth web panel"
+      default = Permission.Default.OP
+    }
     register("sloth.exempt") {
       description = "Exempt from all checks"
       default = Permission.Default.FALSE
