@@ -114,7 +114,7 @@ build/libs/SlothAC-<version>.jar
 
 ## Благодарности
 
-Sloth частично основан на open-source проекте [GrimAC](https://github.com/GrimAnticheat/Grim) и использует код и идеи, разработанные GrimAC, DefineOutside и другими участниками проекта GrimAC.
+У Sloth собственная, независимо разработанная кодовая база. Тем не менее часть его кода адаптирована из open-source проекта [GrimAC](https://github.com/GrimAnticheat/Grim), и Sloth опирается на идеи, разработанные GrimAC, DefineOutside и другими участниками проекта GrimAC - им полная признательность и благодарность за работу.
 
 ## Лицензия
 

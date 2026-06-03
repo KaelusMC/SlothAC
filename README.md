@@ -114,7 +114,7 @@ That makes problems easier to reproduce and fix.
 
 ## Credits
 
-Sloth is partially based on the open-source [GrimAC](https://github.com/GrimAnticheat/Grim) project and uses code and ideas developed by GrimAC, DefineOutside, and other GrimAC contributors.
+Sloth has its own, independently developed codebase. That said, some parts of its code are adapted from the open-source [GrimAC](https://github.com/GrimAnticheat/Grim) project, and Sloth builds on ideas developed by GrimAC, DefineOutside, and other GrimAC contributors - full credit and thanks to them for their work.
 
 ## License
 
