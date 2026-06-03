@@ -64,8 +64,8 @@ class BatchingAiTransport(
   @Synchronized
   fun start() {
     if (timerTask != null) return
-    val periodTicks = (config.maxDelayMs / MILLIS_PER_TICK).coerceAtLeast(1L)
-    timerTask = scheduler.runTimer({ scheduler.runAsync(::drainAndSend) }, periodTicks, periodTicks)
+    val period = config.maxDelayMs.coerceAtLeast(MILLIS_PER_TICK)
+    timerTask = scheduler.runTimerAsync(::drainAndSend, period, period)
   }
 
   @Synchronized
@@ -77,6 +77,7 @@ class BatchingAiTransport(
   }
 
   private fun drainAndSend() {
+    if (queueSize.get() == 0) return
     val drained = drainUpTo(config.maxBatchSize)
     if (drained.isEmpty()) return
     sendBatch(drained)

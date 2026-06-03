@@ -78,6 +78,16 @@ class SchedulerService(private val plugin: SlothAC, private val scheduler: Platf
     )
   }
 
+  fun runTimerAsync(task: Runnable, delayMillis: Long, periodMillis: Long): TaskHandle {
+    return scheduler.asyncScheduler.runAtFixedRate(
+      plugin,
+      task,
+      delayMillis,
+      periodMillis,
+      TimeUnit.MILLISECONDS,
+    )
+  }
+
   fun runTimer(
     player: Player?,
     task: Runnable,
