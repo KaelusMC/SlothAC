@@ -29,6 +29,7 @@ repositories {
   maven("https://repo.codemc.io/repository/maven-snapshots/")
   maven("https://maven.enginehub.org/repo/") // WorldGuard
   maven("https://repo.extendedclip.com/content/repositories/placeholderapi/") // PlaceholderAPI
+  maven("https://repo.opencollab.dev/maven-snapshots/") // Geyser / Floodgate
 }
 
 dependencies {
@@ -36,6 +37,7 @@ dependencies {
   compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
   compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.15")
   compileOnly("me.clip:placeholderapi:2.12.2")
+  compileOnly("org.geysermc.floodgate:api:2.0-SNAPSHOT")
 
   // PacketEvents
   if (BuildConfig.shadePE) {

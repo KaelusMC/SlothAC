@@ -83,6 +83,8 @@ class ConfigManager(private val plugin: SlothAC, private val credentialsStore: C
   var aiDisabledRegions: Map<String, List<String>> = emptyMap()
     private set
 
+  private var bedrockExemptEnabled = false
+
   var persistentBufferEnabled: Boolean = false
     private set
 
@@ -157,6 +159,8 @@ class ConfigManager(private val plugin: SlothAC, private val credentialsStore: C
   fun isAiDamageReductionEnabled(): Boolean = aiDamageReductionEnabled
 
   fun isAiWorldGuardEnabled(): Boolean = aiWorldGuardEnabled
+
+  fun isBedrockExemptEnabled(): Boolean = bedrockExemptEnabled
 
   fun isDisconnectBlacklistedForge(): Boolean = disconnectBlacklistedForge
 
@@ -262,6 +266,8 @@ class ConfigManager(private val plugin: SlothAC, private val credentialsStore: C
 
     aiWorldGuardEnabled = config.getBoolean("ai.worldguard.enabled", true)
     aiDisabledRegions = loadDisabledRegions()
+
+    bedrockExemptEnabled = config.getBoolean("exemptions.bedrock", true)
 
     persistentBufferEnabled = config.getBoolean("ai.persistent-buffer.enabled", true)
     val ttlHours =

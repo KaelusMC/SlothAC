@@ -37,6 +37,7 @@ import space.kaelus.sloth.checks.impl.ai.DataCollectorManager
 import space.kaelus.sloth.checks.impl.ai.PersistentBufferService
 import space.kaelus.sloth.config.ConfigManager
 import space.kaelus.sloth.database.DatabaseManager
+import space.kaelus.sloth.integration.GeyserUtil
 import space.kaelus.sloth.punishment.PunishmentManager
 import space.kaelus.sloth.scheduler.SchedulerService
 import space.kaelus.sloth.server.AIServerProvider
@@ -138,6 +139,7 @@ constructor(
             punishmentManagerFactory = punishmentManagerFactory,
             eventBus = eventBus,
           )
+        slothPlayer.isBedrock = GeyserUtil.isBedrockPlayer(playerUuid)
         players[player.uniqueId] = slothPlayer
         persistentBufferService.restoreOnLogin(slothPlayer)
 

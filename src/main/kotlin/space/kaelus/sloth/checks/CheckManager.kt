@@ -39,7 +39,8 @@ class CheckManager(private val player: SlothPlayer, checkFactories: Set<CheckFac
     }
   }
 
-  private fun checksDisabled(): Boolean = player.exemptManager.isDisabled(player.player)
+  private fun checksDisabled(): Boolean =
+    player.exemptManager.isDisabled(player.player) || player.isBedrockExempt
 
   private fun registerCheck(check: ICheck) {
     checks[check.javaClass] = check

@@ -89,6 +89,12 @@ ai:
     # Skip save below this value
     save-threshold: 1.0
 
+exemptions:
+  # Skip all checks for Bedrock players connecting through Geyser/Floodgate?
+  # Their movement and combat are not comparable to Java clients, so the AI
+  # check produces meaningless results for them.
+  bedrock: true
+
 connect:
   # Base URL of the Sloth panel (used by "/sloth connect").
   panel-url: "https://panel.kaelus.dev"

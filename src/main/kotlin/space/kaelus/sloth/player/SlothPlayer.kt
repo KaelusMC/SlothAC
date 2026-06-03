@@ -76,6 +76,10 @@ constructor(
   var entityId: Int = 0
   var gameMode: GameMode = GameMode.SURVIVAL
   var brand: String = "vanilla"
+  var isBedrock: Boolean = false
+
+  val isBedrockExempt: Boolean
+    get() = configManager.isBedrockExemptEnabled() && isBedrock
 
   val movement: MovementState = MovementState()
   val combat: CombatState = CombatState(aiSequence + 1)
