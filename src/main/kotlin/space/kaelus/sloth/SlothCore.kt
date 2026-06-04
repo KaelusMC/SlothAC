@@ -32,6 +32,8 @@ import space.kaelus.sloth.event.DamageEvent
 import space.kaelus.sloth.monitor.MonitorViewService
 import space.kaelus.sloth.packet.PacketListener
 import space.kaelus.sloth.player.PlayerDataManager
+import space.kaelus.sloth.redis.CrossServerAlertService
+import space.kaelus.sloth.redis.RedisManager
 import space.kaelus.sloth.server.AIServerProvider
 import space.kaelus.sloth.utils.MessageUtil
 
@@ -46,6 +48,8 @@ constructor(
   private val commandManager: CommandManager,
   private val alertManager: AlertManager,
   private val databaseManager: DatabaseManager,
+  private val redisManager: RedisManager,
+  private val crossServerAlertService: CrossServerAlertService,
   private val debugManager: DebugManager,
   private val packetListener: PacketListener,
   private val monitorViewService: MonitorViewService,
@@ -67,12 +71,15 @@ constructor(
       plugin,
       ServicePriority.Normal,
     )
+    crossServerAlertService.start()
   }
 
   fun disable() {
     plugin.server.servicesManager.unregister(SlothApi::class.java, slothApi)
     runCatching { playerDataManager.saveAllBuffersSync() }
     runCatching { aiServerProvider.shutdownTransport() }
+    runCatching { crossServerAlertService.shutdown() }
+    runCatching { redisManager.shutdown() }
     adventure.close()
     coroutines.close()
     databaseManager.shutdown()
@@ -86,6 +93,7 @@ constructor(
     aiServerProvider.reload()
     playerDataManager.reloadAllPlayers()
     monitorViewService.reload()
+    crossServerAlertService.reload()
   }
 
   private fun initializePacketRuntime() {

@@ -48,6 +48,12 @@ class AlertManager(
 
   private var logToConsole = true
 
+  /**
+   * Bridge that mirrors alerts to other servers, or `null` for local-only behaviour. Set by the
+   * Redis bridge on start-up and cleared on shutdown.
+   */
+  @Volatile var crossServerPublisher: CrossServerPublisher? = null
+
   var alertFormat: String = ""
     private set
 
@@ -84,7 +90,18 @@ class AlertManager(
     }
   }
 
+  /** Delivers an alert to local subscribers and the console, then mirrors it to other servers. */
   fun send(component: Component, type: AlertType) {
+    deliver(component, type)
+    crossServerPublisher?.publish(type, component)
+  }
+
+  /**
+   * Delivers an alert to local subscribers and the console only. Used both by [send] and by the
+   * cross-server bridge for alerts received from other servers, which must not be mirrored back
+   * out.
+   */
+  fun deliver(component: Component, type: AlertType) {
     val playersSet = playersWithAlerts.getValue(type)
     val permission = type.permission
 

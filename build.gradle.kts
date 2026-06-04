@@ -57,6 +57,7 @@ dependencies {
   implementation("net.kyori:adventure-platform-bukkit:4.4.1")
   implementation("net.kyori:adventure-text-minimessage:4.26.1")
   implementation("net.kyori:adventure-text-serializer-plain:4.26.1")
+  implementation("net.kyori:adventure-text-serializer-gson:4.26.1")
 
   // HikariCP
   implementation("com.zaxxer:HikariCP:7.0.2")
@@ -68,6 +69,9 @@ dependencies {
   implementation("org.flywaydb:flyway-mysql:12.1.1")
   implementation("org.mariadb.jdbc:mariadb-java-client:3.5.7")
   implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
+
+  // Redis (cross-server alerts)
+  implementation("io.lettuce:lettuce-core:6.5.0.RELEASE")
 
   // Utilities
   implementation(kotlin("stdlib"))
@@ -132,6 +136,11 @@ tasks.shadowJar {
     exclude(dependency("org.flywaydb:flyway-core"))
     exclude(dependency("org.flywaydb:flyway-mysql"))
     exclude(dependency("org.mariadb.jdbc:mariadb-java-client"))
+    // Lettuce, Netty and Reactor wire themselves up reflectively; keep them whole.
+    exclude(dependency("io.lettuce:lettuce-core"))
+    exclude(dependency("io.netty:.*:.*"))
+    exclude(dependency("io.projectreactor:reactor-core"))
+    exclude(dependency("org.reactivestreams:reactive-streams"))
   }
 
   mergeServiceFiles()
@@ -157,6 +166,10 @@ tasks.shadowJar {
   relocate("org.koin", "space.kaelus.sloth.libs.koin")
   relocate("org.flywaydb", "space.kaelus.sloth.libs.flyway")
   relocate("tools.jackson", "space.kaelus.sloth.libs.tools.jackson")
+  relocate("io.lettuce", "space.kaelus.sloth.libs.lettuce")
+  relocate("io.netty", "space.kaelus.sloth.libs.netty")
+  relocate("reactor", "space.kaelus.sloth.libs.reactor")
+  relocate("org.reactivestreams", "space.kaelus.sloth.libs.reactivestreams")
 }
 
 tasks.register<PrintFilePathTask>("printShadowJarPath") {

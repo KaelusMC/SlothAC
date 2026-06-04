@@ -131,6 +131,9 @@ enum class Message(val path: String) {
   SUSPICIOUS_TOP_PLAYER("suspicious.top-player"),
   SUSPICIOUS_TOP_PLAYER_HOVER("suspicious.top-player-hover"),
 
+  // Cross-server
+  CROSS_SERVER_ALERT_PREFIX("cross-server.alert-prefix"),
+
   // Stats
   STATS_INVALID_PERIOD("stats.invalid-period"),
   STATS_HEADER("stats.header"),
