@@ -159,13 +159,12 @@ cross-server:
   alerts:
     # Violation flags (rule breakers).
     regular: true
-    # Suspicious-buffer alerts.
+    # Suspicious-buffer alerts. When on, this also shares the live suspicious-players list
+    # (/sloth suspicious list|top) across servers. Nothing is written to Redis unless this is on;
+    # list entries carry a TTL, so offline servers and players that calm down drop off by themselves.
     suspicious: true
-  # Share the live suspicious-players list (/sloth suspicious list|top) across servers.
-  # Requires cross-server.enabled. Nothing is written to Redis unless this is on; entries
-  # carry a TTL, so offline servers and players that calm down drop off automatically.
+  # Tuning for the shared suspicious-players list (only used when cross-server.alerts.suspicious is on).
   suspicious-sync:
-    enabled: true
     # How long an entry survives in Redis without a refresh, in seconds.
     ttl-seconds: 30
     # How often this server republishes its suspicious players, in seconds.

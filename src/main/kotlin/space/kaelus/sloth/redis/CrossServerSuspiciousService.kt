@@ -32,10 +32,10 @@ import space.kaelus.sloth.scheduler.SchedulerService
  * a network-wide view.
  *
  * While enabled, a repeating task republishes this server's suspicious players as per-player keys
- * with a TTL (so entries vanish when a player calms down, leaves, or the server stops). Nothing is
- * written to Redis unless `cross-server.enabled` and `cross-server.suspicious-sync.enabled` are
- * both on. [fetchRemote] reads the other servers' entries for the command to merge with its local
- * view.
+ * with a TTL (so entries vanish when a player calms down, leaves, or the server stops). It runs
+ * under the same switch as suspicious alert mirroring: nothing is written to Redis unless
+ * `cross-server.enabled` and `cross-server.alerts.suspicious` are both on. [fetchRemote] reads the
+ * other servers' entries for the command to merge with its local view.
  */
 class CrossServerSuspiciousService(
   private val configManager: ConfigManager,
@@ -59,9 +59,10 @@ class CrossServerSuspiciousService(
 
   fun start() {
     val config = configManager.config
+    // Shares the live list under the same switch as suspicious alert mirroring.
     if (
       !config.getBoolean("cross-server.enabled", false) ||
-        !config.getBoolean("cross-server.suspicious-sync.enabled", true)
+        !config.getBoolean("cross-server.alerts.suspicious", true)
     ) {
       return
     }
