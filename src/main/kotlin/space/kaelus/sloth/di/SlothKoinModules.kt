@@ -94,6 +94,7 @@ import space.kaelus.sloth.player.ExemptManager
 import space.kaelus.sloth.player.PlayerDataManager
 import space.kaelus.sloth.punishment.PunishmentManager
 import space.kaelus.sloth.redis.CrossServerAlertService
+import space.kaelus.sloth.redis.CrossServerSuspiciousService
 import space.kaelus.sloth.redis.RedisManager
 import space.kaelus.sloth.region.RegionProvider
 import space.kaelus.sloth.scheduler.SchedulerService
@@ -123,6 +124,7 @@ private fun coreModule(plugin: SlothAC) = module {
   singleOf(::AlertManager)
   singleOf(::RedisManager)
   singleOf(::CrossServerAlertService)
+  singleOf(::CrossServerSuspiciousService)
   singleOf(::MonitorSettingsService)
   singleOf(::MonitorViewService)
   singleOf(::ExemptManager)

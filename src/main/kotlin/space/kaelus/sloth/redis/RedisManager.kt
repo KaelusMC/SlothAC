@@ -18,8 +18,11 @@
 package space.kaelus.sloth.redis
 
 import io.lettuce.core.ClientOptions
+import io.lettuce.core.KeyScanCursor
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
+import io.lettuce.core.ScanArgs
+import io.lettuce.core.SetArgs
 import io.lettuce.core.SocketOptions
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.pubsub.RedisPubSubAdapter
@@ -108,6 +111,50 @@ class RedisManager(private val configManager: ConfigManager, private val logger:
       .onFailure { error -> logger.log(Level.FINE, "[Redis] Publish to $channel failed.", error) }
   }
 
+  /** Stores [value] under [key] with a [ttlSeconds] expiry, without blocking the caller. */
+  fun setWithTtl(key: String, value: String, ttlSeconds: Long) {
+    val activeConnection = connection
+    if (!isAvailable || activeConnection == null) return
+    runCatching {
+        activeConnection.async().set(key, value, SetArgs.Builder.ex(ttlSeconds)).exceptionally {
+          error ->
+          logger.log(Level.FINE, "[Redis] Set $key failed.", error)
+          null
+        }
+      }
+      .onFailure { error -> logger.log(Level.FINE, "[Redis] Set $key failed.", error) }
+  }
+
+  /**
+   * Returns the values of every key matching [pattern]. Blocking (SCAN + MGET) — call off the main
+   * thread. Returns an empty list when unavailable or on error.
+   */
+  @Suppress("SpreadOperator") // Lettuce mget only accepts varargs; the key list is small.
+  fun scanValues(pattern: String): List<String> {
+    val activeConnection = connection
+    if (!isAvailable || activeConnection == null) return emptyList()
+    return runCatching {
+        val commands = activeConnection.sync()
+        val args = ScanArgs.Builder.matches(pattern).limit(SCAN_BATCH)
+        val keys = ArrayList<String>()
+        var cursor: KeyScanCursor<String> = commands.scan(args)
+        keys.addAll(cursor.keys)
+        while (!cursor.isFinished) {
+          cursor = commands.scan(cursor, args)
+          keys.addAll(cursor.keys)
+        }
+        if (keys.isEmpty()) {
+          emptyList()
+        } else {
+          commands.mget(*keys.toTypedArray()).mapNotNull { if (it.hasValue()) it.value else null }
+        }
+      }
+      .getOrElse { error ->
+        logger.log(Level.FINE, "[Redis] Scan $pattern failed.", error)
+        emptyList()
+      }
+  }
+
   /** Subscribes to [channel] and forwards each received message body to [onMessage]. */
   fun subscribe(channel: String, onMessage: (String) -> Unit) {
     val pubSub = pubSubConnection ?: return
@@ -136,6 +183,7 @@ class RedisManager(private val configManager: ConfigManager, private val logger:
     const val DEFAULT_PORT = 6379
     const val DEFAULT_DATABASE = 0
     const val DEFAULT_TIMEOUT_SECONDS = 10L
+    const val SCAN_BATCH = 256L
     val SHUTDOWN_TIMEOUT: Duration = Duration.ofSeconds(2)
   }
 }

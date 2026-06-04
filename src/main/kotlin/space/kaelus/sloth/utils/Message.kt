@@ -133,6 +133,7 @@ enum class Message(val path: String) {
 
   // Cross-server
   CROSS_SERVER_ALERT_PREFIX("cross-server.alert-prefix"),
+  CROSS_SERVER_SERVER_TAG("cross-server.server-tag"),
 
   // Stats
   STATS_INVALID_PERIOD("stats.invalid-period"),
