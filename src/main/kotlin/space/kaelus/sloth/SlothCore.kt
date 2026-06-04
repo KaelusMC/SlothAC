@@ -33,6 +33,7 @@ import space.kaelus.sloth.monitor.MonitorViewService
 import space.kaelus.sloth.packet.PacketListener
 import space.kaelus.sloth.player.PlayerDataManager
 import space.kaelus.sloth.redis.CrossServerAlertService
+import space.kaelus.sloth.redis.CrossServerSuspiciousService
 import space.kaelus.sloth.redis.RedisManager
 import space.kaelus.sloth.server.AIServerProvider
 import space.kaelus.sloth.utils.MessageUtil
@@ -50,6 +51,7 @@ constructor(
   private val databaseManager: DatabaseManager,
   private val redisManager: RedisManager,
   private val crossServerAlertService: CrossServerAlertService,
+  private val crossServerSuspiciousService: CrossServerSuspiciousService,
   private val debugManager: DebugManager,
   private val packetListener: PacketListener,
   private val monitorViewService: MonitorViewService,
@@ -72,6 +74,7 @@ constructor(
       ServicePriority.Normal,
     )
     crossServerAlertService.start()
+    crossServerSuspiciousService.start()
   }
 
   fun disable() {
@@ -79,6 +82,7 @@ constructor(
     runCatching { playerDataManager.saveAllBuffersSync() }
     runCatching { aiServerProvider.shutdownTransport() }
     runCatching { crossServerAlertService.shutdown() }
+    runCatching { crossServerSuspiciousService.shutdown() }
     runCatching { redisManager.shutdown() }
     adventure.close()
     coroutines.close()
@@ -93,7 +97,12 @@ constructor(
     aiServerProvider.reload()
     playerDataManager.reloadAllPlayers()
     monitorViewService.reload()
-    crossServerAlertService.reload()
+    // Restart Redis once, then re-init both consumers so the alert subscription survives reload.
+    crossServerAlertService.shutdown()
+    crossServerSuspiciousService.shutdown()
+    redisManager.shutdown()
+    crossServerAlertService.start()
+    crossServerSuspiciousService.start()
   }
 
   private fun initializePacketRuntime() {

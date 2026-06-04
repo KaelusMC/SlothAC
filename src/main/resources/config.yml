@@ -2,7 +2,7 @@
 # Copyright 2026 KaelusMC, DefineOutside and contributors, Licensed under GPLv3.
 
 # Do not change this value manually.
-config-version: 2
+config-version: 3
 
 # Locale: en, ru
 locale: "en"
@@ -161,6 +161,15 @@ cross-server:
     regular: true
     # Suspicious-buffer alerts.
     suspicious: true
+  # Share the live suspicious-players list (/sloth suspicious list|top) across servers.
+  # Requires cross-server.enabled. Nothing is written to Redis unless this is on; entries
+  # carry a TTL, so offline servers and players that calm down drop off automatically.
+  suspicious-sync:
+    enabled: true
+    # How long an entry survives in Redis without a refresh, in seconds.
+    ttl-seconds: 30
+    # How often this server republishes its suspicious players, in seconds.
+    refresh-seconds: 10
 
 suspicious:
   alerts:

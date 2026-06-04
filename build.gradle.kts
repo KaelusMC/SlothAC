@@ -71,8 +71,10 @@ dependencies {
   implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
 
   // Redis (cross-server alerts).
-  // Netty must NOT be bundled or relocated: the server provides io.netty, and PacketEvents finds the
-  // player's Channel by reflecting on its io.netty type. Relocating it breaks that lookup, so Lettuce
+  // Netty must NOT be bundled or relocated: the server provides io.netty, and PacketEvents finds
+  // the
+  // player's Channel by reflecting on its io.netty type. Relocating it breaks that lookup, so
+  // Lettuce
   // shares the server's Netty (provided at compile time below, supplied by the server at runtime).
   implementation("io.lettuce:lettuce-core:6.5.0.RELEASE") { exclude(group = "io.netty") }
   compileOnly("io.netty:netty-handler:4.1.113.Final")

@@ -127,6 +127,8 @@ suspicious:
 cross-server:
   # Origin tag prepended to alerts mirrored from other servers. <server> is the source server name.
   alert-prefix: "<dark_gray>[</dark_gray><color:#74ebd5><server></color><dark_gray>]</dark_gray>"
+  # Server tag prepended to entries in the network-wide /sloth suspicious list and top.
+  server-tag: "<dark_gray>[</dark_gray><color:#74ebd5><server></color><dark_gray>]</dark_gray>"
 
 stats:
   invalid-period: "<prefix> <color:#ff4b2b>Invalid period. Use: <options>.</color>"

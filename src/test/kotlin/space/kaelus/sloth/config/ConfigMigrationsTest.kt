@@ -165,6 +165,9 @@ class ConfigMigrationsTest {
     assertContains(merged, "# Redis connection, used by cross-server alerting.")
     assertContains(merged, """server-name: "server-1"""")
     assertContains(merged, """channel: "slothac:alerts"""")
+    // v3 added the suspicious-sync block under cross-server.
+    assertContains(merged, "suspicious-sync:")
+    assertContains(merged, "ttl-seconds: 30")
     assertContains(merged, """server: "https://example.internal/inference"""")
     assertContains(merged, """api-key: "MY_KEY"""")
     assertContains(merged, """locale: "ru"""")

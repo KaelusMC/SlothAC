@@ -127,12 +127,6 @@ class CrossServerAlertService(
     alertManager.deliver(prefix.append(Component.space()).append(body), type)
   }
 
-  fun reload() {
-    shutdown()
-    redisManager.shutdown()
-    start()
-  }
-
   fun shutdown() {
     enabled = false
     alertManager.crossServerPublisher = null
