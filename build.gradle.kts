@@ -70,8 +70,12 @@ dependencies {
   implementation("org.mariadb.jdbc:mariadb-java-client:3.5.7")
   implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
 
-  // Redis (cross-server alerts)
-  implementation("io.lettuce:lettuce-core:6.5.0.RELEASE")
+  // Redis (cross-server alerts).
+  // Netty must NOT be bundled or relocated: the server provides io.netty, and PacketEvents finds the
+  // player's Channel by reflecting on its io.netty type. Relocating it breaks that lookup, so Lettuce
+  // shares the server's Netty (provided at compile time below, supplied by the server at runtime).
+  implementation("io.lettuce:lettuce-core:6.5.0.RELEASE") { exclude(group = "io.netty") }
+  compileOnly("io.netty:netty-handler:4.1.113.Final")
 
   // Utilities
   implementation(kotlin("stdlib"))
@@ -94,6 +98,8 @@ dependencies {
   testCompileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
   testRuntimeOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
   testRuntimeOnly("org.xerial:sqlite-jdbc:3.51.3.0")
+  // Server provides Netty at runtime; tests have no server, so give Lettuce its Netty here.
+  testRuntimeOnly("io.netty:netty-handler:4.1.113.Final")
 }
 
 java {
@@ -136,9 +142,8 @@ tasks.shadowJar {
     exclude(dependency("org.flywaydb:flyway-core"))
     exclude(dependency("org.flywaydb:flyway-mysql"))
     exclude(dependency("org.mariadb.jdbc:mariadb-java-client"))
-    // Lettuce, Netty and Reactor wire themselves up reflectively; keep them whole.
+    // Lettuce and Reactor wire themselves up reflectively; keep them whole.
     exclude(dependency("io.lettuce:lettuce-core"))
-    exclude(dependency("io.netty:.*:.*"))
     exclude(dependency("io.projectreactor:reactor-core"))
     exclude(dependency("org.reactivestreams:reactive-streams"))
   }
@@ -167,7 +172,6 @@ tasks.shadowJar {
   relocate("org.flywaydb", "space.kaelus.sloth.libs.flyway")
   relocate("tools.jackson", "space.kaelus.sloth.libs.tools.jackson")
   relocate("io.lettuce", "space.kaelus.sloth.libs.lettuce")
-  relocate("io.netty", "space.kaelus.sloth.libs.netty")
   relocate("reactor", "space.kaelus.sloth.libs.reactor")
   relocate("org.reactivestreams", "space.kaelus.sloth.libs.reactivestreams")
 }
