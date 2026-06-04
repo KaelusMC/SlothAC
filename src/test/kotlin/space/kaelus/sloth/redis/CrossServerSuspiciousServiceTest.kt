@@ -49,8 +49,9 @@ class CrossServerSuspiciousServiceTest {
       enabled: true
       server-name: "Lobby"
       channel: "test:alerts"
+      alerts:
+        suspicious: true
       suspicious-sync:
-        enabled: true
         ttl-seconds: 30
         refresh-seconds: 10
     """
@@ -95,7 +96,7 @@ class CrossServerSuspiciousServiceTest {
     val scheduler = mockk<SchedulerService>(relaxed = true)
     val service =
       service(
-        "cross-server:\n  enabled: true\n  suspicious-sync:\n    enabled: false\n",
+        "cross-server:\n  enabled: true\n  alerts:\n    suspicious: false\n",
         redis,
         scheduler,
         mockk(relaxed = true),
