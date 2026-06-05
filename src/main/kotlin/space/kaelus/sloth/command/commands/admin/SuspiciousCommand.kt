@@ -39,6 +39,27 @@ import space.kaelus.sloth.sender.Sender
 import space.kaelus.sloth.utils.Message
 import space.kaelus.sloth.utils.MessageUtil
 
+/** A suspicious player as shown in the list, from this server (local) or another (remote). */
+internal data class DisplayEntry(
+  val server: String,
+  val uuid: String,
+  val name: String,
+  val buffer: Double,
+  val ping: Int,
+  val updatedAt: Long,
+)
+
+/**
+ * Collapses entries for the same player to one row, keeping the freshest. Local entries use
+ * [Long.MAX_VALUE] for [DisplayEntry.updatedAt], so a player on the viewer's own server always wins
+ * over a stale entry left behind on a server they just moved away from.
+ */
+internal fun dedupeByPlayer(entries: List<DisplayEntry>): List<DisplayEntry> =
+  entries
+    .groupBy { it.uuid }
+    .values
+    .map { group -> group.reduce { a, b -> if (b.updatedAt >= a.updatedAt) b else a } }
+
 class SuspiciousCommand(
   private val playerDataManager: PlayerDataManager,
   private val alertManager: AlertManager,
@@ -46,13 +67,6 @@ class SuspiciousCommand(
   private val scheduler: SchedulerService,
   private val crossServerSuspiciousService: CrossServerSuspiciousService,
 ) : SlothCommand {
-  private data class DisplayEntry(
-    val server: String,
-    val name: String,
-    val buffer: Double,
-    val ping: Int,
-  )
-
   private data class FlaggedPlayerEntry(val playerName: String, val flags: Int)
 
   override fun register(manager: CommandManager<Sender>) {
@@ -105,7 +119,7 @@ class SuspiciousCommand(
     }
 
     scheduler.runAsync {
-      val merged = (local + fetchRemoteEntries()).sortedByDescending { it.buffer }
+      val merged = dedupeByPlayer(local + fetchRemoteEntries()).sortedByDescending { it.buffer }
       scheduler.runSync { renderList(sender, merged, tagged = true) }
     }
   }
@@ -120,7 +134,7 @@ class SuspiciousCommand(
     }
 
     scheduler.runAsync {
-      val top = (local + fetchRemoteEntries()).maxByOrNull { it.buffer }
+      val top = dedupeByPlayer(local + fetchRemoteEntries()).maxByOrNull { it.buffer }
       scheduler.runSync { renderTop(sender, top, tagged = true) }
     }
   }
@@ -131,7 +145,17 @@ class SuspiciousCommand(
     for (sp in playerDataManager.getPlayers()) {
       val check = sp.checkManager.getCheck(AiCheck::class.java) ?: continue
       if (check.buffer > 0.0) {
-        entries.add(DisplayEntry(server, sp.player.name, check.buffer, sp.player.ping))
+        // Local players are authoritative: MAX_VALUE makes them win de-duplication.
+        entries.add(
+          DisplayEntry(
+            server,
+            sp.uuid.toString(),
+            sp.player.name,
+            check.buffer,
+            sp.player.ping,
+            Long.MAX_VALUE,
+          )
+        )
       }
     }
     return entries
@@ -139,7 +163,7 @@ class SuspiciousCommand(
 
   private fun fetchRemoteEntries(): List<DisplayEntry> =
     crossServerSuspiciousService.fetchRemote().map {
-      DisplayEntry(it.server, it.name, it.buffer, it.ping)
+      DisplayEntry(it.server, it.uuid, it.name, it.buffer, it.ping, it.updatedAt)
     }
 
   private fun renderList(sender: Sender, entries: List<DisplayEntry>, tagged: Boolean) {

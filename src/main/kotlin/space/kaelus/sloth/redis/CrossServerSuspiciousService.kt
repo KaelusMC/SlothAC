@@ -113,6 +113,7 @@ class CrossServerSuspiciousService(
               name = player.name,
               buffer = check.buffer,
               ping = player.ping,
+              updatedAt = System.currentTimeMillis(),
             )
           )
         }
