@@ -59,7 +59,7 @@ class CrossServerSuspiciousServiceTest {
 
   @Test
   fun `payload round-trips through jackson`() {
-    val original = SuspiciousSnapshot("Lobby", UUID.randomUUID().toString(), "Notch", 27.5, 42)
+    val original = SuspiciousSnapshot("Lobby", UUID.randomUUID().toString(), "Notch", 27.5, 42, 1L)
 
     val restored =
       mapper.readValue(mapper.writeValueAsString(original), SuspiciousSnapshot::class.java)
@@ -116,8 +116,8 @@ class CrossServerSuspiciousServiceTest {
     every { redis.isAvailable } returns true
     every { redis.scanValues(any()) } returns
       listOf(
-        mapper.writeValueAsString(SuspiciousSnapshot("Lobby", "u1", "Self", 10.0, 5)),
-        mapper.writeValueAsString(SuspiciousSnapshot("PvP", "u2", "Remote", 22.0, 7)),
+        mapper.writeValueAsString(SuspiciousSnapshot("Lobby", "u1", "Self", 10.0, 5, 1L)),
+        mapper.writeValueAsString(SuspiciousSnapshot("PvP", "u2", "Remote", 22.0, 7, 2L)),
         "not json",
       )
     val service = service(enabledYaml, redis, mockk(relaxed = true), mockk(relaxed = true))

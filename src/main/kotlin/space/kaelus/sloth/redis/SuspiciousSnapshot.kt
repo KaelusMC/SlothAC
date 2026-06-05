@@ -29,6 +29,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
  * @property name the player's name
  * @property buffer the player's current AI suspicion buffer
  * @property ping the player's ping in milliseconds
+ * @property updatedAt epoch millis when this snapshot was published, used to de-duplicate a player
+ *   who still has a stale entry from a server they just left (keep the freshest)
  */
 data class SuspiciousSnapshot
 @JsonCreator
@@ -38,4 +40,5 @@ constructor(
   @param:JsonProperty("name") val name: String,
   @param:JsonProperty("buffer") val buffer: Double,
   @param:JsonProperty("ping") val ping: Int,
+  @param:JsonProperty("updatedAt") val updatedAt: Long,
 )
