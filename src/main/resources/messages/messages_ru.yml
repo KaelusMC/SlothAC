@@ -125,9 +125,7 @@ suspicious:
   top-player-hover: "<gray>Включить мониторинг</gray>"
 
 cross-server:
-  # Префикс источника для алёртов с других серверов. <server> — имя сервера-источника.
   alert-prefix: "<dark_gray>[</dark_gray><color:#74ebd5><server></color><dark_gray>]</dark_gray>"
-  # Тег сервера для строк в общесетевом /sloth suspicious list и top.
   server-tag: "<dark_gray>[</dark_gray><color:#74ebd5><server></color><dark_gray>]</dark_gray>"
 
 stats:

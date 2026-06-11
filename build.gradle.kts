@@ -70,12 +70,8 @@ dependencies {
   implementation("org.mariadb.jdbc:mariadb-java-client:3.5.7")
   implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
 
-  // Redis (cross-server alerts).
-  // Netty must NOT be bundled or relocated: the server provides io.netty, and PacketEvents finds
-  // the
-  // player's Channel by reflecting on its io.netty type. Relocating it breaks that lookup, so
-  // Lettuce
-  // shares the server's Netty (provided at compile time below, supplied by the server at runtime).
+  // Redis (cross-server alerts). Netty stays unbundled and unrelocated: PacketEvents reflects on
+  // the server's io.netty Channel type, so Lettuce must share the server's Netty.
   implementation("io.lettuce:lettuce-core:6.5.0.RELEASE") { exclude(group = "io.netty") }
   compileOnly("io.netty:netty-handler:4.1.113.Final")
 
@@ -100,7 +96,6 @@ dependencies {
   testCompileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
   testRuntimeOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
   testRuntimeOnly("org.xerial:sqlite-jdbc:3.51.3.0")
-  // Server provides Netty at runtime; tests have no server, so give Lettuce its Netty here.
   testRuntimeOnly("io.netty:netty-handler:4.1.113.Final")
 }
 
@@ -144,7 +139,6 @@ tasks.shadowJar {
     exclude(dependency("org.flywaydb:flyway-core"))
     exclude(dependency("org.flywaydb:flyway-mysql"))
     exclude(dependency("org.mariadb.jdbc:mariadb-java-client"))
-    // Lettuce and Reactor wire themselves up reflectively; keep them whole.
     exclude(dependency("io.lettuce:lettuce-core"))
     exclude(dependency("io.projectreactor:reactor-core"))
     exclude(dependency("org.reactivestreams:reactive-streams"))

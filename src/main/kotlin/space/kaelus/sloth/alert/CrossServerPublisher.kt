@@ -19,12 +19,6 @@ package space.kaelus.sloth.alert
 
 import net.kyori.adventure.text.Component
 
-/**
- * Mirrors a locally-raised alert to other servers.
- *
- * Implemented by the Redis bridge and registered on [AlertManager] at runtime so the alert package
- * keeps no dependency on the transport.
- */
 fun interface CrossServerPublisher {
   fun publish(type: AlertType, component: Component)
 }
