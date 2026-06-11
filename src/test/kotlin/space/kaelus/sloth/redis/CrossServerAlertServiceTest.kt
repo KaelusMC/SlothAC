@@ -27,7 +27,9 @@ import io.mockk.verify
 import java.util.logging.Logger
 import net.kyori.adventure.platform.bukkit.BukkitAudiences
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
@@ -36,19 +38,36 @@ import space.kaelus.sloth.alert.AlertType
 import space.kaelus.sloth.config.ConfigManager
 import space.kaelus.sloth.config.ConfigView
 import space.kaelus.sloth.config.LocaleManager
+import space.kaelus.sloth.platform.scheduler.TaskHandle
+import space.kaelus.sloth.scheduler.SchedulerService
 import space.kaelus.sloth.utils.MessageUtil
 
 class CrossServerAlertServiceTest {
   private val gson = GsonComponentSerializer.gson()
   private val mapper = ObjectMapper()
 
+  private val scheduler = mockk<SchedulerService>()
+
   @BeforeEach
   fun setUp() {
-    // Initialise the real MessageUtil so the receive path can render the [server] prefix.
     val localeManager = mockk<LocaleManager>(relaxed = true)
     every { localeManager.getRawMessage(any()) } returns "[<server>]"
     MessageUtil.init(
       localeManager,
+      mockk<BukkitAudiences>(relaxed = true),
+      Logger.getLogger("test"),
+    )
+    every { scheduler.runSync(any()) } answers
+      {
+        firstArg<Runnable>().run()
+        mockk<TaskHandle>(relaxed = true)
+      }
+  }
+
+  @AfterEach
+  fun tearDown() {
+    MessageUtil.init(
+      mockk<LocaleManager>(relaxed = true),
       mockk<BukkitAudiences>(relaxed = true),
       Logger.getLogger("test"),
     )
@@ -142,18 +161,44 @@ class CrossServerAlertServiceTest {
       )
     service.start()
 
-    // A message this server published must be ignored when it loops back.
     service.publish(AlertType.REGULAR, Component.text("local"))
     incoming.captured.invoke(published.captured)
     verify(exactly = 0) { alerts.deliver(any(), any()) }
 
-    // A message from another server is delivered locally.
     val foreign =
       mapper.writeValueAsString(
         CrossServerAlert("other-origin", "PvP", "REGULAR", gson.serialize(Component.text("remote")))
       )
     incoming.captured.invoke(foreign)
+    verify(exactly = 1) { scheduler.runSync(any()) }
     verify(exactly = 1) { alerts.deliver(any(), AlertType.REGULAR) }
+  }
+
+  @Test
+  fun `strips click events from foreign alerts`() {
+    val redis = mockk<RedisManager>(relaxed = true)
+    every { redis.isAvailable } returns true
+    val incoming = slot<(String) -> Unit>()
+    every { redis.subscribe(any(), capture(incoming)) } just runs
+    val alerts = mockk<AlertManager>(relaxed = true)
+    val delivered = slot<Component>()
+    every { alerts.deliver(capture(delivered), any()) } just runs
+    val service = service("cross-server:\n  enabled: true\n", redis, alerts)
+    service.start()
+
+    val hostile =
+      Component.text("click me")
+        .clickEvent(ClickEvent.runCommand("/op Evil"))
+        .append(Component.text("child").clickEvent(ClickEvent.runCommand("/stop")))
+    incoming.captured.invoke(
+      mapper.writeValueAsString(
+        CrossServerAlert("other-origin", "PvP", "REGULAR", gson.serialize(hostile))
+      )
+    )
+
+    fun hasClick(component: Component): Boolean =
+      component.clickEvent() != null || component.children().any(::hasClick)
+    kotlin.test.assertFalse(hasClick(delivered.captured))
   }
 
   @Test
@@ -187,6 +232,7 @@ class CrossServerAlertServiceTest {
       configManager,
       redis,
       alerts,
+      scheduler,
       Logger.getLogger("cross-server-test"),
     )
   }

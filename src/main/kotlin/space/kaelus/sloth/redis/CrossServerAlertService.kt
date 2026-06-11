@@ -28,32 +28,25 @@ import space.kaelus.sloth.alert.AlertManager
 import space.kaelus.sloth.alert.AlertType
 import space.kaelus.sloth.alert.CrossServerPublisher
 import space.kaelus.sloth.config.ConfigManager
+import space.kaelus.sloth.scheduler.SchedulerService
 import space.kaelus.sloth.utils.Message
 import space.kaelus.sloth.utils.MessageUtil
 
-/**
- * Bridges the local [AlertManager] with other servers over Redis pub/sub.
- *
- * When enabled, it publishes locally-raised [AlertType.REGULAR] and [AlertType.SUSPICIOUS] alerts
- * to the shared channel and, in the other direction, delivers alerts received from other servers to
- * local staff with a `[server]` origin tag. Alerts received over Redis are delivered through
- * [AlertManager.deliver] so they are never mirrored back out, and messages this server published
- * are dropped on arrival via the per-process [origin] id.
- */
 class CrossServerAlertService(
   private val configManager: ConfigManager,
   private val redisManager: RedisManager,
   private val alertManager: AlertManager,
+  private val scheduler: SchedulerService,
   private val logger: Logger,
 ) {
   private val origin: String = UUID.randomUUID().toString()
   private val mapper = ObjectMapper()
   private val componentSerializer = GsonComponentSerializer.gson()
-  private val mirroredTypes: MutableSet<AlertType> = EnumSet.noneOf(AlertType::class.java)
 
   @Volatile private var enabled = false
-  private var serverName = DEFAULT_SERVER_NAME
-  private var channel = DEFAULT_CHANNEL
+  @Volatile private var mirroredTypes: Set<AlertType> = emptySet()
+  @Volatile private var serverName = DEFAULT_SERVER_NAME
+  @Volatile private var channel = DEFAULT_CHANNEL
 
   fun start() {
     val config = configManager.config
@@ -61,11 +54,10 @@ class CrossServerAlertService(
 
     serverName = config.getString("cross-server.server-name", DEFAULT_SERVER_NAME)
     channel = config.getString("cross-server.channel", DEFAULT_CHANNEL)
-    mirroredTypes.clear()
-    if (config.getBoolean("cross-server.alerts.regular", true)) mirroredTypes.add(AlertType.REGULAR)
-    if (config.getBoolean("cross-server.alerts.suspicious", true)) {
-      mirroredTypes.add(AlertType.SUSPICIOUS)
-    }
+    val types = EnumSet.noneOf(AlertType::class.java)
+    if (config.getBoolean("cross-server.alerts.regular", true)) types.add(AlertType.REGULAR)
+    if (config.getBoolean("cross-server.alerts.suspicious", true)) types.add(AlertType.SUSPICIOUS)
+    mirroredTypes = types
 
     redisManager.start()
     if (!redisManager.isAvailable) {
@@ -86,9 +78,6 @@ class CrossServerAlertService(
     )
   }
 
-  /**
-   * Mirrors a locally-raised alert to other servers. Wired into [AlertManager] as the publisher.
-   */
   fun publish(type: AlertType, component: Component) {
     if (!enabled || type !in mirroredTypes) return
     val payload =
@@ -118,13 +107,24 @@ class CrossServerAlertService(
 
   @Suppress("ReturnCount")
   private fun handleMessage(raw: String) {
+    if (!enabled) return
     val alert = mapper.readValue(raw, CrossServerAlert::class.java)
-    if (alert.origin == origin) return // our own alert, already shown locally
+    if (alert.origin == origin) return
     val type = runCatching { AlertType.valueOf(alert.type) }.getOrNull() ?: return
     if (type !in mirroredTypes) return
-    val body = componentSerializer.deserialize(alert.component)
+    val body = stripClickEvents(componentSerializer.deserialize(alert.component))
     val prefix = MessageUtil.getMessage(Message.CROSS_SERVER_ALERT_PREFIX, "server", alert.server)
-    alertManager.deliver(prefix.append(Component.space()).append(body), type)
+    val message = prefix.append(Component.space()).append(body)
+    scheduler.runSync { alertManager.deliver(message, type) }
+  }
+
+  private fun stripClickEvents(component: Component): Component {
+    val stripped = component.clickEvent(null)
+    val children = component.children()
+    if (children.isEmpty()) {
+      return stripped
+    }
+    return stripped.children(children.map(::stripClickEvents))
   }
 
   fun shutdown() {
