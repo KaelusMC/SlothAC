@@ -27,15 +27,49 @@ import org.geysermc.floodgate.api.FloodgateApi
 
 object GeyserUtil {
   private const val FLOODGATE_API_CLASS = "org.geysermc.floodgate.api.FloodgateApi"
+  private const val GEYSER_API_CLASS = "org.geysermc.geyser.api.GeyserApi"
   private const val BEDROCK_UUID_PREFIX = "00000000-0000-0000-0009"
 
   private val floodgatePresent: Boolean = hasClass(FLOODGATE_API_CLASS)
+  private val geyserPresent: Boolean = hasClass(GEYSER_API_CLASS)
 
-  fun isBedrockPlayer(uuid: UUID): Boolean {
-    if (floodgatePresent && FloodgateApi.getInstance().isFloodgatePlayer(uuid)) {
-      return true
+  @Volatile private var geyserApiInstance: Any? = null
+
+  private val geyserIsBedrockMethod by lazy {
+    runCatching { Class.forName(GEYSER_API_CLASS).getMethod("isBedrockPlayer", UUID::class.java) }
+      .getOrNull()
+  }
+
+  private fun geyserApi(): Any? {
+    if (!geyserPresent) {
+      return null
     }
-    return uuid.toString().startsWith(BEDROCK_UUID_PREFIX)
+    var api = geyserApiInstance
+    if (api == null) {
+      api =
+        runCatching { Class.forName(GEYSER_API_CLASS).getMethod("api").invoke(null) }.getOrNull()
+      if (api != null) {
+        geyserApiInstance = api
+      }
+    }
+    return api
+  }
+
+  fun isBedrockPlayer(uuid: UUID): Boolean =
+    isFloodgateBedrock(uuid) ||
+      isGeyserBedrock(uuid) ||
+      uuid.toString().startsWith(BEDROCK_UUID_PREFIX)
+
+  private fun isFloodgateBedrock(uuid: UUID): Boolean =
+    floodgatePresent && FloodgateApi.getInstance().isFloodgatePlayer(uuid)
+
+  private fun isGeyserBedrock(uuid: UUID): Boolean {
+    val api = geyserApi()
+    val method = geyserIsBedrockMethod
+    if (api == null || method == null) {
+      return false
+    }
+    return runCatching { method.invoke(api, uuid) as Boolean }.getOrDefault(false)
   }
 
   private fun hasClass(name: String): Boolean = runCatching { Class.forName(name) }.isSuccess
