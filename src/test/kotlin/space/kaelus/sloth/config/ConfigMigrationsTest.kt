@@ -161,11 +161,9 @@ class ConfigMigrationsTest {
     val merged = userFile.readText()
     assertContains(merged, "continuous: false")
     assertContains(merged, "config-version: ${ConfigMigrations.LATEST_VERSION}")
-    // v2 added the redis and cross-server sections; they must be merged in.
     assertContains(merged, "# Redis connection, used by cross-server alerting.")
     assertContains(merged, """server-name: "server-1"""")
     assertContains(merged, """channel: "slothac:alerts"""")
-    // v3 added the suspicious-sync block under cross-server.
     assertContains(merged, "suspicious-sync:")
     assertContains(merged, "ttl-seconds: 30")
     assertContains(merged, """server: "https://example.internal/inference"""")

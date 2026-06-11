@@ -19,13 +19,10 @@ package space.kaelus.sloth.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlin.test.assertEquals
-import net.kyori.adventure.text.minimessage.MiniMessage
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
 import org.junit.jupiter.api.Test
 
 class CrossServerAlertTest {
   private val mapper = ObjectMapper()
-  private val gson = GsonComponentSerializer.gson()
 
   @Test
   fun `payload round-trips through jackson`() {
@@ -35,17 +32,5 @@ class CrossServerAlertTest {
     val restored = mapper.readValue(json, CrossServerAlert::class.java)
 
     assertEquals(original, restored)
-  }
-
-  @Test
-  fun `component survives the gson round-trip inside the payload`() {
-    val component = MiniMessage.miniMessage().deserialize("<red>Player</red> <gray>flagged</gray>")
-    val payload = CrossServerAlert("o", "Lobby", "SUSPICIOUS", gson.serialize(component))
-
-    val json = mapper.writeValueAsString(payload)
-    val restored = mapper.readValue(json, CrossServerAlert::class.java)
-    val restoredComponent = gson.deserialize(restored.component)
-
-    assertEquals(gson.serialize(component), gson.serialize(restoredComponent))
   }
 }

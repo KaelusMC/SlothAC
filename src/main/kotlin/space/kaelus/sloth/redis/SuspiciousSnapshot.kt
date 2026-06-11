@@ -20,18 +20,6 @@ package space.kaelus.sloth.redis
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 
-/**
- * One suspicious player, as shared across servers for the network-wide `/sloth suspicious` list.
- * Stored in Redis under a per-player key with a TTL, so stale entries expire on their own.
- *
- * @property server display name of the server the player is on
- * @property uuid the player's UUID
- * @property name the player's name
- * @property buffer the player's current AI suspicion buffer
- * @property ping the player's ping in milliseconds
- * @property updatedAt epoch millis when this snapshot was published, used to de-duplicate a player
- *   who still has a stale entry from a server they just left (keep the freshest)
- */
 data class SuspiciousSnapshot
 @JsonCreator
 constructor(

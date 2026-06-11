@@ -20,14 +20,6 @@ package space.kaelus.sloth.redis
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 
-/**
- * Wire payload for a mirrored alert, serialized as JSON onto the Redis channel.
- *
- * @property origin per-process id of the publishing server, used to ignore our own messages
- * @property server display name of the origin server, shown as the `[server]` tag
- * @property type the alert type name (`REGULAR` or `SUSPICIOUS`)
- * @property component the rendered alert message, serialized with `GsonComponentSerializer`
- */
 data class CrossServerAlert
 @JsonCreator
 constructor(
