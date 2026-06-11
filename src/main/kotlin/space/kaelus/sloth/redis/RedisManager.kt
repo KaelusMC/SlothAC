@@ -32,14 +32,8 @@ import java.util.logging.Level
 import java.util.logging.Logger
 import space.kaelus.sloth.config.ConfigManager
 
-/**
- * Owns the Lettuce Redis connection used for cross-server features.
- *
- * Mirrors [space.kaelus.sloth.database.DatabaseManager]'s resilient pattern: when `redis.enabled`
- * is off, or the connection cannot be established, the manager logs a warning and stays disabled
- * ([isAvailable] = `false`) instead of failing plugin start-up. Publishing is then a no-op.
- */
 class RedisManager(private val configManager: ConfigManager, private val logger: Logger) {
+  @Volatile private var attempted = false
   @Volatile private var client: RedisClient? = null
   @Volatile private var connection: StatefulRedisConnection<String, String>? = null
   @Volatile private var pubSubConnection: StatefulRedisPubSubConnection<String, String>? = null
@@ -49,7 +43,8 @@ class RedisManager(private val configManager: ConfigManager, private val logger:
     private set
 
   fun start() {
-    if (isAvailable) return
+    if (attempted) return
+    attempted = true
     val config = configManager.config
     if (!config.getBoolean("redis.enabled", false)) return
 
@@ -75,6 +70,7 @@ class RedisManager(private val configManager: ConfigManager, private val logger:
         val redisClient = RedisClient.create(uri)
         redisClient.setOptions(
           ClientOptions.builder()
+            .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
             .socketOptions(
               SocketOptions.builder().connectTimeout(Duration.ofSeconds(timeoutSeconds)).build()
             )
@@ -98,7 +94,6 @@ class RedisManager(private val configManager: ConfigManager, private val logger:
       }
   }
 
-  /** Publishes [message] to [channel] without blocking the caller. No-op when unavailable. */
   fun publishAsync(channel: String, message: String) {
     val activeConnection = connection
     if (!isAvailable || activeConnection == null) return
@@ -111,7 +106,6 @@ class RedisManager(private val configManager: ConfigManager, private val logger:
       .onFailure { error -> logger.log(Level.FINE, "[Redis] Publish to $channel failed.", error) }
   }
 
-  /** Stores [value] under [key] with a [ttlSeconds] expiry, without blocking the caller. */
   fun setWithTtl(key: String, value: String, ttlSeconds: Long) {
     val activeConnection = connection
     if (!isAvailable || activeConnection == null) return
@@ -125,11 +119,7 @@ class RedisManager(private val configManager: ConfigManager, private val logger:
       .onFailure { error -> logger.log(Level.FINE, "[Redis] Set $key failed.", error) }
   }
 
-  /**
-   * Returns the values of every key matching [pattern]. Blocking (SCAN + MGET) — call off the main
-   * thread. Returns an empty list when unavailable or on error.
-   */
-  @Suppress("SpreadOperator") // Lettuce mget only accepts varargs; the key list is small.
+  @Suppress("SpreadOperator")
   fun scanValues(pattern: String): List<String> {
     val activeConnection = connection
     if (!isAvailable || activeConnection == null) return emptyList()
@@ -155,7 +145,6 @@ class RedisManager(private val configManager: ConfigManager, private val logger:
       }
   }
 
-  /** Subscribes to [channel] and forwards each received message body to [onMessage]. */
   fun subscribe(channel: String, onMessage: (String) -> Unit) {
     val pubSub = pubSubConnection ?: return
     pubSub.addListener(
@@ -170,6 +159,7 @@ class RedisManager(private val configManager: ConfigManager, private val logger:
 
   fun shutdown() {
     isAvailable = false
+    attempted = false
     runCatching { connection?.close() }
     runCatching { pubSubConnection?.close() }
     runCatching { client?.shutdown(Duration.ZERO, SHUTDOWN_TIMEOUT) }
