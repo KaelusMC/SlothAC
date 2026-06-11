@@ -54,11 +54,15 @@ class DataCollectorCheck(
         return
       }
 
-      if (
-        configManager.aiContinuous || slothPlayer.combat.ticksSinceAttack < configManager.aiSequence
-      ) {
+      if (shouldRecord(slothPlayer)) {
         session.addTick(TickData(slothPlayer))
       }
     }
   }
+
+  private fun shouldRecord(slothPlayer: SlothPlayer): Boolean =
+    !slothPlayer.packetStateData.lastPacketWasOnePointSeventeenDuplicate &&
+      slothPlayer.compensatedEntities.self.riding == null &&
+      (configManager.aiContinuous ||
+        slothPlayer.combat.ticksSinceAttack <= configManager.aiSequence)
 }
