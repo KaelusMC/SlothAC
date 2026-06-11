@@ -224,8 +224,12 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
 
     isMojangStupid(slothPlayer, flying, event)
 
-    if (!event.isCancelled) {
+    if (!event.isCancelled && !teleported && !serverRotated) {
       processRotation(slothPlayer, flying)
+    }
+
+    if (!teleported) {
+      slothPlayer.packetStateData.packetPlayerOnGround = flying.isOnGround
     }
   }
 
@@ -274,10 +278,13 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
       movement.x = flying.location.x
       movement.y = flying.location.y
       movement.z = flying.location.z
+      slothPlayer.packetStateData.duplicatePacketFilterPosition = flying.location.position
     }
     if (flying.hasRotationChanged()) {
       movement.yaw = flying.location.yaw
       movement.pitch = flying.location.pitch
+      movement.lastYaw = movement.yaw
+      movement.lastPitch = movement.pitch
     }
   }
 
