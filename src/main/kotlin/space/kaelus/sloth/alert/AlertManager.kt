@@ -47,6 +47,7 @@ class AlertManager(
   private val consoleAlertsEnabled: MutableSet<AlertType> = EnumSet.allOf(AlertType::class.java)
 
   private var logToConsole = true
+  @Volatile var crossServerPublisher: CrossServerPublisher? = null
 
   var alertFormat: String = ""
     private set
@@ -85,6 +86,11 @@ class AlertManager(
   }
 
   fun send(component: Component, type: AlertType) {
+    deliver(component, type)
+    crossServerPublisher?.publish(type, component)
+  }
+
+  fun deliver(component: Component, type: AlertType) {
     val playersSet = playersWithAlerts.getValue(type)
     val permission = type.permission
 

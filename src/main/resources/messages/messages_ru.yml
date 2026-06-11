@@ -125,6 +125,10 @@ suspicious:
   top-player: "<prefix> <color:#00b4db>Самый подозрительный:</color> <white><player></white> <gray>с буфером</gray> <color:#ff4b2b><buffer></color>"
   top-player-hover: "<gray>Включить мониторинг</gray>"
 
+cross-server:
+  alert-prefix: "<dark_gray>[</dark_gray><color:#74ebd5><server></color><dark_gray>]</dark_gray>"
+  server-tag: "<dark_gray>[</dark_gray><color:#74ebd5><server></color><dark_gray>]</dark_gray>"
+
 stats:
   invalid-period: "<prefix> <color:#ff4b2b>Неверный период. Используй: <options>.</color>"
   header: "<gradient:#8e9eab:#eef2f3>---- [ Статистика Sloth ] ----</gradient>"
