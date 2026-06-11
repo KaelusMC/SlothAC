@@ -34,27 +34,13 @@ import space.kaelus.sloth.command.requirements.PlayerSenderRequirement
 import space.kaelus.sloth.database.DatabaseManager
 import space.kaelus.sloth.player.PlayerDataManager
 import space.kaelus.sloth.redis.CrossServerSuspiciousService
+import space.kaelus.sloth.redis.SuspiciousSnapshot
 import space.kaelus.sloth.scheduler.SchedulerService
 import space.kaelus.sloth.sender.Sender
 import space.kaelus.sloth.utils.Message
 import space.kaelus.sloth.utils.MessageUtil
 
-/** A suspicious player as shown in the list, from this server (local) or another (remote). */
-internal data class DisplayEntry(
-  val server: String,
-  val uuid: String,
-  val name: String,
-  val buffer: Double,
-  val ping: Int,
-  val updatedAt: Long,
-)
-
-/**
- * Collapses entries for the same player to one row, keeping the freshest. Local entries use
- * [Long.MAX_VALUE] for [DisplayEntry.updatedAt], so a player on the viewer's own server always wins
- * over a stale entry left behind on a server they just moved away from.
- */
-internal fun dedupeByPlayer(entries: List<DisplayEntry>): List<DisplayEntry> =
+internal fun dedupeByPlayer(entries: List<SuspiciousSnapshot>): List<SuspiciousSnapshot> =
   entries
     .groupBy { it.uuid }
     .values
@@ -114,7 +100,7 @@ class SuspiciousCommand(
     val local = collectLocalSuspicious()
 
     if (!crossServerSuspiciousService.isActive) {
-      renderList(sender, local, tagged = false)
+      renderList(sender, local.sortedByDescending { it.buffer }, tagged = false)
       return
     }
 
@@ -139,15 +125,14 @@ class SuspiciousCommand(
     }
   }
 
-  private fun collectLocalSuspicious(): List<DisplayEntry> {
+  private fun collectLocalSuspicious(): List<SuspiciousSnapshot> {
     val server = crossServerSuspiciousService.serverName
-    val entries = ArrayList<DisplayEntry>()
+    val entries = ArrayList<SuspiciousSnapshot>()
     for (sp in playerDataManager.getPlayers()) {
       val check = sp.checkManager.getCheck(AiCheck::class.java) ?: continue
       if (check.buffer > 0.0) {
-        // Local players are authoritative: MAX_VALUE makes them win de-duplication.
         entries.add(
-          DisplayEntry(
+          SuspiciousSnapshot(
             server,
             sp.uuid.toString(),
             sp.player.name,
@@ -161,12 +146,10 @@ class SuspiciousCommand(
     return entries
   }
 
-  private fun fetchRemoteEntries(): List<DisplayEntry> =
-    crossServerSuspiciousService.fetchRemote().map {
-      DisplayEntry(it.server, it.uuid, it.name, it.buffer, it.ping, it.updatedAt)
-    }
+  private fun fetchRemoteEntries(): List<SuspiciousSnapshot> =
+    crossServerSuspiciousService.fetchRemote()
 
-  private fun renderList(sender: Sender, entries: List<DisplayEntry>, tagged: Boolean) {
+  private fun renderList(sender: Sender, entries: List<SuspiciousSnapshot>, tagged: Boolean) {
     if (entries.isEmpty()) {
       sender.sendMessage(MessageUtil.getMessage(Message.SUSPICIOUS_LIST_EMPTY))
       return
@@ -196,7 +179,7 @@ class SuspiciousCommand(
     }
   }
 
-  private fun renderTop(sender: Sender, top: DisplayEntry?, tagged: Boolean) {
+  private fun renderTop(sender: Sender, top: SuspiciousSnapshot?, tagged: Boolean) {
     if (top == null) {
       sender.sendMessage(MessageUtil.getMessage(Message.SUSPICIOUS_TOP_NONE))
       return

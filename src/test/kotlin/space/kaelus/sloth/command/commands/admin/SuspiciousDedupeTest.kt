@@ -19,14 +19,15 @@ package space.kaelus.sloth.command.commands.admin
 
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
+import space.kaelus.sloth.redis.SuspiciousSnapshot
 
 class SuspiciousDedupeTest {
 
   @Test
   fun `a player on two servers collapses to the freshest entry`() {
     val uuid = "11111111-1111-1111-1111-111111111111"
-    val stale = DisplayEntry("lite1", uuid, "season", 9.4, 38, 1_000L)
-    val fresh = DisplayEntry("lite2", uuid, "season", 9.4, 43, 2_000L)
+    val stale = SuspiciousSnapshot("lite1", uuid, "season", 9.4, 38, 1_000L)
+    val fresh = SuspiciousSnapshot("lite2", uuid, "season", 9.4, 43, 2_000L)
 
     val result = dedupeByPlayer(listOf(stale, fresh))
 
@@ -37,8 +38,8 @@ class SuspiciousDedupeTest {
   @Test
   fun `local entry wins over a stale remote one for the same player`() {
     val uuid = "22222222-2222-2222-2222-222222222222"
-    val remote = DisplayEntry("lite1", uuid, "season", 9.4, 38, 9_999L)
-    val local = DisplayEntry("lite2", uuid, "season", 9.4, 43, Long.MAX_VALUE)
+    val remote = SuspiciousSnapshot("lite1", uuid, "season", 9.4, 38, 9_999L)
+    val local = SuspiciousSnapshot("lite2", uuid, "season", 9.4, 43, Long.MAX_VALUE)
 
     val result = dedupeByPlayer(listOf(remote, local))
 
@@ -48,8 +49,8 @@ class SuspiciousDedupeTest {
 
   @Test
   fun `different players are all kept`() {
-    val a = DisplayEntry("lite1", "a", "alice", 5.0, 10, 1L)
-    val b = DisplayEntry("lite2", "b", "bob", 7.0, 20, 1L)
+    val a = SuspiciousSnapshot("lite1", "a", "alice", 5.0, 10, 1L)
+    val b = SuspiciousSnapshot("lite2", "b", "bob", 7.0, 20, 1L)
 
     assertEquals(2, dedupeByPlayer(listOf(a, b)).size)
   }
