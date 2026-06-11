@@ -144,5 +144,11 @@ constructor(
     fun isRelativeZ(): Boolean = flags.has(RelativeFlag.Z)
   }
 
-  class RotationData(val yaw: Float, val pitch: Float, val transactionId: Int)
+  class RotationData(
+    val yaw: Float,
+    val pitch: Float,
+    val relativeYaw: Boolean,
+    val relativePitch: Boolean,
+    val transactionId: Int,
+  )
 }

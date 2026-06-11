@@ -54,6 +54,9 @@ import space.kaelus.sloth.player.SlothPlayer
 import space.kaelus.sloth.player.TransactionStamp
 import space.kaelus.sloth.utils.update.RotationUpdate
 
+private const val FULL_CIRCLE_DEGREES = 360f
+private const val MAX_PITCH = 90f
+
 class PacketListener(private val playerDataManager: PlayerDataManager) : PacketListenerAbstract() {
   override fun onUserLogin(event: UserLoginEvent) {
     val user: com.github.retrooper.packetevents.protocol.player.User? = event.user
@@ -147,7 +150,7 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
         return false
       }
 
-      if (flying.location.yaw == rotation.yaw && flying.location.pitch == rotation.pitch) {
+      if (matchesServerRotation(rotation, flying)) {
         player.pendingRotations.poll()
         return true
       }
@@ -211,6 +214,15 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
       return true
     }
     return false
+  }
+
+  private fun matchesServerRotation(
+    rotation: SlothPlayer.RotationData,
+    flying: WrapperPlayClientPlayerFlying,
+  ): Boolean {
+    val yawMatches = rotation.relativeYaw || flying.location.yaw == rotation.yaw
+    val pitchMatches = rotation.relativePitch || flying.location.pitch == rotation.pitch
+    return yawMatches && pitchMatches
   }
 
   private fun handleFlying(event: PacketReceiveEvent, slothPlayer: SlothPlayer) {
@@ -460,8 +472,20 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
   ) {
     slothPlayer.sendTransaction()
     val transactionId = slothPlayer.transactions.lastTransactionSent.get()
+    val storedPitch =
+      if (wrapper.isRelativePitch) {
+        wrapper.pitch
+      } else {
+        (wrapper.pitch % FULL_CIRCLE_DEGREES).coerceIn(-MAX_PITCH, MAX_PITCH)
+      }
     slothPlayer.pendingRotations.add(
-      SlothPlayer.RotationData(wrapper.yaw, wrapper.pitch, transactionId)
+      SlothPlayer.RotationData(
+        wrapper.yaw,
+        storedPitch,
+        wrapper.isRelativeYaw,
+        wrapper.isRelativePitch,
+        transactionId,
+      )
     )
   }
 
