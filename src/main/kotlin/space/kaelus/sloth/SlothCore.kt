@@ -32,6 +32,10 @@ import space.kaelus.sloth.event.DamageEvent
 import space.kaelus.sloth.monitor.MonitorViewService
 import space.kaelus.sloth.packet.PacketListener
 import space.kaelus.sloth.player.PlayerDataManager
+import space.kaelus.sloth.redis.CrossServerAlertService
+import space.kaelus.sloth.redis.CrossServerSuspiciousService
+import space.kaelus.sloth.redis.RedisManager
+import space.kaelus.sloth.scheduler.SchedulerService
 import space.kaelus.sloth.server.AIServerProvider
 import space.kaelus.sloth.utils.MessageUtil
 
@@ -46,6 +50,9 @@ constructor(
   private val commandManager: CommandManager,
   private val alertManager: AlertManager,
   private val databaseManager: DatabaseManager,
+  private val redisManager: RedisManager,
+  private val crossServerAlertService: CrossServerAlertService,
+  private val crossServerSuspiciousService: CrossServerSuspiciousService,
   private val debugManager: DebugManager,
   private val packetListener: PacketListener,
   private val monitorViewService: MonitorViewService,
@@ -53,6 +60,7 @@ constructor(
   private val slothApi: SlothApi,
   private val adventure: BukkitAudiences,
   private val coroutines: SlothCoroutines,
+  private val scheduler: SchedulerService,
 ) {
   fun enable() {
     commandManager.registerCommands()
@@ -67,12 +75,19 @@ constructor(
       plugin,
       ServicePriority.Normal,
     )
+    scheduler.runAsync {
+      crossServerAlertService.start()
+      crossServerSuspiciousService.start()
+    }
   }
 
   fun disable() {
     plugin.server.servicesManager.unregister(SlothApi::class.java, slothApi)
     runCatching { playerDataManager.saveAllBuffersSync() }
     runCatching { aiServerProvider.shutdownTransport() }
+    runCatching { crossServerAlertService.shutdown() }
+    runCatching { crossServerSuspiciousService.shutdown() }
+    runCatching { redisManager.shutdown() }
     adventure.close()
     coroutines.close()
     databaseManager.shutdown()
@@ -86,6 +101,13 @@ constructor(
     aiServerProvider.reload()
     playerDataManager.reloadAllPlayers()
     monitorViewService.reload()
+    crossServerAlertService.shutdown()
+    crossServerSuspiciousService.shutdown()
+    scheduler.runAsync {
+      redisManager.shutdown()
+      crossServerAlertService.start()
+      crossServerSuspiciousService.start()
+    }
   }
 
   private fun initializePacketRuntime() {

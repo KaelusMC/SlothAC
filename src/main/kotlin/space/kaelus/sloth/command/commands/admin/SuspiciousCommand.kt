@@ -33,20 +33,26 @@ import space.kaelus.sloth.command.SlothCommand
 import space.kaelus.sloth.command.requirements.PlayerSenderRequirement
 import space.kaelus.sloth.database.DatabaseManager
 import space.kaelus.sloth.player.PlayerDataManager
-import space.kaelus.sloth.player.SlothPlayer
+import space.kaelus.sloth.redis.CrossServerSuspiciousService
+import space.kaelus.sloth.redis.SuspiciousSnapshot
 import space.kaelus.sloth.scheduler.SchedulerService
 import space.kaelus.sloth.sender.Sender
 import space.kaelus.sloth.utils.Message
 import space.kaelus.sloth.utils.MessageUtil
+
+internal fun dedupeByPlayer(entries: List<SuspiciousSnapshot>): List<SuspiciousSnapshot> =
+  entries
+    .groupBy { it.uuid }
+    .values
+    .map { group -> group.reduce { a, b -> if (b.updatedAt >= a.updatedAt) b else a } }
 
 class SuspiciousCommand(
   private val playerDataManager: PlayerDataManager,
   private val alertManager: AlertManager,
   private val databaseManager: DatabaseManager,
   private val scheduler: SchedulerService,
+  private val crossServerSuspiciousService: CrossServerSuspiciousService,
 ) : SlothCommand {
-  private data class SuspiciousEntry(val player: SlothPlayer, val check: AiCheck)
-
   private data class FlaggedPlayerEntry(val playerName: String, val flags: Int)
 
   override fun register(manager: CommandManager<Sender>) {
@@ -91,91 +97,118 @@ class SuspiciousCommand(
 
   private fun executeList(context: CommandContext<Sender>) {
     val sender = context.sender()
-    val bufferFilter = 0.0
+    val local = collectLocalSuspicious()
 
-    val suspiciousPlayers = ArrayList<SuspiciousEntry>()
-    for (sp in playerDataManager.getPlayers()) {
-      val check = sp.checkManager.getCheck(AiCheck::class.java) ?: continue
-      if (check.buffer > bufferFilter) {
-        suspiciousPlayers.add(SuspiciousEntry(sp, check))
-      }
-    }
-
-    suspiciousPlayers.sortByDescending { it.check.buffer }
-
-    if (suspiciousPlayers.isEmpty()) {
-      sender.sendMessage(MessageUtil.getMessage(Message.SUSPICIOUS_LIST_EMPTY))
+    if (!crossServerSuspiciousService.isActive) {
+      renderList(sender, local.sortedByDescending { it.buffer }, tagged = false)
       return
     }
 
-    sender.sendMessage(
-      MessageUtil.getMessage(
-        Message.SUSPICIOUS_LIST_HEADER,
-        "count",
-        suspiciousPlayers.size.toString(),
-      )
-    )
-
-    for (item in suspiciousPlayers) {
-      val buffer = item.check.buffer
-      val playerName = item.player.player.name
-
-      val message: Component =
-        MessageUtil.getMessage(
-            Message.SUSPICIOUS_LIST_ENTRY,
-            "player",
-            playerName,
-            "buffer",
-            String.format(Locale.US, "%.1f", buffer),
-            "ping",
-            item.player.player.ping.toString(),
-          )
-          .hoverEvent(
-            HoverEvent.showText(MessageUtil.getMessage(Message.SUSPICIOUS_LIST_ENTRY_HOVER))
-          )
-          .clickEvent(ClickEvent.runCommand("/sloth profile $playerName"))
-
-      sender.sendMessage(message)
+    scheduler.runAsync {
+      val merged = dedupeByPlayer(local + fetchRemoteEntries()).sortedByDescending { it.buffer }
+      scheduler.runSync { renderList(sender, merged, tagged = true) }
     }
   }
 
   private fun executeTop(context: CommandContext<Sender>) {
     val sender = context.sender()
+    val local = collectLocalSuspicious()
 
-    var topPlayer: SlothPlayer? = null
-    var topBuffer = 0.0
-
-    for (sp in playerDataManager.getPlayers()) {
-      val check = sp.checkManager.getCheck(AiCheck::class.java) ?: continue
-      val buffer = check.buffer
-      if (buffer > topBuffer) {
-        topBuffer = buffer
-        topPlayer = sp
-      }
+    if (!crossServerSuspiciousService.isActive) {
+      renderTop(sender, local.maxByOrNull { it.buffer }, tagged = false)
+      return
     }
 
-    if (topPlayer == null || topBuffer == 0.0) {
+    scheduler.runAsync {
+      val top = dedupeByPlayer(local + fetchRemoteEntries()).maxByOrNull { it.buffer }
+      scheduler.runSync { renderTop(sender, top, tagged = true) }
+    }
+  }
+
+  private fun collectLocalSuspicious(): List<SuspiciousSnapshot> {
+    val server = crossServerSuspiciousService.serverName
+    val entries = ArrayList<SuspiciousSnapshot>()
+    for (sp in playerDataManager.getPlayers()) {
+      val check = sp.checkManager.getCheck(AiCheck::class.java) ?: continue
+      if (check.buffer > 0.0) {
+        entries.add(
+          SuspiciousSnapshot(
+            server,
+            sp.uuid.toString(),
+            sp.player.name,
+            check.buffer,
+            sp.player.ping,
+            Long.MAX_VALUE,
+          )
+        )
+      }
+    }
+    return entries
+  }
+
+  private fun fetchRemoteEntries(): List<SuspiciousSnapshot> =
+    crossServerSuspiciousService.fetchRemote()
+
+  private fun renderList(sender: Sender, entries: List<SuspiciousSnapshot>, tagged: Boolean) {
+    if (entries.isEmpty()) {
+      sender.sendMessage(MessageUtil.getMessage(Message.SUSPICIOUS_LIST_EMPTY))
+      return
+    }
+
+    sender.sendMessage(
+      MessageUtil.getMessage(Message.SUSPICIOUS_LIST_HEADER, "count", entries.size.toString())
+    )
+
+    for (entry in entries) {
+      val line =
+        MessageUtil.getMessage(
+            Message.SUSPICIOUS_LIST_ENTRY,
+            "player",
+            entry.name,
+            "buffer",
+            String.format(Locale.US, "%.1f", entry.buffer),
+            "ping",
+            entry.ping.toString(),
+          )
+          .hoverEvent(
+            HoverEvent.showText(MessageUtil.getMessage(Message.SUSPICIOUS_LIST_ENTRY_HOVER))
+          )
+          .clickEvent(ClickEvent.runCommand("/sloth profile ${entry.name}"))
+
+      sender.sendMessage(withServerTag(entry.server, line, tagged))
+    }
+  }
+
+  private fun renderTop(sender: Sender, top: SuspiciousSnapshot?, tagged: Boolean) {
+    if (top == null) {
       sender.sendMessage(MessageUtil.getMessage(Message.SUSPICIOUS_TOP_NONE))
       return
     }
 
-    val playerName = topPlayer.player.name
-
-    val message: Component =
+    val line =
       MessageUtil.getMessage(
           Message.SUSPICIOUS_TOP_PLAYER,
           "player",
-          playerName,
+          top.name,
           "buffer",
-          String.format(Locale.US, "%.1f", topBuffer),
+          String.format(Locale.US, "%.1f", top.buffer),
         )
         .hoverEvent(
           HoverEvent.showText(MessageUtil.getMessage(Message.SUSPICIOUS_TOP_PLAYER_HOVER))
         )
-        .clickEvent(ClickEvent.runCommand("/sloth monitor $playerName"))
+        .clickEvent(ClickEvent.runCommand("/sloth monitor ${top.name}"))
 
-    sender.sendMessage(message)
+    sender.sendMessage(withServerTag(top.server, line, tagged))
   }
+
+  private fun withServerTag(server: String, line: Component, tagged: Boolean): Component =
+    if (tagged) {
+      MessageUtil.getMessage(Message.CROSS_SERVER_SERVER_TAG, "server", server)
+        .append(Component.space())
+        .append(line)
+    } else {
+      line
+    }
 
   private fun executeFlagged(context: CommandContext<Sender>) {
     val sender = context.sender()

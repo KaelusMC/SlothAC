@@ -20,7 +20,7 @@ package space.kaelus.sloth.config
 import java.io.File
 
 internal object ConfigMigrations {
-  const val LATEST_VERSION = 1
+  const val LATEST_VERSION = 3
 
   private val VERSION_RE = Regex("""^\s*config-version:\s*(\d+)""", RegexOption.MULTILINE)
 

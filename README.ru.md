@@ -57,7 +57,7 @@ AI-проверка Sloth использует официальный Sloth API.
 
 ## Файлы конфигурации
 
-- [`config.yml`](src/main/resources/config.yml): AI, база данных, алерты и обработка дублирующихся пакетов движения
+- [`config.yml`](src/main/resources/config.yml): AI, база данных, Redis, межсерверные оповещения, алерты и обработка дублирующихся пакетов движения
 - [`monitor.yml`](src/main/resources/monitor.yml): формат `/sloth monitor` и `/sloth view`
 - [`punishments.yml`](src/main/resources/punishments.yml): правила наказаний
 - [`messages/messages_en.yml`](src/main/resources/messages/messages_en.yml): английская локализация

@@ -2,7 +2,7 @@
 # Copyright 2026 KaelusMC, DefineOutside and contributors, Licensed under GPLv3.
 
 # Do not change this value manually.
-config-version: 1
+config-version: 3
 
 # Locale: en, ru
 locale: "en"
@@ -130,6 +130,45 @@ database:
     username: "root"
     password: "password"
     use-ssl: false
+
+# Redis connection, used by cross-server alerting.
+redis:
+  # Enable the Redis connection. Required for cross-server alerts below.
+  enabled: false
+  host: "localhost"
+  port: 6379
+  # Leave empty if your Redis instance has no password.
+  password: ""
+  # Logical database index.
+  database: 0
+  # Connect over TLS (rediss://).
+  ssl: false
+  # Connection and command timeout, in seconds.
+  timeout-seconds: 10
+
+# Mirror alerts between servers that share the same Redis.
+cross-server:
+  # Show alerts from other servers, and send this server's alerts to them.
+  # Requires redis.enabled above.
+  enabled: false
+  # Name shown as the origin tag for alerts coming from this server, e.g. [Lobby].
+  server-name: "server-1"
+  # Redis pub/sub channel. Every server in the network must use the same value.
+  channel: "slothac:alerts"
+  # Which alert types to mirror across servers.
+  alerts:
+    # Violation flags (rule breakers).
+    regular: true
+    # Suspicious-buffer alerts. When on, this also shares the live suspicious-players list
+    # (/sloth suspicious list|top) across servers. Nothing is written to Redis unless this is on;
+    # list entries carry a TTL, so offline servers and players that calm down drop off by themselves.
+    suspicious: true
+  # Tuning for the shared suspicious-players list (only used when cross-server.alerts.suspicious is on).
+  suspicious-sync:
+    # How long an entry survives in Redis without a refresh, in seconds.
+    ttl-seconds: 30
+    # How often this server republishes its suspicious players, in seconds.
+    refresh-seconds: 10
 
 suspicious:
   alerts:
