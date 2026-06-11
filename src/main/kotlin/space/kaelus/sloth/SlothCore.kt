@@ -35,6 +35,7 @@ import space.kaelus.sloth.player.PlayerDataManager
 import space.kaelus.sloth.redis.CrossServerAlertService
 import space.kaelus.sloth.redis.CrossServerSuspiciousService
 import space.kaelus.sloth.redis.RedisManager
+import space.kaelus.sloth.scheduler.SchedulerService
 import space.kaelus.sloth.server.AIServerProvider
 import space.kaelus.sloth.utils.MessageUtil
 
@@ -59,6 +60,7 @@ constructor(
   private val slothApi: SlothApi,
   private val adventure: BukkitAudiences,
   private val coroutines: SlothCoroutines,
+  private val scheduler: SchedulerService,
 ) {
   fun enable() {
     commandManager.registerCommands()
@@ -73,8 +75,10 @@ constructor(
       plugin,
       ServicePriority.Normal,
     )
-    crossServerAlertService.start()
-    crossServerSuspiciousService.start()
+    scheduler.runAsync {
+      crossServerAlertService.start()
+      crossServerSuspiciousService.start()
+    }
   }
 
   fun disable() {
@@ -97,12 +101,13 @@ constructor(
     aiServerProvider.reload()
     playerDataManager.reloadAllPlayers()
     monitorViewService.reload()
-    // Restart Redis once, then re-init both consumers so the alert subscription survives reload.
     crossServerAlertService.shutdown()
     crossServerSuspiciousService.shutdown()
-    redisManager.shutdown()
-    crossServerAlertService.start()
-    crossServerSuspiciousService.start()
+    scheduler.runAsync {
+      redisManager.shutdown()
+      crossServerAlertService.start()
+      crossServerSuspiciousService.start()
+    }
   }
 
   private fun initializePacketRuntime() {
