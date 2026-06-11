@@ -78,7 +78,7 @@ If API access is not available yet, disable the AI check for now.
 | `/sloth logs [page]` | View recent violations |
 | `/sloth history <player> [page]` | View a player's stored violation history |
 | `/sloth stats` | View server-side anti-cheat stats |
-| `/sloth dc <start\|stop\|status>` | Manage labeled data collection sessions |
+| `/sloth dc <start\|stop\|cancel\|status>` | Manage labeled data collection sessions |
 | `/sloth reload` | Reload Sloth configuration |
 
 For the full command list, use `/sloth help` in game.

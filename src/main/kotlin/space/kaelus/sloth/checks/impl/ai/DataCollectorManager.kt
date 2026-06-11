@@ -55,6 +55,10 @@ class DataCollectorManager(private val plugin: SlothAC, private val scheduler: S
     return false
   }
 
+  fun cancelCollecting(uuid: UUID): Boolean {
+    return activeSessions.remove(uuid) != null
+  }
+
   fun getSession(uuid: UUID): DataSession? {
     return activeSessions[uuid]
   }

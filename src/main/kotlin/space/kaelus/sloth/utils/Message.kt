@@ -65,6 +65,7 @@ enum class Message(val path: String) {
   DATACOLLECT_START_RESTARTED("datacollect.start-restarted"),
   DATACOLLECT_STOP_SUCCESS("datacollect.stop-success"),
   DATACOLLECT_STOP_FAIL("datacollect.stop-fail"),
+  DATACOLLECT_CANCEL_SUCCESS("datacollect.cancel-success"),
   DATACOLLECT_STATUS_HEADER("datacollect.status-header"),
   DATACOLLECT_STATUS_PLAYER("datacollect.status-player"),
   DATACOLLECT_STATUS_NONE("datacollect.status-none"),

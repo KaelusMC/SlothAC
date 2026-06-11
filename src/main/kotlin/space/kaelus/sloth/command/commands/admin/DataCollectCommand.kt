@@ -64,6 +64,14 @@ class DataCollectCommand(private val dataCollectorManager: DataCollectorManager)
 
     manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
       literal("datacollect", Description.empty(), "dc")
+        .literal("cancel")
+        .permission("sloth.datacollect.cancel")
+        .required("target", PlayerParser.playerParser())
+        .handler(this@DataCollectCommand::cancel)
+    }
+
+    manager.buildAndRegister("sloth", aliases = arrayOf("slothac")) {
+      literal("datacollect", Description.empty(), "dc")
         .literal("status")
         .permission("sloth.datacollect.status")
         .optional("target", PlayerParser.playerParser())
@@ -99,6 +107,17 @@ class DataCollectCommand(private val dataCollectorManager: DataCollectorManager)
 
     if (dataCollectorManager.stopCollecting(target.uniqueId)) {
       MessageUtil.sendMessage(sender, Message.DATACOLLECT_STOP_SUCCESS, "player", target.name)
+    } else {
+      MessageUtil.sendMessage(sender, Message.DATACOLLECT_STOP_FAIL, "player", target.name)
+    }
+  }
+
+  private fun cancel(context: CommandContext<Sender>) {
+    val sender: CommandSender = context.sender().nativeSender
+    val target: Player = context["target"]
+
+    if (dataCollectorManager.cancelCollecting(target.uniqueId)) {
+      MessageUtil.sendMessage(sender, Message.DATACOLLECT_CANCEL_SUCCESS, "player", target.name)
     } else {
       MessageUtil.sendMessage(sender, Message.DATACOLLECT_STOP_FAIL, "player", target.name)
     }

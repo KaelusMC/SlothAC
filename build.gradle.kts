@@ -268,7 +268,12 @@ bukkit {
       description = "Parent permission for data collection commands"
       default = Permission.Default.OP
       children =
-        listOf("sloth.datacollect.start", "sloth.datacollect.stop", "sloth.datacollect.status")
+        listOf(
+          "sloth.datacollect.start",
+          "sloth.datacollect.stop",
+          "sloth.datacollect.cancel",
+          "sloth.datacollect.status",
+        )
     }
     register("sloth.datacollect.start") {
       description = "Allows starting a data collection session"
@@ -276,6 +281,10 @@ bukkit {
     }
     register("sloth.datacollect.stop") {
       description = "Allows stopping a data collection session"
+      default = Permission.Default.FALSE
+    }
+    register("sloth.datacollect.cancel") {
+      description = "Allows cancelling a data collection session without saving"
       default = Permission.Default.FALSE
     }
     register("sloth.datacollect.status") {
