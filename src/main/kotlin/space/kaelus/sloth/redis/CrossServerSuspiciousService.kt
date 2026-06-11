@@ -27,16 +27,6 @@ import space.kaelus.sloth.player.PlayerDataManager
 import space.kaelus.sloth.player.SlothPlayer
 import space.kaelus.sloth.scheduler.SchedulerService
 
-/**
- * Shares each server's live suspicious players over Redis so `/sloth suspicious list|top` can show
- * a network-wide view.
- *
- * While enabled, a repeating task republishes this server's suspicious players as per-player keys
- * with a TTL (so entries vanish when a player calms down, leaves, or the server stops). It runs
- * under the same switch as suspicious alert mirroring: nothing is written to Redis unless
- * `cross-server.enabled` and `cross-server.alerts.suspicious` are both on. [fetchRemote] reads the
- * other servers' entries for the command to merge with its local view.
- */
 class CrossServerSuspiciousService(
   private val configManager: ConfigManager,
   private val redisManager: RedisManager,
@@ -48,6 +38,7 @@ class CrossServerSuspiciousService(
 
   @Volatile private var enabled = false
   @Volatile private var refreshTask: TaskHandle? = null
+  @Volatile
   var serverName: String = DEFAULT_SERVER_NAME
     private set
 
@@ -59,7 +50,6 @@ class CrossServerSuspiciousService(
 
   fun start() {
     val config = configManager.config
-    // Shares the live list under the same switch as suspicious alert mirroring.
     if (
       !config.getBoolean("cross-server.enabled", false) ||
         !config.getBoolean("cross-server.alerts.suspicious", true)
@@ -94,7 +84,6 @@ class CrossServerSuspiciousService(
     )
   }
 
-  /** Republishes this server's suspicious online players to Redis. Runs on the main thread. */
   private fun publishLocalSuspicious() {
     if (!enabled) return
     playerDataManager.getPlayers().forEach(::publishPlayer)
@@ -121,11 +110,6 @@ class CrossServerSuspiciousService(
     redisManager.setWithTtl("$keyPrefix:$serverName:${slothPlayer.uuid}", payload, ttlSeconds)
   }
 
-  /**
-   * Returns suspicious players reported by other servers. Blocking (reads Redis) — call off the
-   * main thread. Entries from this server are excluded so the caller can merge in its own live
-   * view.
-   */
   fun fetchRemote(): List<SuspiciousSnapshot> {
     if (!enabled) return emptyList()
     return redisManager
