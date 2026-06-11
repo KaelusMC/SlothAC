@@ -43,6 +43,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerJo
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPing
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerRotation
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetPassengers
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnLivingEntity
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnPainting
@@ -323,6 +324,8 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
             handleSpawnPainting(WrapperPlayServerSpawnPainting(event), slothPlayer)
           PacketType.Play.Server.SPAWN_PLAYER ->
             handleSpawnPlayer(WrapperPlayServerSpawnPlayer(event), slothPlayer)
+          PacketType.Play.Server.SET_PASSENGERS ->
+            handleSetPassengers(WrapperPlayServerSetPassengers(event), slothPlayer)
           PacketType.Play.Server.DESTROY_ENTITIES ->
             handleDestroyEntities(WrapperPlayServerDestroyEntities(event), slothPlayer)
           PacketType.Play.Server.JOIN_GAME ->
@@ -420,6 +423,27 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
     )
   }
 
+  private fun handleSetPassengers(
+    wrapper: WrapperPlayServerSetPassengers,
+    slothPlayer: SlothPlayer,
+  ) {
+    val vehicleId = wrapper.entityId
+    val passengers = wrapper.passengers.copyOf()
+    slothPlayer.sendTransaction()
+    slothPlayer.latencyUtils.addRealTimeTask(
+      slothPlayer.transactions.lastTransactionSent.get(),
+      Runnable {
+        val self = slothPlayer.compensatedEntities.self
+        val vehicle = slothPlayer.compensatedEntities.getEntity(vehicleId) ?: return@Runnable
+        if (passengers.contains(slothPlayer.entityId)) {
+          self.mount(vehicle)
+        } else if (self.riding === vehicle) {
+          self.eject()
+        }
+      },
+    )
+  }
+
   private fun handleDestroyEntities(
     destroy: WrapperPlayServerDestroyEntities,
     slothPlayer: SlothPlayer,
@@ -430,7 +454,11 @@ class PacketListener(private val playerDataManager: PlayerDataManager) : PacketL
     slothPlayer.latencyUtils.addRealTimeTask(
       slothPlayer.transactions.lastTransactionSent.get() + 1,
       Runnable {
+        val self = slothPlayer.compensatedEntities.self
         for (id in destroy.entityIds) {
+          if (self.riding === slothPlayer.compensatedEntities.getEntity(id)) {
+            self.eject()
+          }
           slothPlayer.compensatedEntities.removeEntity(id)
         }
       },

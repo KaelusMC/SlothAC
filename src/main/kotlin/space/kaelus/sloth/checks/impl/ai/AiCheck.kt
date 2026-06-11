@@ -128,6 +128,12 @@ class AiCheck(
       return
     }
 
+    if (slothPlayer.compensatedEntities.self.riding != null) {
+      ticks.clear()
+      ticksStep = 0
+      return
+    }
+
     if (!configManager.aiContinuous && slothPlayer.combat.ticksSinceAttack > sequence) {
       if (ticks.isNotEmpty()) {
         ticks.clear()
@@ -144,20 +150,23 @@ class AiCheck(
     }
 
     if (ticks.size == sequence && ticksStep >= step) {
-      if (
-        configManager.isAiWorldGuardEnabled() &&
-          regionProvider.isPlayerInDisabledRegion(slothPlayer.player)
-      ) {
-        debugManager.log(
-          DebugCategory.WORLDGUARD,
-          "Player ${slothPlayer.player.name} is in a disabled region. Skipping AI check.",
-        )
-        ticksStep = 0
-        return
-      }
-      sendData()
+      trySendWindow()
       ticksStep = 0
     }
+  }
+
+  private fun trySendWindow() {
+    if (
+      configManager.isAiWorldGuardEnabled() &&
+        regionProvider.isPlayerInDisabledRegion(slothPlayer.player)
+    ) {
+      debugManager.log(
+        DebugCategory.WORLDGUARD,
+        "Player ${slothPlayer.player.name} is in a disabled region. Skipping AI check.",
+      )
+      return
+    }
+    sendData()
   }
 
   private fun sendData() {

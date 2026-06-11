@@ -20,6 +20,7 @@ package space.kaelus.sloth.entity
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes
 import java.util.UUID
+import java.util.concurrent.CopyOnWriteArrayList
 import space.kaelus.sloth.player.SlothPlayer
 
 open class PacketEntity(val player: SlothPlayer, val uuid: UUID, val type: EntityType) {
@@ -27,8 +28,8 @@ open class PacketEntity(val player: SlothPlayer, val uuid: UUID, val type: Entit
   val isPlayer: Boolean = type == EntityTypes.PLAYER
   val isBoat: Boolean = EntityTypes.isTypeInstanceOf(type, EntityTypes.BOAT)
 
-  var riding: PacketEntity? = null
-  private val passengers: MutableList<PacketEntity> = ArrayList(0)
+  @Volatile var riding: PacketEntity? = null
+  private val passengers: MutableList<PacketEntity> = CopyOnWriteArrayList()
 
   fun inVehicle(): Boolean = riding != null
 

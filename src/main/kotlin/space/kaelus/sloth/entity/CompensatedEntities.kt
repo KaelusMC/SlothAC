@@ -63,6 +63,7 @@ class CompensatedEntities(private val player: SlothPlayer) {
   }
 
   fun clear() {
+    self.eject()
     entityMap.clear()
   }
 }
