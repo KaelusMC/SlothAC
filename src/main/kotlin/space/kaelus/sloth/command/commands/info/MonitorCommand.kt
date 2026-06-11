@@ -28,6 +28,7 @@ import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.incendo.cloud.CommandManager
 import org.incendo.cloud.bukkit.parser.PlayerParser
@@ -191,6 +192,19 @@ class MonitorCommand(
         .mutate { it.apply(CommandRegister.REQUIREMENT_FACTORY.create(PlayerSenderRequirement)) }
         .required("target", PlayerParser.playerParser())
         .handler(this@MonitorCommand::toggleMonitor)
+    }
+  }
+
+  @EventHandler
+  fun onPlayerJoin(event: PlayerJoinEvent) {
+    val player = event.player
+    if (
+      player.hasPermission("sloth.prob.self") &&
+        player.hasPermission("sloth.prob.self.enable-on-join") &&
+        !activeSessions.containsKey(player.uniqueId)
+    ) {
+      start(player, player)
+      MessageUtil.sendMessage(player, Message.MONITOR_ENABLED, "player", player.name)
     }
   }
 

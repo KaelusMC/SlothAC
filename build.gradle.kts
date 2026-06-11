@@ -300,6 +300,10 @@ bukkit {
       description = "Allows enabling the probability display only on self"
       default = Permission.Default.FALSE
     }
+    register("sloth.prob.self.enable-on-join") {
+      description = "Automatically enables the self probability display on join"
+      default = Permission.Default.FALSE
+    }
     register("sloth.prob.list") {
       description = "Allows listing active monitor sessions"
       default = Permission.Default.OP
