@@ -17,6 +17,8 @@
  */
 package space.kaelus.sloth.checks.impl.ai
 
+import com.github.retrooper.packetevents.protocol.player.ClientVersion
+import com.github.retrooper.packetevents.protocol.player.User
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -53,7 +55,7 @@ class AiCheckResponseTest {
 
     verify(exactly = 1) {
       fixture.logger.info(
-        "[DEBUG | AI_PROBABILITY] [TestPlayer] Prob: 0.4200 | Buffer: 0.00 -> 0.00 | Damage Multiplier: 1.00"
+        "[DEBUG | AI_PROBABILITY] [TestPlayer | 1.21.4] Prob: 0.4200 | Buffer: 0.00 -> 0.00 | Damage Multiplier: 1.00"
       )
     }
   }
@@ -109,12 +111,16 @@ class AiCheckResponseTest {
     val punishmentManager = mockk<PunishmentManager>(relaxed = true)
     val combat = CombatState(0)
 
+    val user = mockk<User>(relaxed = true)
+    every { user.clientVersion } returns ClientVersion.V_1_21_4
+
     val slothPlayer = mockk<SlothPlayer>(relaxed = true)
     every { slothPlayer.player } returns player
     every { slothPlayer.uuid } returns player.uniqueId
     every { slothPlayer.eventBus } returns eventBus
     every { slothPlayer.punishmentManager } returns punishmentManager
     every { slothPlayer.combat } returns combat
+    every { slothPlayer.user } returns user
 
     val check =
       AiCheck(

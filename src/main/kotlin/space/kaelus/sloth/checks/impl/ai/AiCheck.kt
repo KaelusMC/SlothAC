@@ -266,7 +266,7 @@ class AiCheck(
       debugManager.log(
         DebugCategory.AI_PROBABILITY,
         buildAiProbabilityDebugMessage(
-          playerName = slothPlayer.player.name,
+          playerName = "${slothPlayer.player.name} | ${slothPlayer.user.clientVersion.releaseName}",
           probability = probability,
           oldBuffer = oldBuffer,
           newBuffer = buffer,
